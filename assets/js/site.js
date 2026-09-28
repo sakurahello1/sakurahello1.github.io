@@ -374,5 +374,116 @@
       ctx.strokeStyle = CLAY; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, cy, R * 0.28 + 8 + Math.sin(t * 2) * 3, 0, 7); ctx.stroke();
     }
   };
+  /* 专利示意：扫描线扫过支护墙面，识别裂缝、剥落、渗漏并换算尺寸（自绘，数值仅为演示） */
+  covers.defect = function (ctx, W, H, t, dt, st) {
+    ctx.clearRect(0, 0, W, H);
+    var x0 = W * 0.08, x1 = W * 0.92, y0 = H * 0.12, y1 = H * 0.74, ww = x1 - x0, wh = y1 - y0;
+    function X(u) { return x0 + u * ww; } function Y(v) { return y0 + v * wh; }
+    var mono = function (px) { return '500 ' + px + 'px "JetBrains Mono", ui-monospace, monospace'; };
+    var fs = Math.max(9, Math.min(12, W * 0.024)), mmPerPx = 6000 / wh;
+    if (!st.defs || st.W !== W) {
+      st.W = W;
+      var spall = []; for (var k = 0; k < 11; k++) { var a = k / 11 * Math.PI * 2, r = 0.05 + 0.018 * Math.sin(k * 2.7) + 0.01 * Math.cos(k * 5.1); spall.push([0.46 + Math.cos(a) * r * 0.8, 0.86 + Math.sin(a) * r * 0.62]); }
+      st.defs = [
+        { kind: 'CRACK', rank: 'P1', place: 'above', pts: [[0.12, 0.37], [0.15, 0.41], [0.14, 0.45], [0.19, 0.5], [0.18, 0.55], [0.24, 0.6], [0.29, 0.62]], br: [[0.19, 0.5], [0.24, 0.49], [0.27, 0.45]] },
+        { kind: 'LEAK', rank: 'P2', place: 'left', leak: [0.77, 0.03, 0.25] },
+        { kind: 'CRACK', rank: 'P3', place: 'below', pts: [[0.55, 0.4], [0.58, 0.45], [0.57, 0.49], [0.62, 0.53], [0.64, 0.58]] },
+        { kind: 'SPALL', rank: 'P2', place: 'below', poly: spall }
+      ];
+      st.defs.forEach(function (d) {
+        var ps = d.pts ? d.pts.concat(d.br || []) : d.poly ? d.poly : [[d.leak[0] - 0.02, d.leak[1]], [d.leak[0] + 0.02, d.leak[2] + 0.03]];
+        d.u0 = Math.min.apply(null, ps.map(function (p) { return p[0]; })); d.u1 = Math.max.apply(null, ps.map(function (p) { return p[0]; }));
+        d.v0 = Math.min.apply(null, ps.map(function (p) { return p[1]; })); d.v1 = Math.max.apply(null, ps.map(function (p) { return p[1]; }));
+        if (d.pts) { var L = 0; for (var i = 1; i < d.pts.length; i++) L += Math.hypot((d.pts[i][0] - d.pts[i - 1][0]) * ww, (d.pts[i][1] - d.pts[i - 1][1]) * wh); d.label = 'L ' + (L * mmPerPx / 1000).toFixed(2) + ' m · W95 ' + (d.rank === 'P1' ? '1.8' : '0.6') + ' mm'; }
+        else if (d.poly) { var A = 0; for (var j = 0; j < d.poly.length; j++) { var p = d.poly[j], q = d.poly[(j + 1) % d.poly.length]; A += (p[0] * q[1] - q[0] * p[1]) * ww * wh; } d.label = 'A ' + (Math.abs(A / 2) * mmPerPx * mmPerPx / 1e6).toFixed(2) + ' m²'; }
+        else d.label = 'L ' + ((d.leak[2] - d.leak[1]) * wh * mmPerPx / 1000).toFixed(2) + ' m';
+      });
+    }
+    // 墙板（钢板桩式分格）
+    var n = 6, pw = ww / n;
+    for (var i = 0; i < n; i++) {
+      ctx.beginPath(); rr(ctx, x0 + i * pw + 2, y0, pw - 4, wh, 4);
+      ctx.fillStyle = 'rgba(237,232,222,.045)'; ctx.fill(); ctx.strokeStyle = 'rgba(237,232,222,.2)'; ctx.lineWidth = 1; ctx.stroke();
+    }
+    // 参照物（已知尺寸，用于求单应性）
+    var rs = ww * 0.075, rx = X(0.9) - rs, ry = Y(0.93) - rs;
+    ctx.fillStyle = CREAM; ctx.fillRect(rx, ry, rs, rs); ctx.fillStyle = INK;
+    [[1, 1], [2, 1], [1, 2], [3, 2], [2, 3]].forEach(function (c) { ctx.fillRect(rx + c[0] * rs / 5, ry + c[1] * rs / 5, rs / 5, rs / 5); });
+    ctx.font = mono(fs * 0.85); ctx.fillStyle = 'rgba(237,232,222,.6)'; ctx.textAlign = 'right'; ctx.fillText('REF 200 mm', rx + rs, ry - 6);
+    // 扫描进度
+    var P = 7, phase = (t % P) / P, su = phase * 1.35 - 0.12, sx = X(su);
+    // 缺陷（原始外观）
+    st.defs.forEach(function (d) {
+      var k = Math.max(0, Math.min(1, (su - d.u1) / 0.07)), hit = k > 0;
+      ctx.strokeStyle = hit ? CLAY : 'rgba(237,232,222,.7)'; ctx.fillStyle = hit ? 'rgba(217,119,87,.55)' : 'rgba(237,232,222,.25)';
+      if (d.pts) {
+        [d.pts, d.br].forEach(function (line, li) {
+          if (!line) return; ctx.lineWidth = (hit ? 2.6 : 1.6) * (li ? 0.7 : 1); ctx.lineJoin = 'round';
+          ctx.beginPath(); line.forEach(function (p, j) { j ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1])); }); ctx.stroke();
+        });
+      } else if (d.poly) {
+        ctx.beginPath(); d.poly.forEach(function (p, j) { j ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1])); }); ctx.closePath(); ctx.fill(); ctx.lineWidth = 1.2; ctx.stroke();
+      } else {
+        var lx = X(d.leak[0]), ya = Y(d.leak[1]), yb = Y(d.leak[2]);
+        var g = ctx.createLinearGradient(0, ya, 0, yb); g.addColorStop(0, hit ? 'rgba(217,119,87,.7)' : 'rgba(237,232,222,.5)'); g.addColorStop(1, 'rgba(237,232,222,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(lx - ww * 0.012, ya); ctx.quadraticCurveTo(lx - ww * 0.02, (ya + yb) / 2, lx, yb); ctx.quadraticCurveTo(lx + ww * 0.02, (ya + yb) / 2, lx + ww * 0.012, ya); ctx.fill();
+        ctx.beginPath(); ctx.arc(lx, yb + wh * 0.02 + ((t * 40) % (wh * 0.05)), 2.2, 0, 7); ctx.fillStyle = hit ? CLAY : 'rgba(237,232,222,.55)'; ctx.fill();
+      }
+    });
+    // 支撑（钢围檩与横撑）
+    [0.3, 0.68].forEach(function (v) {
+      ctx.fillStyle = 'rgba(237,232,222,.2)'; ctx.fillRect(x0 - 8, Y(v) - 5, ww + 16, 10);
+      for (var b = 0; b <= n; b++) { ctx.beginPath(); ctx.arc(x0 + b * pw, Y(v), 2.6, 0, 7); ctx.fillStyle = 'rgba(237,232,222,.55)'; ctx.fill(); }
+    });
+    // 扫描光带
+    if (su > -0.05 && su < 1.05) {
+      var gb = ctx.createLinearGradient(sx - ww * 0.12, 0, sx, 0); gb.addColorStop(0, 'rgba(217,119,87,0)'); gb.addColorStop(1, 'rgba(217,119,87,.22)');
+      ctx.fillStyle = gb; ctx.fillRect(sx - ww * 0.12, y0 - 8, ww * 0.12, wh + 16);
+      ctx.fillStyle = CLAY; ctx.fillRect(sx - 1, y0 - 14, 2, wh + 28);
+    }
+    // 识别框与标注
+    var found = 0, p1 = false;
+    st.defs.forEach(function (d) {
+      var k = Math.max(0, Math.min(1, (su - d.u1) / 0.07)); if (k <= 0) return; found++; if (d.rank === 'P1') p1 = true;
+      var bx = X(d.u0) - 8, by = Y(d.v0) - 8, bw = X(d.u1) - X(d.u0) + 16, bh = Y(d.v1) - Y(d.v0) + 16, c = 9;
+      ctx.globalAlpha = k; ctx.strokeStyle = CLAY; ctx.lineWidth = 1.5; ctx.beginPath();
+      [[bx, by, 1, 1], [bx + bw, by, -1, 1], [bx, by + bh, 1, -1], [bx + bw, by + bh, -1, -1]].forEach(function (q) { ctx.moveTo(q[0] + q[2] * c, q[1]); ctx.lineTo(q[0], q[1]); ctx.lineTo(q[0], q[1] + q[3] * c); });
+      ctx.stroke();
+      ctx.font = mono(fs); var l1 = d.kind + ' · ' + d.rank, l2 = d.label;
+      var tw = Math.max(ctx.measureText(l1).width, ctx.measureText(l2).width) + 16, lh = fs * 1.35, th = lh * 2 + 8, tx, ty;
+      if (d.place === 'below') { tx = bx; ty = by + bh + 6; }
+      else if (d.place === 'left') { tx = bx - tw - 6; ty = by; }
+      else { tx = bx; ty = by - th - 6; }
+      tx = Math.min(W - tw - 8, Math.max(8, tx)); ty = Math.max(8, ty);
+      ctx.fillStyle = CLAY; ctx.beginPath(); rr(ctx, tx, ty, tw, th, 5); ctx.fill();
+      ctx.fillStyle = INK; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.font = '600 ' + fs + 'px "JetBrains Mono", ui-monospace, monospace'; ctx.fillText(l1, tx + 8, ty + 4 + lh / 2);
+      ctx.font = mono(fs); ctx.fillText(l2, tx + 8, ty + 4 + lh * 1.5);
+      ctx.textBaseline = 'alphabetic'; ctx.globalAlpha = 1;
+    });
+    // 底部读数
+    var by2 = H * 0.86;
+    ctx.fillStyle = 'rgba(237,232,222,.14)'; ctx.fillRect(x0, by2 - 12, ww, 1);
+    ctx.font = mono(fs); ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(237,232,222,.75)';
+    ctx.fillText('DETECTED ' + found + '/' + st.defs.length + (su > 1 ? ' · SCAN DONE' : ' · SCANNING'), x0, by2 + 8);
+    ctx.fillStyle = p1 ? CLAY : 'rgba(237,232,222,.45)';
+    ctx.fillText(p1 ? 'P1 ≥ τ → VLM + 知识库 → REPORT.json' : 'RISK < τ · 直接汇总', x0, by2 + 8 + fs * 1.9);
+    ctx.textAlign = 'left';
+  };
+
   $$('canvas[data-cover]').forEach(function (cv) { var f = covers[cv.getAttribute('data-cover')]; if (f) stage(cv, f); });
+
+  /* 流程条：逐步点亮 */
+  $$('.flow').forEach(function (ol) {
+    var items = $$('li', ol), i = 0;
+    if (reduced || !('IntersectionObserver' in window)) { items.forEach(function (li) { li.classList.add('on'); }); return; }
+    var io = new IntersectionObserver(function (es) {
+      if (!es[0].isIntersecting) return; io.disconnect();
+      setInterval(function () {
+        if (i > items.length) { items.forEach(function (li) { li.classList.remove('on'); }); i = 0; return; }
+        if (items[i]) items[i].classList.add('on'); i++;
+      }, 900);
+    }, { threshold: 0.3 });
+    io.observe(ol);
+  });
 })();

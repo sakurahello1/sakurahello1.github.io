@@ -258,11 +258,20 @@ a:hover { color: var(--clay-deep); }
 .patent .num span { color: var(--clay); }
 .patent h3 { font-size: clamp(1.25rem, 2vw, 1.6rem); font-weight: 900; line-height: 1.5; margin: 1.4rem 0 1rem; }
 .patent p { color: var(--ink-2); }
-.figs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.figs a { display: block; background: #fff; border-radius: 10px; overflow: hidden; border: 1px solid var(--line-2); text-decoration: none; }
-.figs img { aspect-ratio: 3 / 4; object-fit: cover; object-position: 50% 30%; width: 100%; filter: grayscale(1) contrast(1.05); transition: transform .8s var(--ease); }
-.figs a:hover img { transform: scale(1.04); }
-.figs span { display: block; padding: .55rem .75rem; color: var(--ink-2); border-top: 1px solid var(--line); }
+.patent-fig { margin: 0; }
+.pfig { position: relative; aspect-ratio: 4 / 5; border-radius: 18px; overflow: hidden; background: var(--night); color: var(--cream-on-night); }
+.pfig canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.pfig .tag { position: absolute; left: 16px; top: 14px; z-index: 1; }
+.patent-fig figcaption { margin-top: .7rem; color: var(--mute); }
+.flow { list-style: none; padding: 0; margin: clamp(36px, 5vw, 64px) 0 0; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; counter-reset: s; }
+.flow li { counter-increment: s; position: relative; border-top: 1.5px solid var(--ink); padding: 14px 10px 0 0; display: flex; flex-direction: column; gap: .35rem; transition: color .35s; }
+.flow li::before { content: "0" counter(s); font-family: var(--mono); font-size: .64rem; letter-spacing: .14em; color: var(--mute); }
+.flow li::after { content: ""; position: absolute; left: 0; top: -1.5px; height: 3px; width: 0; background: var(--clay); transition: width .9s var(--ease); }
+.flow li.on::after { width: 100%; }
+.flow li b { font-weight: 900; font-size: 1.02rem; }
+.flow li span { font-size: .84rem; color: var(--ink-2); line-height: 1.6; }
+.flow li:nth-child(5) b::after { content: " ◆"; color: var(--clay); font-size: .7em; vertical-align: .15em; }
+@media (max-width: 900px) { .flow { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 14px; } }
 @media (max-width: 900px) { .patent { grid-template-columns: 1fr; } }
 
 /* ---------- 获奖（陶土橙带） ---------- */

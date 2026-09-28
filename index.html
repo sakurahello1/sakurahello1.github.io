@@ -211,11 +211,19 @@
           <tr><th>Inventors</th><td>共 7 人 · 本人第 3 位</td></tr>
         </table>
       </div>
-      <div class="figs reveal" style="--d:.12s">
-        <a href="assets/img/patent-fig1.webp" target="_blank" rel="noopener"><img src="assets/img/patent-fig1.webp" alt="专利附图 1：检测方法流程图" loading="lazy" width="1131" height="1600"><span class="mono">Fig. 1 · 方法流程</span></a>
-        <a href="assets/img/patent-fig2.webp" target="_blank" rel="noopener"><img src="assets/img/patent-fig2.webp" alt="专利附图 2：系统功能模块图" loading="lazy" width="1131" height="1600"><span class="mono">Fig. 2 · 系统模块</span></a>
-      </div>
+      <figure class="patent-fig reveal" style="--d:.12s">
+        <div class="pfig"><canvas data-cover="defect" role="img" aria-label="自绘示意动画：扫描线扫过带钢支撑的支护墙面，依次识别裂缝、剥落和渗漏，标注实际尺寸与风险等级"></canvas><span class="tag mono">Fig. A · 支护墙面检测</span></div>
+        <figcaption class="mono">自绘示意 · 数值仅为演示</figcaption>
+      </figure>
     </article>
+    <ol class="flow" aria-label="检测方法的六个步骤">
+      <li><b>采集</b><span>移动装置上的工业相机与定位单元</span></li>
+      <li><b>分割支护区域</b><span>语义分割先剔除背景</span></li>
+      <li><b>缺陷实例</b><span>改进的 YOLOv11-seg 输出裂缝、剥落、渗漏的掩码</span></li>
+      <li><b>换算尺寸</b><span>用参照物求单应性，得到面积、骨架长度、95 分位宽度</span></li>
+      <li><b>风险评分</b><span>按尺寸和形态排序，超过阈值才调用 VLM</span></li>
+      <li><b>诊断报告</b><span>结合知识库给出成因与维修建议，输出 JSON 报告</span></li>
+    </ol>
   </div>
 </section>
 
