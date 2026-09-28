@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>博客 · 吕灏 Hao Lyu</title>
+<meta name="description" content="吕灏的研究与实践笔记：强化学习后训练，以及 Agent 系统的统一理论。">
+<meta property="og:title" content="博客 · 吕灏 Hao Lyu">
+<meta property="og:description" content="研究与实践笔记 · Writing">
+<meta property="og:image" content="https://sakurahello1.github.io/assets/img/og.jpg">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#EDE8DE">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="../assets/css/site.css">
+<script>
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) document.documentElement.classList.add('js-motion');
+</script>
+<script src="../assets/js/site.js" defer></script>
+</head>
+<body>
+
+<header class="hud-top">
+  <a class="badge" href="../" aria-label="返回首页"><span class="dot" aria-hidden="true"></span><span class="idx" id="hud-idx">01</span>吕灏 Hao Lyu</a>
+  <button class="navtoggle" id="navtoggle" type="button" aria-expanded="false" aria-controls="navlinks">Index</button>
+  <ul class="navlinks" id="navlinks">
+    <li><a href="../#about">About</a></li>
+    <li><a href="../#work">Work</a></li>
+    <li><a href="../#paper">Paper</a></li>
+    <li><a href="../#writing">Writing</a></li>
+  </ul>
+</header>
+
+<div class="hud-frame" id="hud" aria-hidden="true">
+  <span class="corner bl"></span><span class="corner br"></span>
+  <span class="tc mono"><b id="hud-tc">00:00</b>TC</span>
+  <span class="ruler" id="hud-ruler"><span class="rest"></span><span class="bar"></span></span>
+  <span class="sec mono"><b id="hud-count">01/01</b><span id="hud-name">Writing</span></span>
+</div>
+
+<main id="main">
+  <section class="section detail-top" id="writing" data-sec="Writing">
+    <div class="wrap">
+      <header class="sec-head">
+        <p class="spec-label mono" data-spec="writing-type">01 <span class="sep">/</span> Writing <span class="sep">/</span> <span data-px>220</span> px</p>
+        <h1 class="bigtype" id="writing-type" data-type data-guides>Writing</h1>
+        <p class="cn">博客</p>
+      </header>
+      <div class="posts">
+        <a class="post reveal" href="rl-post-training/">
+          <div class="cover clay"><canvas data-cover="rl" aria-hidden="true"></canvas><span class="word">RL</span></div>
+          <div class="body">
+            <p class="kicker mono">2026-09-28 · 长文图解 · 约 45 分钟</p>
+            <h3>从策略梯度到 GRPO</h3>
+            <p>沿着 REINFORCE → 自然梯度 → TRPO → PPO，再讲到 RLHF、DPO、GRPO 和 DAPO。附 17 个在浏览器里当场训练的实例。</p>
+            <span class="go mono">Read</span>
+          </div>
+        </a>
+        <a class="post reveal" href="agent-theory/" style="--d:.1s">
+          <div class="cover cream"><canvas data-cover="agent" aria-hidden="true"></canvas><span class="word">Agent</span></div>
+          <div class="body">
+            <p class="kicker mono">2026-09 · 研究手册 · 约 68 分钟</p>
+            <h3>Agent 系统的统一理论</h3>
+            <p>从单 agent 的状态与策略，到长期记忆、技能、多 agent 协作和机制组合，用一套记号把 agent harness 讲成可以做实验的对象。</p>
+            <span class="go mono">Read</span>
+          </div>
+        </a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot night" data-sec="End" data-dark>
+  <div class="wrap">
+    <p class="bigtype" data-type>Hao Lyu</p>
+    <div class="foot-row mono">
+      <span>吕灏 · Tongji University · 2026</span>
+      <span><a href="../">Home</a> · <a href="https://github.com/sakurahello1" rel="me noopener" target="_blank">GitHub</a> · <a href="#writing">Back to top ↑</a></span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>PPT Studio · 项目详情 · 吕灏</title>
+<meta name="description" content="PPT Studio：从需求和参考资料逐页生成演示文稿，并把图片型 PPT 重建为可编辑稿。">
+<meta property="og:title" content="PPT Studio · 项目详情">
+<meta property="og:image" content="https://sakurahello1.github.io/assets/img/og.jpg">
+<meta name="theme-color" content="#EDE8DE">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="stylesheet" href="../../assets/css/detail.css">
+<script>
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) document.documentElement.classList.add('js-motion');
+</script>
+<script src="../../assets/js/site.js" defer></script>
+<script src="../../assets/js/detail.js" defer></script>
+</head>
+<body>
+
+<header class="hud-top">
+  <a class="badge" href="../../" aria-label="回到主页"><span class="dot" aria-hidden="true"></span><span class="idx" id="hud-idx">01</span>吕灏 Hao Lyu</a>
+  <button class="navtoggle" id="navtoggle" type="button" aria-expanded="false" aria-controls="navlinks">Index</button>
+  <ul class="navlinks" id="navlinks">
+    <li><a href="../../">Home</a></li><li><a href="../../#work">Work</a></li><li><a href="../../#paper">Paper</a></li><li><a href="../../#oss">Open Source</a></li><li><a href="../../blog/">Writing</a></li>
+  </ul>
+</header>
+
+<div class="hud-frame" id="hud" aria-hidden="true">
+  <span class="corner bl"></span><span class="corner br"></span>
+  <span class="tc mono"><b id="hud-tc">00:00</b>TC</span>
+  <span class="ruler" id="hud-ruler"><span class="rest"></span><span class="bar"></span></span>
+  <span class="sec mono"><b id="hud-count">01/09</b><span id="hud-name">Overview</span></span>
+</div>
+
+<main id="main">
+<section class="detail-top" data-sec="Overview">
+  <div class="wrap">
+    <p class="crumb mono"><a href="../../">Home</a> / <a href="../../#work">Work</a> / P-01</p>
+    <p class="spec-label mono" data-spec="ppt-type">P-01 <span class="sep">/</span> Original project <span class="sep">/</span> <span data-px>170</span> px</p>
+    <div class="specimen">
+      <h1 class="bigtype" id="ppt-type" data-type data-guides>PPT Studio</h1>
+      <div class="measure mono" data-measure="ppt-type"><span>— px</span></div>
+    </div>
+    <p class="detail-lede">我做了一个演示文稿工作台：从需求和参考资料生成整套幻灯片，也把图片型 PPT 重建为可编辑稿。</p>
+    <div class="factbar mono">
+      <div><span>Role</span><b>原创作者</b></div><div><span>Since</span><b>2026-08</b></div><div><span>Backend</span><b>Python · FastAPI</b></div><div><span>Frontend</span><b>React · Vite</b></div><div><span>Deploy</span><b>自部署</b></div>
+    </div>
+    <div class="detail-cover cover clay"><canvas data-cover="ppt" aria-hidden="true"></canvas><span class="tag mono">Prompt → outline → slides → editable pptx</span></div>
+    <div class="note plain"><span class="mono">一句话版本</span><p>我把资料整理、风格确认、逐页生成和修改放在一个网页里。已有的图片型幻灯片也可以拆出文字与图形，做成能继续编辑的文件。</p></div>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Problem"><div class="wrap prose">
+  <h2><span class="n">01 · Problem</span>从资料到可以继续修改的文稿</h2>
+  <p>做一套 PPT，通常要先读完零散资料，决定叙事顺序，再逐页排版。只把一句话交给图像模型，方向不合适时容易整套返工。另一类问题发生在已有文稿上：每页只剩一张图片，文字和图形都无法单独修改。</p>
+  <p>我把这两个需求接在同一个工作台中。输入可以是文字需求，也可以上传 Word、PDF、Excel、图片或已有 PPT；生成路线先得到整页图像并封装成 pptx，需要继续改字和元素时再进入图转可编辑流程。</p>
+</div></section>
+
+<section class="dsec" data-sec="How it works"><div class="wrap">
+  <div class="prose"><h2><span class="n">02 · How it works</span>先定方向，再逐页生成</h2><p>生成路线把人工确认放在作画之前。我先让用户确认风格和逐页大纲，再生成、质检和按页修改。</p></div>
+  <figure class="fig"><div class="frame"><ol class="pipeline" aria-label="从需求生成幻灯片">
+    <li><b>描述需求</b><span>输入主题并上传参考资料</span></li><li><b>确认风格</b><span>选择或保存可复用的风格</span></li><li><b>确认大纲</b><span>检查每页要讲的内容</span></li><li><b>逐页生成</b><span>图像模型绘制整页</span></li><li><b>质检修改</b><span>按页反馈，只重画相关页</span></li><li><b>导出文稿</b><span>将页面封装为 pptx</span></li>
+  </ol></div><figcaption><span class="mono">Flow A</span><span>风格与大纲确认不扣应用积分；上游对话 API 仍可能产生费用。</span></figcaption></figure>
+  <div class="prose"><h3>图片型 PPT → 可编辑 pptx</h3><p>另一条路线处理已有页面。用户可以选择完整重建，也可以只重建文字，最后对渲染结果人工复核。</p></div>
+  <figure class="fig"><div class="frame"><ol class="pipeline" aria-label="图片型幻灯片转可编辑稿">
+    <li><b>导入页面</b><span>上传图片型 PPT</span></li><li><b>去除文字</b><span>保留可重用的背景</span></li><li><b>识别结构</b><span>标出文字与视觉元素</span></li><li><b>裁切素材</b><span>拆出图标和面板</span></li><li><b>求解字体</b><span>估计字号与字距</span></li><li><b>重建校准</b><span>生成 pptx 并对照渲染</span></li>
+  </ol></div><figcaption><span class="mono">Flow B</span><span>重建优先保证视觉一致性，最终仍需要人工复核，不承诺像素级还原。</span></figcaption></figure>
+</div></section>
+
+<section class="dsec" data-sec="Features"><div class="wrap">
+  <div class="prose"><h2><span class="n">03 · Features</span>让修改落在需要修改的地方</h2></div>
+  <ol class="rules">
+    <li><b>逐页修改</b><span>提出“修改第三页”时，只重画相关页面；内容未变的页面按 hash 跳过。</span></li>
+    <li><b>风格与模板</b><span>确认后的风格和模板可以入库，供下一次生成复用。</span></li>
+    <li><b>任务进度</b><span>前端通过 SSE 显示生成进度，工作台保留成本记录。</span></li>
+    <li><b>通道切换</b><span>图像通道支持优先级、失败切换与冷却。</span></li>
+    <li><b>可编辑重建</b><span>支持人工修订标注、断点续跑和按页重跑，并输出残差报告。</span></li>
+    <li><b>材料处理</b><span>普通模式直接使用资料；高级模式让 agent 在一次性 Docker 沙盒里读取材料和运行 Python。</span></li>
+  </ol>
+</div></section>
+
+<section class="dsec" data-sec="Architecture"><div class="wrap prose">
+  <h2><span class="n">04 · Architecture</span>网页工作台与两条处理管线</h2>
+  <p>后端用 Python、FastAPI 和 SQLite。代码按接口、服务编排、agent／渲染／素材／可编辑管线、领域与基础设施分层；转换求解放在独立子进程。前端用 React 18 与 Vite，通过 SSE 接收进度。</p>
+  <p>文稿处理依赖 python-pptx、PyMuPDF、SciPy 和 OpenCV。可编辑稿的渲染按平台分路：Windows 使用 PowerPoint COM，Linux 和 macOS 使用 LibreOffice，字体候选也随平台变化。仓库附带前端构建产物，普通自部署不必另装 Node。</p>
+</div></section>
+
+<section class="dsec" data-sec="Decisions"><div class="wrap prose">
+  <h2><span class="n">05 · Decisions</span>三个实现取舍</h2>
+  <h3>把两次确认放在绘制前</h3><p>先确认风格，再确认逐页大纲，能在生成整套图片之前发现方向和结构的问题。</p>
+  <h3>先生成整页，再按需重建元素</h3><p>整页图像适合快速形成统一画面；图片型输出本身难以局部编辑，所以我保留独立的图转可编辑流程，也提供只重建文字的轻量选择。</p>
+  <h3>按平台选择渲染器</h3><p>PowerPoint COM 与 LibreOffice 的环境条件不同。我在同一仓库保留两条平台路线，让可编辑稿的渲染校准能在相应系统上运行。</p>
+</div></section>
+
+<section class="dsec" data-sec="Milestones"><div class="wrap prose">
+  <h2><span class="n">06 · Milestones</span>公开仓库中的节点</h2>
+  <ol class="timeline">
+    <li class="done"><time>2026-08-28</time><div><b>仓库创建</b><span>PPT Studio 公开仓库创建。</span></div></li>
+    <li class="done"><time>2026-09-20</time><div><b>成本记录</b><span>提交历史加入页面成本的记录与管理界面。</span></div></li>
+    <li class="done"><time>2026-09-22</time><div><b>合并两条历史</b><span>主应用与原先的 ppt-editable 历史合入当前仓库。</span></div></li>
+    <li class="done"><time>2026-09-22</time><div><b>自部署入口</b><span>提交一键启动、Docker、CI 和前端构建产物。</span></div></li>
+  </ol>
+  <p class="mono" style="color:var(--mute)">统计日期 2026-09-28：默认分支 211 次提交、10 stars、1 fork；提交数包含合并历史。未发现 GitHub Release。</p>
+</div></section>
+
+<section class="dsec" data-sec="Screens"><div class="wrap">
+  <div class="prose"><h2><span class="n">07 · Screens</span>生成前的两次确认，与生成后的页面</h2></div>
+  <div class="gallery">
+    <figure class="fig"><div class="frame"><img src="../../assets/img/projects/ppt-studio/style-confirmation.webp" alt="PPT Studio 风格确认的教程截图，界面中有红框标注" loading="lazy" width="1600" height="868"></div><figcaption><span class="mono">Fig. 1</span><span>风格确认。原仓库图文教程截图，红框和文字标注来自原图。</span></figcaption></figure>
+    <figure class="fig"><div class="frame"><img src="../../assets/img/projects/ppt-studio/outline-confirmation.webp" alt="PPT Studio 逐页大纲确认的教程截图" loading="lazy" width="1600" height="874"></div><figcaption><span class="mono">Fig. 2</span><span>逐页大纲确认。可以在作画前检查内容顺序。</span></figcaption></figure>
+    <figure class="fig"><div class="frame"><img src="../../assets/img/projects/ppt-studio/generation-result.webp" alt="PPT Studio 生成结果的教程截图" loading="lazy" width="1600" height="887"></div><figcaption><span class="mono">Fig. 3</span><span>生成结果。截图展示仓库教程中的界面，不代表本次重新运行生成任务。</span></figcaption></figure>
+  </div>
+</div></section>
+
+<section class="dsec" data-sec="Links"><div class="wrap prose">
+  <h2><span class="n">08 · Links</span>项目入口</h2>
+  <ul><li><a href="https://github.com/sakurahello1/ppt-studio" target="_blank" rel="noopener">代码仓库</a> · <a href="https://github.com/sakurahello1/ppt-studio#readme" target="_blank" rel="noopener">使用说明与图文教程</a></li><li><a href="https://zuoppt.top" target="_blank" rel="noopener">在线版入口</a>。README 标注使用同一份代码；本次没有验证登录后的功能。</li></ul>
+  </div><div class="wrap"><nav class="next" aria-label="其他项目"><a href="../inkreel/"><span class="mono">← P-03</span><b>Inkreel</b></a><a href="../harnessrouter/" style="text-align:right"><span class="mono">P-02 →</span><b>HarnessRouter</b></a></nav></div>
+</section>
+</main>
+
+<footer class="foot night" data-dark><div class="wrap"><p class="bigtype" data-type>Hao Lyu</p><div class="foot-row mono"><span>吕灏 · Tongji University · 2026</span><span><a href="../../">Home</a> · <a href="https://github.com/sakurahello1" rel="me noopener" target="_blank">GitHub</a></span></div></div></footer>
+</body>
+</html>

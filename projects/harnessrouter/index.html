@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HarnessRouter · Benchmark 设想 · 吕灏</title>
+<meta name="description" content="在 HarnessRouter 的支持矩阵旁边加一个维度：harness × 模型在公开任务集上的评测。提案、实现、首轮 200 次运行的结果、Pi Lab 后续设想。">
+<meta property="og:title" content="HarnessRouter · Benchmark 设想">
+<meta property="og:image" content="https://sakurahello1.github.io/assets/img/og.jpg">
+<meta name="theme-color" content="#EDE8DE">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="stylesheet" href="../../assets/css/detail.css">
+<script>
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) document.documentElement.classList.add('js-motion');
+</script>
+<script src="../../assets/js/site.js" defer></script>
+<script src="../../assets/js/detail.js" defer></script>
+</head>
+<body>
+
+<header class="hud-top">
+  <a class="badge" href="../../" aria-label="回到主页"><span class="dot" aria-hidden="true"></span><span class="idx" id="hud-idx">01</span>吕灏 Hao Lyu</a>
+  <button class="navtoggle" id="navtoggle" type="button" aria-expanded="false" aria-controls="navlinks">Index</button>
+  <ul class="navlinks" id="navlinks">
+    <li><a href="../../">Home</a></li>
+    <li><a href="../../#work">Work</a></li>
+    <li><a href="../../#paper">Paper</a></li>
+    <li><a href="../../#oss">Open Source</a></li>
+    <li><a href="../../blog/">Writing</a></li>
+  </ul>
+</header>
+
+<div class="hud-frame" id="hud" aria-hidden="true">
+  <span class="corner bl"></span><span class="corner br"></span>
+  <span class="tc mono"><b id="hud-tc">00:00</b>TC</span>
+  <span class="ruler" id="hud-ruler"><span class="rest"></span><span class="bar"></span></span>
+  <span class="sec mono"><b id="hud-count">01/07</b><span id="hud-name">Proposal</span></span>
+</div>
+
+<main id="main">
+
+<section class="detail-top" data-sec="Proposal">
+  <div class="wrap">
+    <p class="crumb mono"><a href="../../">Home</a> / <a href="../../#work">Work</a> / P-02</p>
+    <p class="spec-label mono" data-spec="hr-type">P-02 <span class="sep">/</span> Open-source contribution <span class="sep">/</span> <span data-px>170</span> px</p>
+    <div class="specimen">
+      <h1 class="bigtype" id="hr-type" data-type data-guides>HarnessRouter</h1>
+      <div class="measure mono" data-measure="hr-type"><span>— px</span></div>
+    </div>
+    <p class="detail-lede">为统一的 agent 接口补上一个可复核的评测维度：同一个模型放进不同的 harness，做同一批公开任务，谁完成得多、花得少，失败又是因为什么。</p>
+    <div class="factbar mono">
+      <div><span>Role</span><b>上游贡献者</b></div>
+      <div><span>Proposal</span><b>#205 → #231</b></div>
+      <div><span>First column</span><b>4 × 50 = 200 runs</b></div>
+      <div><span>Merged PRs</span><b>5</b></div>
+      <div><span>Next</span><b>Pi Lab · #280</b></div>
+    </div>
+    <div class="detail-cover cover clay"><canvas data-cover="hr" aria-hidden="true"></canvas><span class="tag mono">Four harnesses · one hub · first-column completion</span></div>
+    <div class="note plain">
+      <span class="mono">一句话版本</span>
+      <p>同一个模型，放进不同的 agent 运行框架（harness），做完同一道题所需的时间和调用量可能差很多。我给上游项目加了一套公开任务评测：除了看答案对不对，也记录耗时、用量和失败原因，把“偷看答案”“评分器出错”这类情况单独列出来。下一步想固定模型和任务，每次只改变一个运行机制，分清省下的资源到底来自哪里。</p>
+    </div>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Problem">
+  <div class="wrap prose">
+    <h2><span class="n">01 · Context</span>HarnessRouter 是什么</h2>
+    <p>HarnessRouter 是一个开源的 agent 基础设施：应用如果想分别接入 Codex、Claude Code、pi 这些后端，就得一个个处理会话、流式事件、文件、取消和失败语义。项目用 Unified Harness Protocol（UHP）把这些交互统一起来，并提供兼容 OpenAI Responses 的任务接口，让产品用同一套调用方式选择不同的 harness。Community Edition 以 Apache-2.0 开源，可以用 Docker 自部署。</p>
+    <p>这些工程设计属于上游项目。我是它的贡献者，下面讲的是我提出并实现的那一部分。</p>
+
+    <h2><span class="n">02 · Problem</span>能跑起来，还不足以决定选谁</h2>
+    <p>项目原本有两类检查：<b>支持矩阵</b>回答某个 harness 能不能在系统里跑起来，<b>conformance 测试</b>回答它是否遵守协议。但它们都没回答一个更实际的问题：同样的工作交给不同的 harness 和模型，完成率、耗时和资源消耗差多少？</p>
+    <p>我在 issue #205 里指出，当时官网上的对比数字来自单个没有公开任务与脚本的案例，缺少一个可以复跑的公共任务维度。</p>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Design">
+  <div class="wrap">
+    <div class="prose">
+      <h2><span class="n">03 · Design</span>在矩阵旁边加一个维度</h2>
+      <p>我的方案是在支持矩阵旁边新增一个评测维度，以 <b>harness × model × task pack</b> 为比较单位，并复用项目已有的 API、会话、产物和运行记录。问题从“支持哪些后端”变成“这些组合做同样的工作做得怎样”，也不再把整体表现只归因于底座模型。</p>
+    </div>
+    <figure class="fig">
+      <div class="frame"><canvas data-fig="matrix" role="img" aria-label="示意图：左侧是原有的支持矩阵，右侧新加的一列显示四个 harness 在首轮评测中的完成率：pi 85%，opencode 81%，dsh 78%，cline 77%"></canvas></div>
+      <figcaption><span class="mono">Fig. 1</span><span>左边是原有的支持矩阵（示意），只回答“能不能跑”；右边是新加的一列，回答“同样的工作做得怎样”，数字为首轮实测完成率。点击图可以重放。</span></figcaption>
+    </figure>
+    <div class="prose">
+      <p>选任务集时，我最初考虑了多文档推理、表格产物、长程开发、跨系统工具使用等方向（DABstep hard、SpreadsheetBench 2、RoadmapBench、TheAgentCompany 等）。随后发现 DABstep 的 450 道正式题没有公开答案，只有 10 道开发题能在本地评分，于是自己更正：第一列改用答案公开、评分确定的 <b>SpreadsheetBench Verified</b>，DABstep 只留作管线的冒烟测试。</p>
+    </div>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Method">
+  <div class="wrap">
+    <div class="prose">
+      <h2><span class="n">04 · Method</span>第一列：SpreadsheetBench Verified</h2>
+      <p>首轮取数据集前 50 题，对 pi、opencode、dsh、cline 各运行一次，共 200 次；模型都请求 deepseek-v4.1-flash，经同一个自定义连接，用自部署的 Community Edition。每道题的流程是：</p>
+    </div>
+    <figure class="fig">
+      <ol class="pipeline" aria-label="单题评测流程">
+        <li><b>新建会话</b><span>每题一个干净会话</span></li>
+        <li><b>放入输入</b><span>input.xlsx + 统一形式的指令，去掉题号</span></li>
+        <li><b>harness 运行</b><span>同一模型、两个 worker、900 秒上限</span></li>
+        <li><b>回收产物</b><span>取回 output.xlsx 与完整 trace</span></li>
+        <li><b>重算公式</b><span>在评分机上用 LibreOffice，不塞进 agent 沙盒</span></li>
+        <li><b>原生 grader</b><span>比对指定答案单元格，不用 LLM 当裁判</span></li>
+      </ol>
+      <figcaption><span class="mono">Fig. 2</span><span>数据与 grader 放在仓库外的 PACK_ROOT，agent 无法在工作区里翻到答案。</span></figcaption>
+    </figure>
+    <div class="prose">
+      <h3>记录什么</h3>
+      <p>是否完成、reward、评分原因、总耗时与中位耗时、工具调用及其失败、fresh 和 cached input tokens、output tokens、实际使用的连接、服务端返回的模型、产物与错误记录。工具失败率只用能读到 trace 的工具结果做分母，不把缺失的记录当成成功；三类 token 分开报告，不直接换算成账单。</p>
+      <h3>五条计分规则</h3>
+    </div>
+    <ol class="rules prose">
+      <li><b>连接必须一致</b><span>实际连接与声明不符的运行列为 finding，不计分。</span></li>
+      <li><b>模型必须一致</b><span>服务端模型不符也不计分；允许合法别名。缺失 served model 时照常计分，但明确标注“不可验证”。</span></li>
+      <li><b>不许偷看答案</b><span>联网或到工作区外查找题目答案，列为 finding，保留证据、不计分。</span></li>
+      <li><b>token 同一口径</b><span>fresh、cached、output 三类分开，按同一规则统计。</span></li>
+      <li><b>只用确定性评分</b><span>只用任务集自带的 grader，不用 LLM judge。</span></li>
+    </ol>
+    <div class="prose">
+      <h3>失败也要分清原因</h3>
+      <p>正确答案本身都过不了 grader 的两道题，从所有组剔除。正常超时会记录取消，并对已有产物评分，产物没通过仍算失败。agent 还没开始动作就遇到的鉴权、余额、限流或服务错误，归为 runner error 并重跑，连续三次被供应商拒绝就停止。历史上代理超时后的 20 次任务，从会话记录里恢复评分，避免把客户端断线误判为任务失败。</p>
+    </div>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Results">
+  <div class="wrap">
+    <div class="prose">
+      <h2><span class="n">05 · Results</span>首轮结果，以及它不能说明什么</h2>
+    </div>
+    <figure class="fig">
+      <div class="frame"><canvas data-fig="results" role="img" aria-label="首轮结果：pi 完成 40/47（85%），中位 48 秒；opencode 39/48（81%），75 秒；dsh 36/46（78%），100 秒；cline 36/47（77%），108 秒"></canvas></div>
+      <figcaption><span class="mono">Fig. 3</span><span>SpreadsheetBench Verified 前 50 题，deepseek-v4.1-flash。分母是扣除 2 道不可评分题和各组 finding 之后的计分题数。</span></figcaption>
+    </figure>
+    <div class="prose">
+      <table>
+        <thead><tr><th>harness</th><th>完成 / 计分题</th><th>完成率</th><th>总耗时</th><th>中位耗时</th></tr></thead>
+        <tbody>
+          <tr><td>pi</td><td>40 / 47</td><td>85%</td><td>3605 s</td><td>48 s</td></tr>
+          <tr><td>opencode</td><td>39 / 48</td><td>81%</td><td>5515 s</td><td>75 s</td></tr>
+          <tr><td>dsh</td><td>36 / 46</td><td>78%</td><td>6506 s</td><td>100 s</td></tr>
+          <tr><td>cline</td><td>36 / 47</td><td>77%</td><td>6882 s</td><td>108 s</td></tr>
+        </tbody>
+      </table>
+      <p>findings 共 4 次：pi 1 次、dsh 2 次到工作区外查找，cline 1 次联网。pi 与 cline 的 fresh input、cached input、output 分别相差约 2.5、2.6、2.2 倍，总耗时约 1.9 倍。</p>
+      <p><b>这些数字的边界</b>要一起写清楚：它们是不同计分集合的汇总，不是逐题配对的均值，也不是账单倍数，不足以证明普遍的排名。四组的 Community Edition 版本和运行日期不完全相同；web 开关对 pi 和 opencode 是硬开关，对 cline 和 dsh 只是模型可能忽略的指令；cline 和 dsh 的 50 次运行都缺少 served model 记录。首轮没有做多轮随机重复和置信区间。这里的“可复现”首先指规则和汇总可以复核：实现支持断点续跑，表格能从 JSON 记录重新生成，finding 会话都留有 trace。</p>
+    </div>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Pi Lab">
+  <div class="wrap">
+    <div class="prose">
+      <h2><span class="n">06 · Next</span>Pi Lab：一次只改变一个机制</h2>
+      <p>第一列回答了“差多少”，但没回答“为什么”。不同的 harness 同时改变了许多机制，很难归因。issue #280 提出 Pi Lab：把机制做成开关，固定其余条件，比较原版 pi 与只多打开一个机制的实验组。首批机制来自 SoL-Pi。</p>
+    </div>
+    <figure class="fig">
+      <div class="lab" role="group" aria-label="Pi Lab 机制开关示意">
+        <div>
+          <h4>Mechanisms · 一次只能打开一个</h4>
+          <button class="switch" type="button" aria-pressed="false" data-key="batch"><span class="knob"></span><span><b>合并动作</b><small>把可以合并的工具调用放在一步里完成</small></span></button>
+          <button class="switch" type="button" aria-pressed="true" data-key="compact"><span class="knob"></span><span><b>子任务边界压缩上下文</b><small>在子任务完成处压缩，而不是等窗口满了再压</small></span></button>
+          <button class="switch" type="button" aria-pressed="false" data-key="obs-pack"><span class="knob"></span><span><b>ObservationPack</b><small>大段工具输出以句柄保存，按需取用</small></span></button>
+          <button class="switch" type="button" aria-pressed="false" data-key="reducer"><span class="knob"></span><span><b>证据保留 reducer</b><small>把日志读取交给更便宜的模型，只保留证据</small></span></button>
+        </div>
+        <div class="readout">
+          <div class="arm"><span class="mono">Control</span><span class="chips"><span class="chip">pi</span></span></div>
+          <div class="arm"><span class="mono">Treatment</span><span class="chips"></span></div>
+          <p class="verdict"></p>
+        </div>
+      </div>
+      <figcaption><span class="mono">Fig. 4</span><span>交互示意：打开一个开关会自动关掉其他开关，保证实验组与对照组只差一个机制。这里只演示设计，没有实验结果。</span></figcaption>
+    </figure>
+    <div class="prose">
+      <p>最初的方案是用扩展加载这些机制，后来改成独立的 <code>pi-lab</code> backend，让原版 pi 保持为干净的对照，也避免工作区配置覆盖实验开关。短的表格任务可能看不出长程机制的收益，延长任务或缩小上下文窗口是下一步的实验思路，目前还不是已经取得的结果。</p>
+    </div>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Status">
+  <div class="wrap prose">
+    <h2><span class="n">07 · Status</span>反馈与现状</h2>
+    <blockquote class="bigquote">
+      <p>Reviewed from first principles today; the design stands and the table re-renders from your records unchanged.</p>
+      <footer class="mono">richard-epsilla · 维护者 · <a href="https://github.com/HarnessRouter/harnessrouter/pull/231#issuecomment-5769343082" target="_blank" rel="noopener">PR #231 评论</a></footer>
+    </blockquote>
+    <p>维护者评审后保留了我的九个提交，并在 #235 里补上四处修正：本地搜索工具不再被误判为联网、“工作区外”的判定改为除工作区和 /tmp 以外的所有路径、LibreOffice 每次评分使用独立的 profile，以及对应的 CI 测试。这些修正归功于维护者。</p>
+    <ol class="timeline">
+      <li class="done"><time>2026-09-17</time><div><b>issue #205 · 提案</b><span>在支持矩阵旁边加一个公开任务集评测维度。</span></div></li>
+      <li class="done"><time>2026-09-18</time><div><b>#209 · #214 · #216 · 修复</b><span>跑评测的过程中发现并修复计量与超时问题，均已合并。</span></div></li>
+      <li class="done"><time>2026-09-22</time><div><b>PR #231 → #235 · 合并</b><span>runner、任务包、规则测试、报告生成与首列结果进入主干，在 CI 中运行。</span></div></li>
+      <li class="done"><time>2026-09-23</time><div><b>issue #205 · 关闭</b><span>维护者确认：“Delivered… Thank you for proposing it and then building it.”</span></div></li>
+      <li><time>2026-09-26</time><div><b>issue #280 · Pi Lab</b><span>一次只改变一个机制的后续实验，讨论中。</span></div></li>
+      <li class="done"><time>2026-09-28</time><div><b>PR #285 · 合并</b><span>pi 可重试的中途结束不再被当成一轮对话的结束。</span></div></li>
+    </ol>
+
+    <h2><span class="n">08 · Also merged</span>评测带出来的修复</h2>
+    <ul>
+      <li><a href="https://github.com/HarnessRouter/harnessrouter/pull/209" target="_blank" rel="noopener">#209</a>：cline 的 inputTokens 是整段 prompt，像 codex 一样扣除缓存部分，避免重复计量。</li>
+      <li><a href="https://github.com/HarnessRouter/harnessrouter/pull/216" target="_blank" rel="noopener">#216</a>：opencode 的输出以可见文本为准，并补上被漏计的 reasoning tokens。</li>
+      <li><a href="https://github.com/HarnessRouter/harnessrouter/pull/214" target="_blank" rel="noopener">#214</a>：控制台的网关代理按声明的时长等待，而不是 undici 默认的五分钟。</li>
+      <li><a href="https://github.com/HarnessRouter/harnessrouter/pull/285" target="_blank" rel="noopener">#285</a>：pi 会重试的 agent_end 不算最终失败。</li>
+    </ul>
+
+    <h2><span class="n">09 · Links</span>链接</h2>
+    <ul>
+      <li><a href="https://github.com/HarnessRouter/harnessrouter/issues/205" target="_blank" rel="noopener">issue #205 · 提案</a> · <a href="https://github.com/HarnessRouter/harnessrouter/pull/231" target="_blank" rel="noopener">PR #231 · 实现</a> · <a href="https://github.com/HarnessRouter/harnessrouter/issues/280" target="_blank" rel="noopener">issue #280 · Pi Lab</a></li>
+      <li><a href="https://github.com/HarnessRouter/harnessrouter/tree/main/scripts/benchmark" target="_blank" rel="noopener">scripts/benchmark</a> · <a href="https://github.com/HarnessRouter/harnessrouter/blob/main/docs/benchmark.md" target="_blank" rel="noopener">docs/benchmark.md · 首列公开报告</a></li>
+      <li><a href="https://github.com/HarnessRouter/harnessrouter" target="_blank" rel="noopener">上游仓库</a> · <a href="https://harnessrouter.ai/" target="_blank" rel="noopener">harnessrouter.ai</a></li>
+    </ul>
+    <p class="mono" style="color:var(--mute)">数据统计日期 2026-09-28。</p>
+  </div>
+
+  <div class="wrap">
+    <nav class="next" aria-label="其他项目">
+      <a href="../ppt-studio/"><span class="mono">← P-01</span><b>PPT Studio</b></a>
+      <a href="../inkreel/" style="text-align:right"><span class="mono">P-03 →</span><b>Inkreel</b></a>
+    </nav>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot night" data-dark>
+  <div class="wrap">
+    <p class="bigtype" data-type>Hao Lyu</p>
+    <div class="foot-row mono">
+      <span>吕灏 · Tongji University · 2026</span>
+      <span><a href="../../">Home</a> · <a href="https://github.com/sakurahello1" rel="me noopener" target="_blank">GitHub</a></span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

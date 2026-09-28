@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inkreel · 项目详情 · 吕灏</title>
+<meta name="description" content="Inkreel：把小说章节组织成可反复修改的有声短剧制作流程。">
+<meta property="og:title" content="Inkreel · 项目详情">
+<meta property="og:image" content="https://sakurahello1.github.io/assets/img/og.jpg">
+<meta name="theme-color" content="#EDE8DE">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="stylesheet" href="../../assets/css/detail.css">
+<script>
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) document.documentElement.classList.add('js-motion');
+</script>
+<script src="../../assets/js/site.js" defer></script>
+<script src="../../assets/js/detail.js" defer></script>
+</head>
+<body>
+
+<header class="hud-top">
+  <a class="badge" href="../../" aria-label="回到主页"><span class="dot" aria-hidden="true"></span><span class="idx" id="hud-idx">01</span>吕灏 Hao Lyu</a>
+  <button class="navtoggle" id="navtoggle" type="button" aria-expanded="false" aria-controls="navlinks">Index</button>
+  <ul class="navlinks" id="navlinks">
+    <li><a href="../../">Home</a></li><li><a href="../../#work">Work</a></li><li><a href="../../#paper">Paper</a></li><li><a href="../../#oss">Open Source</a></li><li><a href="../../blog/">Writing</a></li>
+  </ul>
+</header>
+
+<div class="hud-frame" id="hud" aria-hidden="true">
+  <span class="corner bl"></span><span class="corner br"></span>
+  <span class="tc mono"><b id="hud-tc">00:00</b>TC</span>
+  <span class="ruler" id="hud-ruler"><span class="rest"></span><span class="bar"></span></span>
+  <span class="sec mono"><b id="hud-count">01/09</b><span id="hud-name">Overview</span></span>
+</div>
+
+<main id="main">
+<section class="detail-top" data-sec="Overview"><div class="wrap">
+  <p class="crumb mono"><a href="../../">Home</a> / <a href="../../#work">Work</a> / P-03</p>
+  <p class="spec-label mono" data-spec="ink-type">P-03 <span class="sep">/</span> Original project <span class="sep">/</span> <span data-px>170</span> px</p>
+  <div class="specimen"><h1 class="bigtype" id="ink-type" data-type data-guides>Inkreel</h1><div class="measure mono" data-measure="ink-type"><span>— px</span></div></div>
+  <p class="detail-lede">我做了一个单人短剧工作台，把小说拆镜、预演截帧、视频生成、字幕对齐和导出接成可反复修改的流程。</p>
+  <div class="factbar mono"><div><span>Role</span><b>原创作者</b></div><div><span>Since</span><b>2026-09</b></div><div><span>Stack</span><b>Next.js · Prisma</b></div><div><span>Storage</span><b>SQLite</b></div><div><span>Mode</span><b>单机部署</b></div></div>
+  <div class="detail-cover cover ink"><canvas data-cover="ink" aria-hidden="true"></canvas><span class="tag mono">Story → shots → video → subtitles → export</span></div>
+  <div class="note plain"><span class="mono">一句话版本</span><p>我让一章小说的镜头、人物素材、生成版本和字幕待在同一个工作台。某个镜头不满意时，可以换首帧或重新出片，比较版本后再导出整集。</p></div>
+</div></section>
+
+<section class="dsec" data-sec="Problem"><div class="wrap prose">
+  <h2><span class="n">01 · Problem</span>镜头越多，输入和版本越难追</h2>
+  <p>把图片模型画的首帧交给视频模型，人物外观可能在两步之间发生变化。镜头反复生成后，哪一版用了哪些人物、场景和关键帧，也容易记不清。更长的制作链还要处理台词、时间线、字幕和导出。</p>
+  <p>我以镜头为中心组织这些环节：先整理人物三视图、场景和道具，再用视频模型预演，人工截取首帧，继续生成正式镜头。预演截帧是为了减少跨模型的视觉漂移；它不能保证所有镜头完全一致。</p>
+</div></section>
+
+<section class="dsec" data-sec="How it works"><div class="wrap">
+  <div class="prose"><h2><span class="n">02 · How it works</span>从章节走到可交付的片段</h2><p>拆镜 agent 先给出镜头和台词，我逐镜检查景别、运镜、提示词及参考资产，然后预演、截帧、出片、对齐字幕与导出。</p></div>
+  <figure class="fig"><div class="frame"><ol class="pipeline" aria-label="Inkreel 短剧制作流程">
+    <li><b>拆解章节</b><span>生成分镜组、镜头与台词</span></li><li><b>整理资产</b><span>确认人物、场景和道具</span></li><li><b>预演截帧</b><span>拖动视频选取首帧</span></li><li><b>生成镜头</b><span>MiniMax H3 出片并比较版本</span></li><li><b>对齐字幕</b><span>Whisper 字级时间戳对应台词</span></li><li><b>导出成片</b><span>拼接、字幕、音乐与片尾</span></li>
+  </ol></div><figcaption><span class="mono">Flow</span><span>首帧也可以来自图片生成、上传或上一镜末帧；生成模型和成本取决于所选供应商。</span></figcaption></figure>
+</div></section>
+
+<section class="dsec" data-sec="Features"><div class="wrap">
+  <div class="prose"><h2><span class="n">03 · Features</span>让每次重做都有来处</h2></div>
+  <ol class="rules">
+    <li><b>关键帧与分段</b><span>可以指定尾帧与中间关键帧，分段生成后用 ffmpeg 拼接；预览和任务端共用切段函数。</span></li>
+    <li><b>版本与血缘</b><span>每次生成保留可播放、比较、采用或弃用的版本，并记录输入指纹，标出上游变化后的过期产物。</span></li>
+    <li><b>人物与场景库</b><span>人物按人设阶段留版本，三视图、场景正反打和道具图供镜头复用。</span></li>
+    <li><b>字幕检查</b><span>Whisper 给出台词的字级时间戳，同时保留识别文本，便于检查念错的内容。</span></li>
+    <li><b>时间线导出</b><span>ffmpeg 负责镜头拼接、裁切、转场、ASS 字幕、背景音乐和片尾字卡。</span></li>
+    <li><b>说书模式</b><span>章节拆成画面与旁白；角色音色先试听确认，再配音，复用版本和时间线流程。</span></li>
+  </ol>
+</div></section>
+
+<section class="dsec" data-sec="Architecture"><div class="wrap prose">
+  <h2><span class="n">04 · Architecture</span>单机任务队列与媒体处理</h2>
+  <p>项目使用 TypeScript、Next.js 15、React 19、Prisma 和 SQLite。页面通过 Server Actions 进入服务层，进程内队列执行生成与导出任务。provider 层连接 fal.ai、OpenAI 兼容中转站和 MiniMax，本地媒体处理交给 ffmpeg。</p>
+  <p>预演默认使用 MiniMax H3，图像模型主要用于人物、场景和道具等资产。单进程与 SQLite 便于在一台机器上部署；目前的公开资料不足以说明分布式并发能力。界面里的成本是估价，实际扣费以供应商为准。</p>
+</div></section>
+
+<section class="dsec" data-sec="Decisions"><div class="wrap prose">
+  <h2><span class="n">05 · Decisions</span>围绕镜头做三项选择</h2>
+  <h3>从视频预演中取首帧</h3><p>图片模型仍用于生成资产，首帧优先从视频模型的预演结果里人工挑选，让后续镜头沿用更接近出片的视觉起点。</p>
+  <h3>把生成记录留成版本</h3><p>重做不直接覆盖上一版。每个产物保留输入指纹和采用状态，上游改动后可以判断哪些镜头需要复查。</p>
+  <h3>配音先让人确认</h3><p>说书模式先给角色与旁白提供音色候选，人工试听确认后才允许配音，避免整章生成后才发现音色不合适。</p>
+</div></section>
+
+<section class="dsec" data-sec="Milestones"><div class="wrap prose">
+  <h2><span class="n">06 · Milestones</span>公开提交中的节点</h2>
+  <ol class="timeline">
+    <li class="done"><time>2026-09-17</time><div><b>首个公开版本</b><span>以“场记”发布短剧工作台，随后补充 README 与截图。</span></div></li>
+    <li class="done"><time>2026-09-19</time><div><b>改名为墨影 · Inkreel</b><span>同日加入中英双语展示页。</span></div></li>
+    <li class="done"><time>2026-09-19</time><div><b>说书与对话框</b><span>加入说书流程和 galgame 式立绘、名牌与逐字字幕。</span></div></li>
+    <li class="done"><time>2026-09-22</time><div><b>交接说明</b><span>仓库补充 AGENTS.md，记录当前实现、前端约定和待办。</span></div></li>
+  </ol>
+  <p class="mono" style="color:var(--mute)">统计日期 2026-09-28：默认分支 10 次提交、1 star、1 fork。未发现 GitHub Release。</p>
+</div></section>
+
+<section class="dsec" data-sec="Screens"><div class="wrap">
+  <div class="prose"><h2><span class="n">07 · Screens</span>从分镜到导出</h2></div>
+  <div class="gallery">
+    <figure class="fig"><div class="frame"><img src="../../assets/img/projects/inkreel/storyboard.webp" alt="墨影早期分镜工作台的三栏镜头编辑界面" loading="lazy" width="1600" height="960"></div><figcaption><span class="mono">Fig. 1</span><span>墨影早期界面：分镜工作台，左侧选镜头，中间编辑，右侧查看参考、首帧与视频。</span></figcaption></figure>
+    <figure class="fig"><div class="frame"><img src="../../assets/img/projects/inkreel/previz.webp" alt="墨影早期预演面板和截帧入口" loading="lazy" width="1600" height="960"></div><figcaption><span class="mono">Fig. 2</span><span>墨影早期界面：预演面板，镜头可以跳到对应的首帧截取位置。</span></figcaption></figure>
+    <figure class="fig"><div class="frame"><img src="../../assets/img/projects/inkreel/export.webp" alt="墨影早期时间线和导出界面" loading="lazy" width="1600" height="960"></div><figcaption><span class="mono">Fig. 3</span><span>墨影早期界面：时间线与导出。截图中的费用为当时界面内容，不作为当前价格。</span></figcaption></figure>
+  </div>
+</div></section>
+
+<section class="dsec" data-sec="Links"><div class="wrap prose">
+  <h2><span class="n">08 · Links</span>项目入口</h2>
+  <ul><li><a href="https://github.com/sakurahello1/inkreel" target="_blank" rel="noopener">代码仓库</a> · <a href="https://github.com/sakurahello1/inkreel#readme" target="_blank" rel="noopener">运行与部署说明</a></li><li><a href="https://sakurahello1.github.io/inkreel/" target="_blank" rel="noopener">中英双语展示页</a>，用于介绍产品。</li></ul>
+  </div><div class="wrap"><nav class="next" aria-label="其他项目"><a href="../harnessrouter/"><span class="mono">← P-02</span><b>HarnessRouter</b></a><a href="../ppt-studio/" style="text-align:right"><span class="mono">P-01 →</span><b>PPT Studio</b></a></nav></div>
+</section>
+</main>
+
+<footer class="foot night" data-dark><div class="wrap"><p class="bigtype" data-type>Hao Lyu</p><div class="foot-row mono"><span>吕灏 · Tongji University · 2026</span><span><a href="../../">Home</a> · <a href="https://github.com/sakurahello1" rel="me noopener" target="_blank">GitHub</a></span></div></div></footer>
+</body>
+</html>

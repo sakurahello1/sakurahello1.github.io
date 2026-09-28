@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>吕灏 · Hao Lyu</title>
+<meta name="description" content="吕灏（Hao Lyu），同济大学本科三年级。研究 AI Agent 的长程可靠性与自我改进；AI4AI 综述共同第一作者；PPT Studio、墨影 Inkreel 作者，HarnessRouter 贡献者。">
+<meta property="og:title" content="吕灏 · Hao Lyu">
+<meta property="og:description" content="AI Agent 的长程可靠性与自我改进 · 开源工具">
+<meta property="og:image" content="https://sakurahello1.github.io/assets/img/og.jpg">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#EDE8DE">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="assets/css/site.css">
+<script>
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) document.documentElement.classList.add('js-motion');
+</script>
+<script src="assets/js/site.js" defer></script>
+</head>
+<body>
+
+<header class="hud-top">
+  <a class="badge" href="#top" aria-label="回到顶部"><span class="dot" aria-hidden="true"></span><span class="idx" id="hud-idx">01</span>吕灏 Hao Lyu</a>
+  <button class="navtoggle" id="navtoggle" type="button" aria-expanded="false" aria-controls="navlinks">Index</button>
+  <ul class="navlinks" id="navlinks">
+    <li><a href="#about">About</a></li>
+    <li><a href="#work">Work</a></li>
+    <li><a href="#paper">Paper</a></li>
+    <li><a href="#patent">Patent</a></li>
+    <li><a href="#honors">Honors</a></li>
+    <li><a href="#oss">Open Source</a></li>
+    <li><a href="#writing">Writing</a></li>
+  </ul>
+</header>
+
+<div class="hud-frame" id="hud" aria-hidden="true">
+  <span class="corner bl"></span><span class="corner br"></span>
+  <span class="tc mono"><b id="hud-tc">00:00</b>TC</span>
+  <span class="ruler" id="hud-ruler"><span class="rest"></span><span class="bar"></span></span>
+  <span class="sec mono"><b id="hud-count">01/09</b><span id="hud-name">Name</span></span>
+</div>
+
+<main id="main">
+
+<!-- 01 · NAME -->
+<section class="hero" id="top" data-sec="Name">
+  <div class="wrap inner">
+    <p class="spec-label mono" data-spec="hero-type">Barlow Condensed <span class="sep">/</span> Wght 700 <span class="sep">/</span> <span data-px>390</span> px</p>
+    <div class="specimen">
+      <h1 class="bigtype" id="hero-type" data-type data-guides><span class="sr-only">吕灏 · </span>Hao Lyu</h1>
+      <div class="measure mono" data-measure="hero-type"><span>— px</span></div>
+    </div>
+    <div class="hero-row">
+      <p class="cn-name reveal">吕<span class="o">灏</span><small>Tongji University · 本科三年级</small></p>
+      <p class="hero-lede reveal" style="--d:.12s">我关心 <strong>AI Agent 能把一件事可靠地做多久</strong>，以及它能不能拿这份能力去改进 AI 本身。也做能直接用上的开源工具。</p>
+      <div class="actions reveal" style="--d:.24s">
+        <a class="btn solid" href="#work">Work</a>
+        <a class="btn" href="#paper">AI4AI</a>
+        <a class="btn" href="https://github.com/sakurahello1" rel="me noopener" target="_blank"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 · SYSTEMS：陶土橙几何场 -->
+<section class="field" id="systems" data-sec="Systems" aria-label="互动几何图形：移动鼠标，形状会从菱形依次变成方块、圆和十字">
+  <canvas id="field-canvas" aria-hidden="true"></canvas>
+  <div class="cap mono"><span>Agents · Harness · Benchmark · Self-improvement</span><span id="field-grid">Grid</span></div>
+  <span class="hint mono">移动鼠标 · Move the cursor</span>
+</section>
+
+<!-- 03 · ABOUT -->
+<section class="section" id="about" data-sec="About">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="spec-label mono" data-spec="about-type">03 <span class="sep">/</span> About <span class="sep">/</span> <span data-px>220</span> px</p>
+      <h2 class="bigtype" id="about-type" data-type data-guides>About</h2>
+      <p class="cn">关于</p>
+    </header>
+    <div class="about">
+      <div class="reveal">
+        <p class="lede">我是吕灏，同济大学本科三年级学生。我关心的是：<strong>AI 系统能把一件事可靠地做多久</strong>，以及它能不能拿这份能力去改进 AI 本身。</p>
+        <p>围绕这个问题，我和合作者写了综述《AI4AI Survey》，把长程智能体、AI4AI 和递归自我改进放进同一个框架里讨论。在开源项目 HarnessRouter 里，我提出并实现了在公开任务集上对比“harness × 模型”组合的 benchmark 维度。另一边，我也做能直接用上的工具：一句话生成整套 PPT 的 PPT Studio，以及 AI 短剧工作台墨影 Inkreel。</p>
+      </div>
+      <table class="spec-table reveal" style="--d:.12s">
+        <tr><th>School</th><td>同济大学 · 本科三年级</td></tr>
+        <tr><th>Focus</th><td>AI Agent · 长程可靠性 · 自我改进</td></tr>
+        <tr><th>Now</th><td>Agent harness 评测、AI 生成内容工具</td></tr>
+        <tr><th>Paper</th><td>AI4AI Survey · 共同第一作者</td></tr>
+        <tr><th>GitHub</th><td><a href="https://github.com/sakurahello1" rel="me noopener" target="_blank">@sakurahello1</a></td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 04 · WORK -->
+<section class="section" id="work" data-sec="Work" style="padding-top:0">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="spec-label mono" data-spec="work-type">04 <span class="sep">/</span> Work <span class="sep">/</span> <span data-px>220</span> px</p>
+      <h2 class="bigtype" id="work-type" data-type data-guides>Work</h2>
+      <p class="cn">项目</p>
+    </header>
+    <div class="works">
+      <a class="work feature reveal" href="projects/ppt-studio/">
+        <div class="cover cream"><canvas data-cover="ppt" aria-hidden="true"></canvas><span class="tag mono">P-01 · zuoppt.top</span></div>
+        <div class="body">
+          <p class="kicker mono">原创 · 主力项目</p>
+          <h3>PPT Studio<small>一句话，一整套 PPT</small></h3>
+          <p>跟 AI 说一句话，整套 PPT 逐页画出来；只有图片的 PPT 也能反向重建成可编辑的 pptx。自部署，Windows 双击即用，也支持 Linux、macOS 和 Docker。</p>
+          <div class="specs mono"><div>Lang<b>Python</b></div><div>Stars<b>10</b></div><div>Since<b>2026.08</b></div></div>
+          <span class="go mono">Case study</span>
+        </div>
+      </a>
+      <a class="work reveal" href="projects/harnessrouter/">
+        <div class="cover clay"><canvas data-cover="hr" aria-hidden="true"></canvas><span class="tag mono">P-02 · Benchmark</span></div>
+        <div class="body">
+          <p class="kicker mono">开源贡献 · Benchmark 设想</p>
+          <h3>HarnessRouter<small>harness × 模型 × 任务集</small></h3>
+          <p>用一个接口运行 Codex、Claude Code 等 agent harness 的开源项目。我提出并实现了在公开任务集上评测“harness × 模型”组合的 benchmark 维度，另有 4 个 runner 与 console 修复被合并。</p>
+          <div class="specs mono"><div>PRs merged<b>5</b></div><div>Runs<b>200</b></div><div>Issues<b>#205 · #280</b></div></div>
+          <span class="go mono">Read the proposal</span>
+        </div>
+      </a>
+      <a class="work reveal" href="projects/inkreel/" style="--d:.1s">
+        <div class="cover ink"><canvas data-cover="ink" aria-hidden="true"></canvas><span class="tag mono">P-03 · Short drama</span></div>
+        <div class="body">
+          <p class="kicker mono">原创 · AI 短剧</p>
+          <h3>Inkreel<small>墨影 · AI 短剧工作台</small></h3>
+          <p>AI 短剧生产工作台：拆镜、预演截帧、MiniMax H3 出片、字幕对齐，一路做到导出成片。</p>
+          <div class="specs mono"><div>Lang<b>TypeScript</b></div><div>Demo<b>Live</b></div><div>Since<b>2026.09</b></div></div>
+          <span class="go mono">Case study</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- 05 · PAPER（深色） -->
+<section class="section night" id="paper" data-sec="Paper" data-dark>
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="spec-label mono" data-spec="paper-type">05 <span class="sep">/</span> Publication <span class="sep">/</span> <span data-px>220</span> px</p>
+      <h2 class="bigtype" id="paper-type" data-type data-guides>Paper</h2>
+      <p class="cn">论文</p>
+    </header>
+    <article class="paper">
+      <div class="orb reveal"><canvas id="orb-canvas" aria-hidden="true"></canvas></div>
+      <div class="reveal" style="--d:.12s">
+        <p class="kicker mono">Survey · Preprints.org · 2026.08</p>
+        <h3>AI4AI Survey: From Long-Horizon Agents to Recursive Self-Improvement</h3>
+        <p class="cn-title">AI4AI 综述：从长程智能体到递归自我改进</p>
+        <p class="authors">Kai Wu<sup>*</sup>, <span class="me">Hao Lyu</span><sup>*</sup>, Zhen Luo<sup>*</sup>, Chaofan Wang, Siyu Ye, Jinghao Lin, Xiaozhong Ji, Boyuan Jiang, Shengzhi Wang, Zihan Wang, Yiwen Ye, Hao Wang, Zimu Wang, Wenzhe Liu, Ruobing Wang, Kai Cai, Mingliang Xiong, Wen Fang, Mingqing Liu, Yifan Zhang, Lei Yang, Xiaobin Hu, Qingwen Liu<sup>†</sup></p>
+        <p class="affil"><sup>*</sup> 共同第一作者　<sup>†</sup> 通讯作者　·　同济大学、上海交通大学、UC Berkeley、中国科学院大学、新加坡国立大学、南洋理工大学、Simple Agent Lab</p>
+        <div class="abstract">
+          <p>AI Agent 已经能调度实验、改代码、优化训练管线，但相关讨论分散在长程智能体、AI4AI、自我改进和递归自我改进（RSI）这些彼此割裂的概念里。这篇综述问的是：<b>AI 系统能把一个改进设想可靠地推进到多远，直到得到经过验证的结果？</b></p>
+          <p>单项能力越来越强，串成端到端的改进循环后却不可靠，我们称之为 <b>composition gap</b>。目标、评测标准和“什么算进步”仍主要由人决定。</p>
+        </div>
+        <ol class="findings">
+          <li>AI4AI 是作用于 AI 系统自身的长程循环：目标、规划、执行、反馈、修复。</li>
+          <li>盘点 35 个系统：执行环节几乎都能自己完成，没有一个自己设定目标。</li>
+          <li>底座能力相当时，换 harness 的收益常常大于换模型。</li>
+          <li>很多提升是用预算换来的，脱离成本谈成功率意义不大。</li>
+        </ol>
+        <div class="actions">
+          <a class="btn solid" href="https://www.preprints.org/manuscript/202608.2108" target="_blank" rel="noopener">Preprints.org</a>
+          <a class="btn" href="https://simpleagentlab.com/ai4ai/" target="_blank" rel="noopener">Project page</a>
+          <a class="btn" href="https://github.com/simple-agent-lab/RSIHub" target="_blank" rel="noopener">RSIHub</a>
+          <button class="btn" type="button" data-copy="bibtex">Copy BibTeX</button>
+        </div>
+        <pre id="bibtex" hidden>@misc{wu2026eveai4ai,
+  title = {{AI4AI} Survey: From Long-Horizon Agents to Recursive Self-Improvement---Definitions, Reliable Horizons, and Open Problems},
+  author = {Wu, Kai and Lyu, Hao and Luo, Zhen and Wang, Chaofan and
+            Ye, Siyu and Lin, Jinghao and Ji, Xiaozhong and Jiang, Boyuan and
+            Wang, Shengzhi and Wang, Zihan and Ye, Yiwen and Wang, Hao and
+            Wang, Zimu and Liu, Wenzhe and Wang, Ruobing and Cai, Kai and
+            Xiong, Mingliang and Fang, Wen and Liu, Mingqing and
+            Zhang, Yifan and Yang, Lei and Hu, Xiaobin and Liu, Qingwen},
+  howpublished = {Preprints.org},
+  year = {2026},
+  doi = {10.5281/zenodo.22198847},
+  url = {https://doi.org/10.5281/zenodo.22198847}
+}</pre>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- 06 · PATENT -->
+<section class="section" id="patent" data-sec="Patent">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="spec-label mono" data-spec="patent-type">06 <span class="sep">/</span> Patent <span class="sep">/</span> <span data-px>220</span> px</p>
+      <h2 class="bigtype" id="patent-type" data-type data-guides>Patent</h2>
+      <p class="cn">专利</p>
+    </header>
+    <article class="patent">
+      <div class="reveal">
+        <p class="kicker mono">发明专利申请 · 已公开</p>
+        <p class="num">CN 121353179 <span>A</span></p>
+        <h3>基于分层图模型的基坑支护结构表面缺陷检测系统及方法</h3>
+        <p>移动装置采集基坑支护结构的图像与位置，先分割出支护区域，再识别裂缝、剥落和渗漏，并把像素尺寸换算成实际尺寸；按风险评分决定是否调用视觉语言模型，结合知识库分析成因、给出维修建议，最后输出结构化诊断报告。</p>
+        <table class="spec-table">
+          <tr><th>Application</th><td>202511350902.2</td></tr>
+          <tr><th>Filed</th><td>2025-09-22</td></tr>
+          <tr><th>Published</th><td>2026-01-16</td></tr>
+          <tr><th>Applicant</th><td>同济大学</td></tr>
+          <tr><th>Inventors</th><td>共 7 人 · 本人第 3 位</td></tr>
+        </table>
+      </div>
+      <div class="figs reveal" style="--d:.12s">
+        <a href="assets/img/patent-fig1.webp" target="_blank" rel="noopener"><img src="assets/img/patent-fig1.webp" alt="专利附图 1：检测方法流程图" loading="lazy" width="1131" height="1600"><span class="mono">Fig. 1 · 方法流程</span></a>
+        <a href="assets/img/patent-fig2.webp" target="_blank" rel="noopener"><img src="assets/img/patent-fig2.webp" alt="专利附图 2：系统功能模块图" loading="lazy" width="1131" height="1600"><span class="mono">Fig. 2 · 系统模块</span></a>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- 07 · HONORS（陶土橙） -->
+<section class="section clayband" id="honors" data-sec="Honors">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="spec-label mono" data-spec="honors-type">07 <span class="sep">/</span> Honors <span class="sep">/</span> <span data-px>220</span> px</p>
+      <h2 class="bigtype" id="honors-type" data-type data-guides>Honors</h2>
+      <p class="cn">获奖</p>
+    </header>
+    <ol class="honor-list">
+      <li class="honor reveal">
+        <p class="rank">3rd<small>National Finals</small></p>
+        <div><h3>全国大学生统计建模大赛</h3><p>第十二届 · 全国总决赛三等奖 · 本科生组。作品：助力绿色低空经济，基于 YOLOv8 与 ArUco 的太阳能补能无人机自主停歇最优阈值决策。</p></div>
+        <div class="meta mono">2026 · 中国统计教育学会<br><a class="vault" href="https://github.com/sakurahello1/vault/blob/main/honors/statistical-modeling-2026.pdf" rel="nofollow noopener" target="_blank"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4 7V5a4 4 0 118 0v2h.5A1.5 1.5 0 0114 8.5v5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13.5v-5A1.5 1.5 0 013.5 7H4zm1.6 0h4.8V5a2.4 2.4 0 10-4.8 0v2z"/></svg>证书 · 仅本人</a></div>
+      </li>
+      <li class="honor reveal">
+        <p class="rank">Silver<small>Tongji Round</small></p>
+        <div><h3>中国国际大学生创新大赛</h3><p>2026 同济大学校内赛 · 银奖。项目：天途智巡。</p></div>
+        <div class="meta mono">2026 · 同济大学创新创业学院<br><a class="vault" href="https://github.com/sakurahello1/vault/blob/main/honors/innovation-2026.webp" rel="nofollow noopener" target="_blank"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4 7V5a4 4 0 118 0v2h.5A1.5 1.5 0 0114 8.5v5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13.5v-5A1.5 1.5 0 013.5 7H4zm1.6 0h4.8V5a2.4 2.4 0 10-4.8 0v2z"/></svg>证书 · 仅本人</a></div>
+      </li>
+      <li class="honor reveal">
+        <p class="rank">1st<small>Tongji</small></p>
+        <div><h3>同济大学智能计算创新设计赛</h3><p>2026 年 · 一等奖。同济大学创新创业学院 × 海光产业生态合作组织。</p></div>
+        <div class="meta mono">2026<br><a class="vault" href="https://github.com/sakurahello1/vault/blob/main/honors/intelligent-computing-2026-ai-restored.png" rel="nofollow noopener" target="_blank"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4 7V5a4 4 0 118 0v2h.5A1.5 1.5 0 0114 8.5v5a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13.5v-5A1.5 1.5 0 013.5 7H4zm1.6 0h4.8V5a2.4 2.4 0 10-4.8 0v2z"/></svg>证书 · 仅本人</a></div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<!-- 08 · OPEN SOURCE -->
+<section class="section" id="oss" data-sec="Open Source">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="spec-label mono" data-spec="oss-type">08 <span class="sep">/</span> Open Source <span class="sep">/</span> <span data-px>220</span> px</p>
+      <h2 class="bigtype" id="oss-type" data-type data-guides>Commits</h2>
+      <p class="cn">开源贡献</p>
+    </header>
+    <ol class="oss">
+      <li class="reveal"><span class="no">#231</span><div><span class="repo mono">HarnessRouter / harnessrouter</span><a class="t" href="https://github.com/HarnessRouter/harnessrouter/pull/231" target="_blank" rel="noopener">benchmark：在支持矩阵旁边加一个维度，把 harness × 模型放到公开任务集上评测</a><p class="d">实现 issue #205 的提案：SpreadsheetBench Verified 首轮 4 个 harness × 50 题。</p></div><span class="status merged">Merged</span></li>
+      <li class="reveal"><span class="no">#285</span><div><span class="repo mono">HarnessRouter / harnessrouter</span><a class="t" href="https://github.com/HarnessRouter/harnessrouter/pull/285" target="_blank" rel="noopener">runner：pi 会重试的 agent_end 不算一轮对话的结束</a></div><span class="status merged">Merged</span></li>
+      <li class="reveal"><span class="no">#216</span><div><span class="repo mono">HarnessRouter / harnessrouter</span><a class="t" href="https://github.com/HarnessRouter/harnessrouter/pull/216" target="_blank" rel="noopener">runner：opencode 的输出以可见文本为准，并补上它单独保存的推理内容</a></div><span class="status merged">Merged</span></li>
+      <li class="reveal"><span class="no">#214</span><div><span class="repo mono">HarnessRouter / harnessrouter</span><a class="t" href="https://github.com/HarnessRouter/harnessrouter/pull/214" target="_blank" rel="noopener">console：网关代理按声明的时长等待，而不是 undici 默认的五分钟</a></div><span class="status merged">Merged</span></li>
+      <li class="reveal"><span class="no">#209</span><div><span class="repo mono">HarnessRouter / harnessrouter</span><a class="t" href="https://github.com/HarnessRouter/harnessrouter/pull/209" target="_blank" rel="noopener">runner：cline 的 inputTokens 是整段 prompt，像 codex 一样扣除缓存部分</a></div><span class="status merged">Merged</span></li>
+      <li class="reveal"><span class="no">#29066</span><div><span class="repo mono">ggml-org / llama.cpp</span><a class="t" href="https://github.com/ggml-org/llama.cpp/pull/29066" target="_blank" rel="noopener">common：不再把生成提示词预填进输出格式语法</a></div><span class="status open">In review</span></li>
+      <li class="reveal"><span class="no">#2212</span><div><span class="repo mono">kvcache-ai / ktransformers</span><a class="t" href="https://github.com/kvcache-ai/ktransformers/pull/2212" target="_blank" rel="noopener">kt-kernel：在 AVX2 MXFP4 快速路径里对激活行分块</a></div><span class="status open">In review</span></li>
+      <li class="reveal"><span class="no">#246</span><div><span class="repo mono">ZSeven-W / openpencil</span><a class="t" href="https://github.com/ZSeven-W/openpencil/pull/246" target="_blank" rel="noopener">SVG 导入：支持 transform 属性和 &lt;style&gt; 规则</a></div><span class="status open">In review</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 09 · WRITING -->
+<section class="section" id="writing" data-sec="Writing" style="padding-top:0">
+  <div class="wrap">
+    <header class="sec-head">
+      <p class="spec-label mono" data-spec="writing-type">09 <span class="sep">/</span> Writing <span class="sep">/</span> <span data-px>220</span> px</p>
+      <h2 class="bigtype" id="writing-type" data-type data-guides>Writing</h2>
+      <p class="cn">博客</p>
+    </header>
+    <div class="posts">
+      <a class="post reveal" href="blog/rl-post-training/">
+        <div class="cover clay"><canvas data-cover="rl" aria-hidden="true"></canvas><span class="word">RL</span></div>
+        <div class="body">
+          <p class="kicker mono">长文图解 · 强化学习</p>
+          <h3>从策略梯度到 GRPO</h3>
+          <p>沿着 REINFORCE → 自然梯度 → TRPO → PPO，再讲到 RLHF、DPO、GRPO 和 DAPO。附 17 个在浏览器里当场训练的实例。</p>
+          <span class="go mono">Read</span>
+        </div>
+      </a>
+      <a class="post reveal" href="blog/agent-theory/" style="--d:.1s">
+        <div class="cover cream"><canvas data-cover="agent" aria-hidden="true"></canvas><span class="word">Agent</span></div>
+        <div class="body">
+          <p class="kicker mono">研究手册 · Agent</p>
+          <h3>Agent 系统的统一理论</h3>
+          <p>从单 agent 的状态与策略，到长期记忆、技能、多 agent 协作和机制组合，用一套记号把 agent harness 讲成可以做实验的对象。</p>
+          <span class="go mono">Read</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot night" data-sec="End" data-dark>
+  <div class="wrap">
+    <p class="bigtype" data-type>Hao Lyu</p>
+    <div class="foot-row mono">
+      <span>吕灏 · Tongji University · 2026</span>
+      <span><a href="https://github.com/sakurahello1" rel="me noopener" target="_blank">GitHub</a> · <a href="#top">Back to top ↑</a></span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

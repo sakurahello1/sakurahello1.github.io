@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>项目名称 · 吕灏 Hao Lyu</title>
+<meta name="description" content="一句话介绍项目。">
+<meta name="theme-color" content="#EDE8DE">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<script>
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) document.documentElement.classList.add('js-motion');
+</script>
+<script src="../../assets/js/site.js" defer></script>
+</head>
+<body>
+
+<header class="hud-top">
+  <a class="badge" href="../../" aria-label="返回首页"><span class="dot" aria-hidden="true"></span><span class="idx" id="hud-idx">01</span>吕灏 Hao Lyu</a>
+  <button class="navtoggle" id="navtoggle" type="button" aria-expanded="false" aria-controls="navlinks">Index</button>
+  <ul class="navlinks" id="navlinks">
+    <li><a href="../../#about">About</a></li>
+    <li><a href="../../#work">Work</a></li>
+    <li><a href="../../#writing">Writing</a></li>
+  </ul>
+</header>
+
+<div class="hud-frame" id="hud" aria-hidden="true">
+  <span class="corner bl"></span><span class="corner br"></span>
+  <span class="tc mono"><b id="hud-tc">00:00</b>TC</span>
+  <span class="ruler" id="hud-ruler"><span class="rest"></span><span class="bar"></span></span>
+  <span class="sec mono"><b id="hud-count">01/01</b><span id="hud-name">Work</span></span>
+</div>
+
+<main id="main">
+  <section class="section detail-top" id="project" data-sec="Work">
+    <div class="wrap">
+      <p class="crumb mono"><a href="../../#work">← Work</a> / 项目名称</p>
+      <p class="spec-label mono" data-spec="project-type">01 <span class="sep">/</span> Case Study <span class="sep">/</span> <span data-px>200</span> px</p>
+      <h1 class="bigtype" id="project-type" data-type data-guides>Project</h1>
+      <p class="detail-lede reveal">一句话写清它解决什么问题，以及做到什么程度。</p>
+      <!-- 将 data-cover 改为 ppt、hr 或 ink；其他封面可在 site.js 中增加绘制函数。 -->
+      <div class="detail-cover cover cream"><canvas data-cover="ppt" aria-hidden="true"></canvas></div>
+      <div class="factbar mono">
+        <div><span>Role</span><b>作者</b></div>
+        <div><span>Since</span><b>2026</b></div>
+        <div><span>Stack</span><b>技术栈</b></div>
+      </div>
+      <article class="prose">
+        <h2><span class="n">01 / Context</span>背景</h2>
+        <p>项目背景、目标和你的具体贡献。</p>
+        <h2><span class="n">02 / Process</span>实现</h2>
+        <p>关键设计、实现过程与取舍。</p>
+        <h2><span class="n">03 / Result</span>结果</h2>
+        <p>可验证的结果、演示或代码链接。</p>
+      </article>
+      <nav class="next"><a href="../../#work"><span class="mono">Back</span><b>All work ↑</b></a></nav>
+    </div>
+  </section>
+</main>
+
+<footer class="foot night" data-sec="End" data-dark>
+  <div class="wrap">
+    <p class="bigtype" data-type>Hao Lyu</p>
+    <div class="foot-row mono"><span>吕灏 · Tongji University · 2026</span><span><a href="../../">Home</a> · <a href="../../blog/">Writing</a></span></div>
+  </div>
+</footer>
+</body>
+</html>
