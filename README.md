@@ -9,9 +9,10 @@
 | `index.html` | 首页：About、Work、Paper、Patent、Honors、Open Source、Writing |
 | `projects/<slug>/index.html` | PPT Studio、HarnessRouter、Inkreel 三个项目详情页 |
 | `blog/index.html` | 博客目录 |
-| `blog/rl-post-training/`、`blog/agent-theory/` | 两篇独立文章及其附属资源 |
+| `blog/rl-post-training/`、`blog/agent-theory/` | 两篇长文。RL 长文直接在这里编辑（`css/`、`js/art.js` 是代码绘制的图版）；Agent 手册由源码 `G:\homepage-blog-src\agent-theory` 的 `python build.py --site <本目录>` 生成，不要手改输出 |
 | `404.html` | GitHub Pages 的未找到页面 |
-| `assets/css/site.css`、`assets/js/site.js` | 全站视觉样式、HUD、标题效果和画布动画 |
+| `assets/css/core.css` | 所有页面共享：字体、色板、纸面、HUD、字体样张式大标题、深色块、页脚 |
+| `assets/css/site.css`、`assets/js/site.js` | 首页与项目页的版块样式；site.js 负责标题效果、HUD、画布动画，并以 `window.Reel` 向博客提供绘图工具 |
 | `assets/img/`、`assets/fonts/` | 图片及本地字体；字体许可证同目录保存 |
 | `tools/` | 项目详情模板、链接检查脚本及验收记录 |
 
@@ -34,7 +35,7 @@ python -m http.server 8000
 
 ## 新增博客文章
 
-在 `blog/<slug>/` 放入 `index.html` 和文章所需图片、脚本等资源。更新 `blog/index.html` 的 `.posts` 列表，填写标题、日期、摘要和按正文汉字数除以 400 估算的“约 N 分钟”；同时更新首页 `index.html` 的 Writing 卡片，并将文章地址加入 `sitemap.xml`。博客目录的封面用 `data-cover="rl"` 或 `data-cover="agent"`，新增动画时需要在 `assets/js/site.js` 的 `covers` 中定义对应名称。
+长文的视觉规范见 `tools/BLOG-STYLE.md`：页面先引 `core.css`，再引自己的样式；插图用 `Reel.cover()` 在画布上绘制，不用图片。在 `blog/<slug>/` 放入 `index.html` 和文章所需脚本等资源。更新 `blog/index.html` 的 `.posts` 列表，填写标题、日期、摘要和按正文汉字数除以 400 估算的“约 N 分钟”；同时更新首页 `index.html` 的 Writing 卡片，并将文章地址加入 `sitemap.xml`。博客目录的封面用 `data-cover="rl"` 或 `data-cover="agent"`，新增动画时需要在 `assets/js/site.js` 的 `covers` 中定义对应名称。
 
 ## 更新首页
 

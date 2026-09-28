@@ -148,7 +148,8 @@
       if (!raf) draw(ctx, W, H, t, 0, state);
     }
     function loop(now) {
-      var dt = Math.min(0.05, (now - last) / 1000 || 0); last = now; t += dt;
+      // rAF 的时间戳可能早于进入视口时记下的 performance.now()，夹到 0 以上，t 不会变负
+      var dt = Math.max(0, Math.min(0.05, (now - last) / 1000 || 0)); last = now; t += dt;
       draw(ctx, W, H, t, dt, state);
       raf = visible && !reduced ? requestAnimationFrame(loop) : 0;
     }
