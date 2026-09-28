@@ -102,6 +102,7 @@
   var secs = $$('main [data-sec]'), total = secs.length;
   var hud = $('#hud'), hIdx = $('#hud-idx'), hCount = $('#hud-count'), hName = $('#hud-name'), hTc = $('#hud-tc'), ruler = $('#hud-ruler');
   var navA = $$('.navlinks a');
+  var TC = +(document.body.getAttribute('data-tc') || 540);   // 时间码满格秒数：首页 9 分钟，博客按阅读时长
   if (ruler) for (var i = 0; i <= 8; i++) { var tick = document.createElement('i'); tick.style.left = (i / 8 * 100) + '%'; ruler.appendChild(tick); }
   var bar = ruler && ruler.querySelector('.bar');
   function two(n) { return (n < 10 ? '0' : '') + n; }
@@ -119,7 +120,7 @@
     if (hud) hud.classList.toggle('on-dark', dark && s.getBoundingClientRect().bottom > innerHeight * 0.9 || onFoot);
     var h = document.documentElement.scrollHeight - innerHeight, p = h > 0 ? Math.min(1, scrollY / h) : 0;
     if (bar) bar.style.width = (p * 100) + '%';
-    if (hTc) { var sec = Math.round(p * 540); hTc.textContent = two(Math.floor(sec / 60)) + ':' + two(sec % 60); }
+    if (hTc) { var sec = Math.round(p * TC); hTc.textContent = two(Math.floor(sec / 60)) + ':' + two(sec % 60); }
     navA.forEach(function (a) { a.setAttribute('aria-current', a.getAttribute('href') === '#' + s.id ? 'true' : 'false'); });
   }
   addEventListener('scroll', function () { if (!ticking) { ticking = true; requestAnimationFrame(hudUpdate); } }, { passive: true });
@@ -471,10 +472,24 @@
     ctx.textAlign = 'left';
   };
 
-  $$('canvas[data-cover]').forEach(function (cv) { var f = covers[cv.getAttribute('data-cover')]; if (f) stage(cv, f); });
+  function mountCovers(name) {
+    $$(name ? 'canvas[data-cover="' + name + '"]' : 'canvas[data-cover]').forEach(function (cv) {
+      var f = covers[cv.getAttribute('data-cover')];
+      if (f && !cv.dataset.mounted) { cv.dataset.mounted = '1'; stage(cv, f); }
+    });
+  }
+  mountCovers();
 
-  /* 流程条：逐步点亮 */
-  $$('.flow').forEach(function (ol) {
+  /* 供博客等页面复用：Reel.cover('名字', 绘制函数) 注册并挂载新的封面动画 */
+  window.Reel = {
+    INK: INK, CLAY: CLAY, CREAM: CREAM, PAPER: PAPER, WHITE: WHITE, reduced: reduced,
+    stage: stage, rr: rr, shapePath: shapePath, drawShape: drawShape,
+    cover: function (name, fn) { covers[name] = fn; mountCovers(name); }
+  };
+  document.dispatchEvent(new CustomEvent('reel:ready'));
+
+  /* 流程条（专利）：逐步点亮 */
+  $$('#patent .flow').forEach(function (ol) {
     var items = $$('li', ol), i = 0;
     if (reduced || !('IntersectionObserver' in window)) { items.forEach(function (li) { li.classList.add('on'); }); return; }
     var io = new IntersectionObserver(function (es) {
