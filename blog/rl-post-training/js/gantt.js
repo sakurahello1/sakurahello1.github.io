@@ -75,14 +75,14 @@
       p.gen.forEach(function (x) {
         var e = Math.min(x.e, T), shade = x.v % 2 ? 'var(--teal-fill)' : 'var(--teal)';
         S('rect', { x: X(x.s) + 1, y: rowY(x.w), width: Math.max(2, X(e) - X(x.s) - 2), height: rowH - 8, rx: 3, style: 'fill:' + shade + ';opacity:' + (x.partial ? .45 : .9) }, svg);
-        if (X(e) - X(x.s) > 26) S('text', { x: X(x.s) + 6, y: rowY(x.w) + (rowH - 8) / 2 + 4, 'class': 't-m', style: 'fill:#fff', text: 'v' + x.v }, svg);
+        if (X(e) - X(x.s) > 26) S('text', { x: X(x.s) + 6, y: rowY(x.w) + (rowH - 8) / 2 + 4, 'class': 't-m', style: 'fill:' + (x.v % 2 ? 'var(--ink)' : 'var(--paper-hi)'), text: 'v' + x.v }, svg);
         if (x.stale > 0) S('circle', { cx: X(e) - 6, cy: rowY(x.w) + 6, r: 3.5, style: 'fill:var(--amber-fill);stroke:var(--surface);stroke-width:1' }, svg);
       });
       p.train.forEach(function (x) {
         var e = Math.min(x.e, T); if (e <= x.s) return;
         var tr = x.kind === 'train';
         S('rect', { x: X(x.s) + 1, y: rowY(4), width: Math.max(2, X(e) - X(x.s) - 2), height: rowH - 8, rx: 3, style: 'fill:' + (tr ? 'var(--amber-fill)' : 'var(--muted)') }, svg);
-        if (tr && X(e) - X(x.s) > 40) S('text', { x: X(x.s) + 6, y: rowY(4) + (rowH - 8) / 2 + 4, 'class': 't-m', style: 'fill:#fff', text: '更新→v' + (x.v + 1) }, svg);
+        if (tr && X(e) - X(x.s) > 40) S('text', { x: X(x.s) + 6, y: rowY(4) + (rowH - 8) / 2 + 4, 'class': 't-m', style: 'fill:var(--ink)', text: '更新→v' + (x.v + 1) }, svg);
       });
       var ly = top + 5 * rowH + 26;
       [['var(--teal-fill)', '生成回答（vN = 用第 N 版权重）'], ['var(--amber-fill)', '训练更新'], ['var(--muted)', '同步权重'], ['url(#g-hatch)', 'GPU 空等']].forEach(function (lg, i) {

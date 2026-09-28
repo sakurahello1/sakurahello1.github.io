@@ -317,7 +317,7 @@ mjx-container[jax="SVG"]:not([display="true"]) { display: inline-block; max-widt
 .foot .readnext { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 1rem 2rem; margin-bottom: 3.2rem; padding-bottom: 2.4rem; border-bottom: 1px solid rgba(237, 232, 222, .16); }
 .foot .readnext a { text-decoration: none; color: var(--cream-on-night); }
 .foot .readnext span { display: block; color: #A8A49A; margin-bottom: .5rem; }
-.foot .readnext b { font-family: var(--cond); font-weight: 700; font-size: clamp(2.2rem, 5vw, 3.6rem); line-height: .95; text-transform: uppercase; }
+.foot .readnext b { color: var(--cream-on-night); font-family: var(--cond); font-weight: 700; font-size: clamp(2.2rem, 5vw, 3.6rem); line-height: .95; text-transform: uppercase; }
 .foot .readnext a:hover b { color: var(--clay); }
 
 @media (max-width: 640px) {
@@ -329,3 +329,24 @@ mjx-container[jax="SVG"]:not([display="true"]) { display: inline-block; max-widt
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
 @media print { .stage, .mbar, .toc { display: none; } }
+
+/* Remaining long-form surfaces, scoped to this article. */
+#trail-svg .node { fill: var(--card); stroke: var(--ink); stroke-width: 1.5; }
+#trail-svg a:hover .node, #trail-svg a:focus-visible .node, #trail-svg a[aria-current] .node { fill: var(--clay); stroke: var(--clay-deep); stroke-width: 2; }
+#trail-svg a[aria-current] .t-b { fill: var(--clay-deep); }
+.art .tag { font-size: 10px; letter-spacing: .1em; }
+.art.night .tag { color: var(--paper); }
+.art:has([data-cover="rl-map"]) { min-height: 360px; }
+select:focus-visible { outline: 2px solid var(--clay); outline-offset: 3px; }
+.main { overflow-wrap: break-word; }
+.main ::selection { color: var(--ink); background: var(--clay-soft); }
+.toc, .trail-scroll, .fig-svg, .tbl { scrollbar-color: var(--mute) var(--paper); scrollbar-width: thin; }
+@media (max-width: 640px) {
+  .illus .art { aspect-ratio: 1 / 1; min-height: 290px; }
+  #part2 .art { aspect-ratio: auto; height: 320px; }
+  .art:has([data-cover="rl-map"]) { aspect-ratio: auto; height: 560px; }
+  .fig-svg svg { min-width: 560px; }
+  .widget:has(> .w-svg) { overflow-x: auto; }
+  .widget > .w-svg { min-width: 560px; }
+  figcaption { gap: .55rem; }
+}

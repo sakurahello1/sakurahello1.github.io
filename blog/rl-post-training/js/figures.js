@@ -46,14 +46,8 @@
   /* ---------------- trail map ---------------- */
   (function trail() {
     var svg = $('trail-svg'); if (!svg) return;
-    for (var k = 0; k < 7; k++) {
-      var d = '';
-      for (var x = 0; x <= 1200; x += 20) {
-        var y = 48 + k * 36 + 9 * Math.sin(x / 95 + k * 1.3) + 5 * Math.sin(x / 41 + k);
-        d += (x ? 'L' : 'M') + x + ',' + y.toFixed(1);
-      }
-      S('path', { d: d, 'class': 'grid', style: 'opacity:.55' }, svg);
-    }
+    for (var x = 30; x < 1200; x += 76) S('line', { x1:x, y1:48, x2:x, y2:280, 'class':'grid' }, svg);
+    for (var y = 52; y < 300; y += 38) S('line', { x1:30, y1:y, x2:1170, y2:y, 'class':'grid' }, svg);
     var p1 = [
       { id: 'ch2', t: 'REINFORCE', y: '1992', x: 70, h: 236 },
       { id: 'ch3', t: '基线 · GAE', y: '2015', x: 180, h: 208, fix: '减基线' },
@@ -68,16 +62,10 @@
       { id: 'ch13', t: 'R1 · RLVR', y: '2025', x: 1015, h: 84, fix: '规则奖励' },
       { id: 'ch14', t: 'DAPO · GSPO', y: '2025', x: 1125, h: 60, fix: '逐项修补' }
     ];
-    function area(pts) {
-      var ptsA = pts.map(function (p) { return [p.x, p.h]; });
-      var d = smoothPath(ptsA) + ' L' + pts[pts.length - 1].x + ',300 L' + pts[0].x + ',300 Z';
-      S('path', { d: d, style: 'fill:var(--surface-2);opacity:.7' }, svg);
-    }
-    area(p1); area(p2);
     S('text', { x: 70, y: 32, 'class': 't-m', text: '第一部分 · 经典策略优化' }, svg);
     S('text', { x: 670, y: 32, 'class': 't-m', text: '第二部分 · 大模型后训练' }, svg);
-    S('path', { d: smoothPath(p1.map(function (p) { return [p.x, p.h]; })), 'class': 'ln-amb', style: 'stroke-width:2.6' }, svg);
-    S('path', { d: smoothPath(p2.map(function (p) { return [p.x, p.h]; })), 'class': 'ln-amb', style: 'stroke-width:2.6' }, svg);
+    S('path', { d: smoothPath(p1.map(function (p) { return [p.x, p.h]; })), 'class': 'ln-ink', style: 'stroke-width:1.5' }, svg);
+    S('path', { d: smoothPath(p2.map(function (p) { return [p.x, p.h]; })), 'class': 'ln-ink', style: 'stroke-width:1.5' }, svg);
     S('path', { d: 'M510,112 C560,120 600,176 670,168', 'class': 'ln', style: 'stroke-dasharray:5 5' }, svg);
     S('path', { d: 'M583,190 l11,-18 l11,18 z', style: 'fill:var(--amber-soft);stroke:var(--amber);stroke-width:1.5' }, svg);
     S('text', { x: 594, y: 210, 'text-anchor': 'middle', 'class': 't-s', text: '搬到大模型上' }, svg);
@@ -92,15 +80,28 @@
     for (var i = 1; i < p1.length; i++) seg(p1[i - 1], p1[i]);
     for (i = 1; i < p2.length; i++) seg(p2[i - 1], p2[i]);
     function node(p, dashed) {
-      var a = S('a', { href: '#' + p.id }, svg);
+      var a = S('a', { href: '#' + p.id, 'data-chapter': p.id }, svg);
       S('title', { text: p.t }, a);
       S('circle', { cx: p.x, cy: p.h, r: 16, style: 'fill:transparent' }, a);
-      S('circle', { cx: p.x, cy: p.h, r: 8.5, 'class': 'node', style: 'fill:var(--surface);stroke:var(--amber);stroke-width:2.6' + (dashed ? ';stroke-dasharray:3 2' : '') }, a);
+      if (p1.indexOf(p) >= 0) S('path', { d:'M'+p.x+','+(p.h-9)+' l9,9 -9,9 -9,-9 Z', 'class':'node' }, a);
+      else S('circle', { cx:p.x, cy:p.h, r:8.5, 'class':'node', style:dashed?'stroke-dasharray:3 2':'' }, a);
       S('text', { x: p.x, y: p.h - 17, 'text-anchor': 'middle', 'class': 't-b', text: p.t }, a);
       if (p.y) S('text', { x: p.x, y: dashed ? p.h + 25 : p.h - 35, 'text-anchor': 'middle', 'class': 't-m', text: p.y }, a);
     }
     all.forEach(function (p) { node(p); });
     node({ id: 'ch11', t: 'DPO', y: '2023 · 离线支线', x: 870, h: 224 }, true);
+    var pending = false;
+    function current() {
+      pending = false;
+      var selected = null;
+      document.querySelectorAll('.chapter[id]').forEach(function(ch) { if(ch.getBoundingClientRect().top <= 160) selected = ch.id; });
+      svg.querySelectorAll('a[data-chapter]').forEach(function(a) {
+        if(a.dataset.chapter === selected) a.setAttribute('aria-current','step');
+        else a.removeAttribute('aria-current');
+      });
+    }
+    window.addEventListener('scroll',function(){ if(!pending){pending=true;requestAnimationFrame(current);} },{passive:true});
+    current();
   })();
 
   /* ---------------- TOC tracking + mobile bar ---------------- */
@@ -275,7 +276,7 @@
     var c0 = 4 * a * a, q = g1 * g1 / 4 + g2 * g2 * 4, k = Math.sqrt(c0 / q);
     var nv = [nat[0] * k, nat[1] * k];
     var ns = P(nv);
-    S('path', { d: 'M' + cx + ',' + cy + ' L' + ns[0].toFixed(1) + ',' + ns[1].toFixed(1), 'class': 'ln-amb', style: 'stroke-width:2.6', 'marker-end': 'url(#n-ah-amb)' }, svg);
+    S('path', { d: 'M' + cx + ',' + cy + ' L' + ns[0].toFixed(1) + ',' + ns[1].toFixed(1), 'class': 'ln-ink', style: 'stroke-width:1.5', 'marker-end': 'url(#n-ah-amb)' }, svg);
     S('circle', { cx: cx, cy: cy, r: 4.5, 'class': 's-ink' }, svg);
     S('text', { x: gs[0] + 8, y: gs[1] + 4, 'class': 't', style: 'font-weight:700', text: 'g' }, svg);
     S('text', { x: ns[0] + 8, y: ns[1] + 12, 'class': 't', style: 'fill:var(--amber);font-weight:700', text: 'F⁻¹g' }, svg);
@@ -286,7 +287,7 @@
     S('text', { x: lx + 20, y: 96, 'class': 't', text: 'KL 距离相同的点（椭圆）' }, svg);
     S('line', { x1: lx, y1: 124, x2: lx + 12, y2: 124, 'class': 'ln-ink', style: 'stroke-width:2.2' }, svg);
     S('text', { x: lx + 20, y: 128, 'class': 't', text: '普通梯度 g' }, svg);
-    S('line', { x1: lx, y1: 156, x2: lx + 12, y2: 156, 'class': 'ln-amb', style: 'stroke-width:2.6' }, svg);
+    S('line', { x1: lx, y1: 156, x2: lx + 12, y2: 156, 'class': 'ln-ink', style: 'stroke-width:1.5' }, svg);
     S('text', { x: lx + 20, y: 160, 'class': 't', text: '自然梯度 F⁻¹g' }, svg);
     S('text', { x: lx, y: 200, 'class': 't-s', text: '短轴：策略敏感，参数只能动一点' }, svg);
     S('text', { x: lx, y: 220, 'class': 't-s', text: '长轴：策略不敏感，可以多动' }, svg);
@@ -398,7 +399,7 @@
     S('line', { x1: L, y1: T, x2: L, y2: H - B, 'class': 'ln-ink', style: 'stroke-width:1' }, svg);
     S('text', { x: W - R, y: H - 12, 'text-anchor': 'end', 'class': 't-s', text: '策略离初始模型的距离（√KL）→' }, svg);
     S('text', { x: L + 6, y: T + 4, 'class': 't-s', text: '奖励（示意）' }, svg);
-    S('path', { d: fnPath(px, 0, 10, X, Y, 100), 'class': 'ln-amb', style: 'stroke-width:2.6' }, svg);
+    S('path', { d: fnPath(px, 0, 10, X, Y, 100), 'class': 'ln-amb', style: 'stroke-width:1.5' }, svg);
     S('path', { d: fnPath(gd, 0, 10, X, Y, 100), 'class': 'ln-teal', style: 'stroke-width:2.6' }, svg);
     S('line', { x1: X(dPeak), y1: Y(gd(dPeak)), x2: X(dPeak), y2: H - B, 'class': 'ln', style: 'stroke-dasharray:3 3;stroke-width:1' }, svg);
     S('circle', { cx: X(dPeak), cy: Y(gd(dPeak)), r: 5, style: 'fill:var(--teal)' }, svg);

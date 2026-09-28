@@ -473,7 +473,8 @@
     }
     function drawChart(plot) {
       const { ctx: g, w, h, color } = canvasContext(plot.canvas, plot.height);
-      const l = 43, r = w - 14, top = 20, bottom = h - 34;
+      const denseLabels = plot.type === 'bars' && plot.data.some(d => g.measureText(d.label).width > (w - 57) / plot.data.length - 4);
+      const l = 43, r = w - 14, top = 20, bottom = h - (denseLabels ? 65 : 34);
       let [xmin, xmax] = plot.xRange, [ymin, ymax] = plot.yRange;
       if (plot.type === 'scatter') {
         ymin = Math.min(ymin, ...plot.points.map(p => p.y));
@@ -507,8 +508,10 @@
           if (plot.flash === i) g.globalAlpha = 0.45 + 0.55 * Math.abs(Math.cos((plot.flashTime || 0) / 65));
           g.fillRect(l + i * bw + 3, Math.min(Y(value), Y(0)), Math.max(1, bw - 6), Math.max(1, Math.abs(Y(value) - Y(0))));
           g.globalAlpha = 1;
-          if (plot.probabilities) { g.fillStyle = color('--ink-2'); g.fillText(percent(d.value), l + (i + .5) * bw, Y(value) - 5); }
-          g.fillStyle = color('--ink-2'); g.fillText(d.label, l + (i + 0.5) * bw, bottom + 15);
+          if (plot.probabilities) { g.fillStyle = color('--ink-2'); g.fillText(percent(d.value), l + (i + .5) * bw, Y(value) - 5 - (w < 400 ? (i % 2) * 12 : 0)); }
+          g.fillStyle = color('--ink-2');
+          if (denseLabels) { g.save(); g.translate(l + (i + .5) * bw, bottom + 12); g.rotate(-Math.PI / 4); g.textAlign = 'right'; g.fillText(d.label, 0, 0); g.restore(); }
+          else g.fillText(d.label, l + (i + .5) * bw, bottom + 15);
         });
       } else if (plot.type === 'hist') {
         plot.data.forEach(d => { const bw = (r - l) / plot.data.length;
@@ -970,7 +973,7 @@
       const feedback=svg.querySelector('path.ln-amb');
       feedback.setAttribute('d','M686,136 L686,150 L754,150 L754,328 L91,328 L91,216');
       const canvas=el('canvas','lab-flow-canvas');canvas.setAttribute('aria-hidden','true');
-      wrap.append(svg,canvas);ui.charts.appendChild(wrap);ui.flowCanvas=canvas;ui.flowSVG=svg;
+      const scroll=el('div','lab-flow-scroll');wrap.append(svg,canvas);scroll.appendChild(wrap);ui.charts.appendChild(scroll);ui.flowCanvas=canvas;ui.flowSVG=svg;
       ui.flowStage=-1;ui.flowFraction=0;
       ui.flowTexts=['策略生成回答','RM / πref / πold / Critic 给出分数','KL 奖励 + GAE','PPO-clip + 价值回归'];
       const details=el('div','lab-flow-details');ui.flowDetails=[];

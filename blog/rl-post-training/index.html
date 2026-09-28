@@ -470,8 +470,8 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   <p class="bridge"><span class="lab">承上</span><span>自然梯度告诉我们用 KL 约束步长，但它的近似可能失准、计算太贵、也不验证结果。信赖域策略优化（TRPO, Schulman et al., 2015）在它的基础上补了理论保证和三个工程改进，实际表现比自然梯度更好、更稳定，一度成为主流算法。</span></p>
 
   <figure class="illus">
-    <img src="img/trust.webp" alt="浓雾中的窄山脊上，小机器人站在一圈发光的安全区域里，圈外是陡峭的悬崖" width="2000" height="1333" loading="lazy">
-    <figcaption><span class="fn">信赖域</span>只在确信近似可靠的范围内迈步。圈内的判断可以相信，圈外就说不准了。</figcaption>
+    <div class="art night" data-dark><canvas data-cover="rl-trust" role="img" aria-label="自绘示意动画：虚线椭圆表示当前策略附近的 KL 二次近似。先试整步，再缩成半步、四分之一步；空心点未通过实际 KL 或目标检查，白点通过后策略与可信区域一起移动。"></canvas><span class="tag mono">Fig. 02 · 信赖域与回溯</span></div>
+    <figcaption><span class="fn">信赖域</span>虚线椭圆表示当前策略附近的 KL 二次近似。先试整步，再缩成半步、四分之一步；空心点未通过实际 KL 或目标检查，白点通过后策略与可信区域一起移动。</figcaption>
   </figure>
 
   <div class="tbl"><table>
@@ -572,8 +572,8 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   <p class="bridge"><span class="lab">承上</span><span>TRPO 的约束靠二阶方法实现，又慢又复杂。Schulman 等人在 2017 年提出近端策略优化（PPO），用更简单的办法达到同样的目的。论文里有两种变体：PPO-Penalty 和 PPO-Clip。先看在概念上更接近 TRPO 的 Penalty。</span></p>
 
   <figure class="illus">
-    <img src="img/ppo.webp" alt="小机器人攀爬陡坡，身上系着一根发光的弹性安全绳，另一端固定在下方营地的木桩上" width="2000" height="1333" loading="lazy">
-    <figcaption><span class="fn">近端</span>PPO 像一根系在上一个营地的安全绳：可以往上爬，但一次爬不出绳子的长度。绳子的一端是 \(\pi_{\text{old}}\)，长度由 \(\epsilon\) 决定。</figcaption>
+    <div class="art "><canvas data-cover="rl-clip" role="img" aria-label="自绘示意动画：上、下两幅分别画正优势与负优势的裁剪目标。token 点沿概率比移动；只有越过边界且继续朝提高目标的方向走时，点变为空心、停止移动，梯度箭头消失。"></canvas><span class="tag mono">Fig. 03 · PPO 的双向裁剪</span></div>
+    <figcaption><span class="fn">近端</span>上、下两幅分别画正优势与负优势的裁剪目标。token 点沿概率比移动；只有越过边界且继续朝提高目标的方向走时，点变为空心、停止移动，梯度箭头消失。</figcaption>
   </figure>
 
   <h3><span class="sn">6.1</span>PPO-Penalty：自动调节的 KL 惩罚</h3>
@@ -672,11 +672,11 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
 </section>
 
 <div class="part" id="part2" data-sec="Part II" data-dark>
-  <img src="img/part2.webp" alt="高耸的塔形图书馆里，小机器人坐在书桌前，一位人类导师站在身旁指着书页" width="2000" height="1333" loading="lazy">
+  <div class="art"><canvas data-cover="rl-tokens" role="img" aria-label="自绘示意动画：从候选概率中逐个采样 token，生成 EOS 后获得奖励，再沿序列向前分配信用。"></canvas><span class="tag mono">Fig. II · 语言模型也是策略</span><span class="word" aria-hidden="true">Part II</span></div>
   <div class="part-inner">
-    <p class="part-no">第二部分</p>
+    <p class="part-no">Part 02 <span class="sep">/</span> 第 7–16 章</p>
     <h2>大模型的后训练</h2>
-    <p>预训练让模型读完了整座图书馆，后训练则教它怎样回答问题。PPO 的工具箱被原样搬了过来，最难的问题变成了怎样判断一个回答好不好。</p>
+    <p>预训练让模型读完了整座图书馆，后训练则教它怎样回答问题。PPO 的工具箱被原样搬了过来，最难的问题变成了怎样判断一个回答好不好。上图从候选概率中逐个采样 token，生成结束后获得奖励，再把信用沿序列传回。</p>
   </div>
 </div>
 
@@ -808,8 +808,8 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   <p class="bridge"><span class="lab">承上</span><span>开放式任务没有标准答案，只有“哪个更好”的判断。这一章讲怎样把这种判断变成可以求导的奖励，以及这个奖励为什么靠不住。</span></p>
 
   <figure class="illus">
-    <img src="img/rlhf.webp" alt="夜晚书房里，一只人手在天平两端的两卷发光卷轴中挑选，小机器人在一旁观察" width="2000" height="1333" loading="lazy">
-    <figcaption><span class="fn">比较</span>让人说出“这个回答值 7 分还是 8 分”很难，说出“左边比右边好”容易得多，也一致得多。</figcaption>
+    <div class="art cream"><canvas data-cover="rl-pref" role="img" aria-label="自绘示意动画：裁判从两个回答中选出更好的一个。奖励模型按成对偏好更新分数，六个回答逐渐排开；曲线上的点给出当前分差对应的胜出概率，交叉熵随之变化。"></canvas><span class="tag mono">Fig. 04 · 从偏好到奖励</span></div>
+    <figcaption><span class="fn">比较</span>裁判从两个回答中选出更好的一个。奖励模型按成对偏好更新分数，六个回答逐渐排开；曲线上的点给出当前分差对应的胜出概率，交叉熵随之变化。</figcaption>
   </figure>
 
   <h3><span class="sn">9.1</span>收集比较，而不是打分</h3>
@@ -828,8 +828,8 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   <h3><span class="sn">9.3</span>奖励模型只是一个代理</h3>
   <p>奖励模型是用有限的数据训练出来的，它只在训练数据附近可靠。策略一旦被优化去讨好它，就会主动去找它判断失误的地方。这是古德哈特定律在机器学习里的体现：<strong>一个指标一旦成为优化目标，就不再是好指标</strong>。</p>
   <figure class="illus">
-    <img src="img/hacking.webp" alt="小机器人偷偷用手指把一个黄铜仪表盘的指针往上拨，身后本该攀登的山路被雾遮住" width="2000" height="1333" loading="lazy">
-    <figcaption><span class="fn">奖励投机</span>把指针拨上去，比真的爬上山容易得多。</figcaption>
+    <div class="art night" data-dark><canvas data-cover="rl-goodhart" role="img" aria-label="自绘示意动画：横轴是策略偏离参考模型的 KL。代理奖励持续上涨，真实质量先升后降，两者的差距逐渐扩大；竖虚线标出加入 KL 惩罚后代理目标停止优化的位置。"></canvas><span class="tag mono">Fig. 05 · 代理与真实质量</span></div>
+    <figcaption><span class="fn">奖励投机</span>横轴是策略偏离参考模型的 KL。代理奖励持续上涨，真实质量先升后降，两者的差距逐渐扩大；竖虚线标出加入 KL 惩罚后代理目标停止优化的位置。</figcaption>
   </figure>
   <figure>
     <div class="fig-svg"><svg id="ovr-svg" viewBox="0 0 640 270" role="img" aria-label="示意图：随着策略偏离初始模型，代理奖励持续上升，真实质量先升后降"></svg></div>
@@ -1010,8 +1010,8 @@ loss   = -F.logsigmoid(logits).mean()</code></pre>
   <p class="bridge"><span class="lab">承上</span><span>PPO 里的 Critic 和策略一样大，还很难学准。第 3 章说过，基线只要不依赖当前动作就不会引入偏差，并不一定要一个神经网络。大模型有一个特别方便的条件：同一个提示可以很便宜地多采样几次。</span></p>
 
   <figure class="illus">
-    <img src="img/grpo.webp" alt="长桌边坐着八个一模一样的小机器人，各自在石板上作答，一个提灯的考官机器人沿桌巡视，部分石板亮起青色" width="2000" height="1333" loading="lazy">
-    <figcaption><span class="fn">组内比较</span>同一道题让模型答 \(G\) 次，彼此比较。比同组平均好的被鼓励，比平均差的被抑制，不再需要一个单独的“考官网络”来估值。</figcaption>
+    <div class="art "><canvas data-cover="rl-group" role="img" aria-label="自绘示意动画：同一道题采样八个回答并评分，虚线标出组平均。每个回答的标准化优势画在零线上下：白条为正，空心墨条为负；按优势更新后，正优势回答的概率增大，再采下一组。"></canvas><span class="tag mono">Fig. 06 · 同题八答的优势</span></div>
+    <figcaption><span class="fn">组内比较</span>同一道题采样八个回答并评分，虚线标出组平均。每个回答的标准化优势画在零线上下：白条为正，空心墨条为负；按优势更新后，正优势回答的概率增大，再采下一组。</figcaption>
   </figure>
 
   <h3><span class="sn">12.1</span>为什么想去掉 Critic</h3>
@@ -1300,8 +1300,8 @@ loss   = -F.logsigmoid(logits).mean()</code></pre>
   </header>
 
   <figure class="illus">
-    <img src="img/summit.webp" alt="日出时小机器人站在山顶，回望云雾缭绕的山谷，许多发光的小路从山下通向这里，还有别的小机器人在攀登" width="2000" height="1333" loading="lazy">
-    <figcaption><span class="fn">回望</span>每一条上山的路，都是为了绕开上一条路上的某个坑。</figcaption>
+    <div class="art cream"><canvas data-cover="rl-map" role="img" aria-label="自绘示意动画：白点沿方法台阶推进，每一级标出它处理的问题。墨色、陶土橙和冷灰蓝轨道分别对应往哪走、走多远、奖励从哪来；DPO 与在线策略优化是不同分支。"></canvas><span class="tag mono">Fig. 07 · 十一种方法，三个问题</span></div>
+    <figcaption><span class="fn">回望</span>白点沿方法台阶推进，每一级标出它处理的问题。墨色、陶土橙和冷灰蓝轨道分别对应往哪走、走多远、奖励从哪来；DPO 与在线策略优化是不同分支。</figcaption>
   </figure>
 
   <h3><span class="sn">1</span>三个问题的答案是怎样演变的</h3>
