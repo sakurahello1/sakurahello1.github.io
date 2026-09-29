@@ -258,12 +258,36 @@
 
   <h3><span class="sn">2.5</span>两种常见的策略形式</h3>
   <p>要算出 \(\nabla_\theta\log\pi_\theta\)，得先给出策略的具体形式。</p>
+  <h4>先说特征向量</h4>
+  <p>最简单的一类策略分两步给动作打分。第一步，把“在状态 \(s\) 下做动作 \(a\)”这个组合描述成一串数字，叫作<strong>特征向量</strong> \(\mathbf{x}(s,a)=\big(x_1,x_2,\dots,x_d\big)\)，每一维刻画这个组合的一个性质。第二步，参数 \(\theta\) 是同样长度的权重向量，两者的内积</p>
+  \[\theta^{\top}\mathbf{x}(s,a)=\theta_1x_1(s,a)+\theta_2x_2(s,a)+\dots+\theta_dx_d(s,a)\]
+  <p>就是动作 \(a\) 的得分（logit）。特征由人事先设计好，训练只调每个特征的权重。很多教材把特征记作 \(\phi(s,a)\)；本文把 \(\phi\) 留给第 3 章 Critic 网络的参数，所以这里写作 \(\mathbf{x}\)。</p>
+  <div class="call intu"><span class="ct">例子：九格山路上的两种特征</span>
+    <p>第一部分的小机器人站在 9 个格子之一，每步可以向左、休息或向右。特征至少有两种设计法：</p>
+    <ul>
+      <li><strong>独热特征</strong>：给每个“格子 × 动作”组合分配一维，一共 \(9\times3=27\) 维。在第 4 格向右时，只有“第 4 格·向右”那一维是 1，其余都是 0。于是 \(\theta^{\top}\mathbf{x}\) 只是从 27 个参数里取出一个，相当于每个格子的每个动作各有一个独立的分数，这就是<strong>表格型</strong> softmax 策略。</li>
+      <li><strong>手工特征</strong>：例如 \(\mathbf{x}(s,a)=\big(\text{这一步是否向上走},\ \text{走完离山顶还有几格},\ 1\big)\)。参数只有 3 个，而且在第 2 格学到的“向上走好”，会自动用到第 6 格。代价是特征选得不好时，策略再怎么训练也表达不出最优行为。</li>
+    </ul>
+    <p>深度网络是同一个结构，只是特征不再由人设计：最后一层之前的所有层合起来，就是一个可以学习的 \(\mathbf{x}\)。</p>
+  </div>
   <h4>离散动作：Softmax 策略</h4>
-  \[\pi_\theta(a\mid s)=\frac{\exp\!\big(\theta^{\top}\phi(s,a)\big)}{\sum_{b}\exp\!\big(\theta^{\top}\phi(s,b)\big)},\qquad \nabla_\theta\log\pi_\theta(a\mid s)=\phi(s,a)-\mathbb{E}_{b\sim\pi_\theta}\big[\phi(s,b)\big]\]
-  <p>梯度是“被选中动作的特征”减去“所有动作的平均特征”。如果回报很高，而被选中的动作又和平均水平差得很远，这个动作的概率就会被大幅提高。</p>
-  <p>大语言模型的输出层正是这种形式：最后一层给出每个 token 的 logit \(z\)，再过 softmax。对 logit 求导，结果是 \(\nabla_z\log\pi(a)=\mathbf{e}_a-\pi\)，也就是被选中 token 的 one-hot 向量减去整个概率向量。</p>
+  <p>把所有动作的得分过一遍 softmax，就得到概率：</p>
+  \[\pi_\theta(a\mid s)=\frac{\exp\!\big(\theta^{\top}\mathbf{x}(s,a)\big)}{\sum_{b}\exp\!\big(\theta^{\top}\mathbf{x}(s,b)\big)},\qquad \nabla_\theta\log\pi_\theta(a\mid s)=\mathbf{x}(s,a)-\mathbb{E}_{b\sim\pi_\theta}\big[\mathbf{x}(s,b)\big]\]
+  <p>分母里的 \(b\) 只是求和变量，遍历所有可选动作；\(\mathbb{E}_{b\sim\pi_\theta}[\mathbf{x}(s,b)]=\sum_b\pi_\theta(b\mid s)\,\mathbf{x}(s,b)\) 是按当前策略加权的平均特征。</p>
+  <details class="derive"><summary>展开推导：Softmax 策略的对数梯度</summary>
+    <div class="db">
+      <p>取对数，分式变成相减：</p>
+      \[\log\pi_\theta(a\mid s)=\theta^{\top}\mathbf{x}(s,a)-\log\sum_{b}\exp\!\big(\theta^{\top}\mathbf{x}(s,b)\big)\]
+      <p>第一项对 \(\theta\) 求导，得到 \(\mathbf{x}(s,a)\)。第二项用链式法则：</p>
+      \[\nabla_\theta\log\sum_{b}e^{\theta^{\top}\mathbf{x}(s,b)}=\frac{\sum_{b}e^{\theta^{\top}\mathbf{x}(s,b)}\,\mathbf{x}(s,b)}{\sum_{b'}e^{\theta^{\top}\mathbf{x}(s,b')}}=\sum_{b}\pi_\theta(b\mid s)\,\mathbf{x}(s,b)=\mathbb{E}_{b\sim\pi_\theta}\big[\mathbf{x}(s,b)\big]\]
+      <p>两项相减就是上面的结果。</p>
+    </div>
+  </details>
+  <p>梯度是“被选中动作的特征”减去“当前策略下的平均特征”。沿这个方向更新 \(\theta\)，会加大那些“被选中的动作有、而一般的动作没有”的特征的权重，于是 \(a\) 的得分相对其他动作升高。在 2.3 节的公式里它还要乘上回报：回报高时往这个方向推，回报为负时往反方向推。被选中的动作和平均水平差得越远，这一步的改变就越大；如果策略已经几乎只选 \(a\)，平均特征约等于 \(\mathbf{x}(s,a)\)，梯度接近 0，不会再继续推。</p>
+  <p>大语言模型的输出层正是这种形式：最后一层给出每个 token 的 logit \(z\)，再过 softmax。如果把 logit 本身当作参数，特征就是独热向量 \(\mathbf{x}(s,a)=\mathbf{e}_a\)，平均特征就是整个概率向量 \(\pi\)，上面的结果化为 \(\nabla_z\log\pi(a)=\mathbf{e}_a-\pi\)：被选中 token 的 one-hot 向量减去整个概率向量。</p>
   <h4>连续动作：高斯策略</h4>
-  \[\pi_\theta(a\mid s)=\mathcal{N}\big(a;\,\mu_\theta(s),\,\sigma^2\big),\quad \mu_\theta(s)=\phi(s)^{\top}\theta,\qquad \nabla_\theta\log\pi_\theta(a\mid s)=\frac{\big(a-\mu_\theta(s)\big)\,\phi(s)}{\sigma^{2}}\]
+  <p>动作是实数时（例如力矩、角度），让策略输出一个正态分布的均值。这里的特征只依赖状态，记作 \(\mathbf{x}(s)\)：</p>
+  \[\pi_\theta(a\mid s)=\mathcal{N}\big(a;\,\mu_\theta(s),\,\sigma^2\big),\quad \mu_\theta(s)=\mathbf{x}(s)^{\top}\theta,\qquad \nabla_\theta\log\pi_\theta(a\mid s)=\frac{\big(a-\mu_\theta(s)\big)\,\mathbf{x}(s)}{\sigma^{2}}\]
   <p>同样地，回报高时，离均值越远的动作带来的更新信号越强。因为概率总和必须是 1，提高一部分轨迹的概率，也就意味着降低了其他轨迹的概率。</p>
 
   <h3><span class="sn">2.6</span>交给自动求导</h3>
@@ -333,10 +357,45 @@ optimizer.zero_grad(); loss.backward(); optimizer.step()</code></pre>
 
 
   <h3><span class="sn">3.4</span>Critic：用一个网络学 \(V\)</h3>
-  <p>\(V^\pi\) 未知，那就再训练一个网络 \(V_\phi(s)\) 去拟合它，用回归损失 \(\big(V_\phi(s_t)-\hat G_t\big)^2\) 训练。于是有了两个网络：负责选动作的<strong>Actor</strong>（策略）和负责打分的<strong>Critic</strong>（价值网络）。这就是 <strong>Actor-Critic</strong> 框架。</p>
-  <p>有了 Critic，还可以只看一步就估计优势，这就是 <strong>TD 误差</strong>：</p>
+  <p>\(V^\pi\) 未知，那就再训练一个网络 \(V_\phi(s)\) 去拟合它，\(\phi\) 是这个网络的参数。于是有了两个网络：负责选动作的<strong>Actor</strong>（策略）和负责打分的<strong>Critic</strong>（价值网络）。这就是 <strong>Actor-Critic</strong> 框架。</p>
+  <p>剩下的问题是：拿什么当 Critic 的训练目标？我们并不知道真实的 \(V^\pi(s_t)\)，只能用样本凑出一个“答案”。常用的有两种，而且可以连续地混合。</p>
+
+  <h4>目标一：采样回报（蒙特卡洛）</h4>
+  <p>最直接的做法，是用这一局从 \(t\) 开始实际拿到的回报当目标：</p>
+  \[\hat G_t=r_t+\gamma\,r_{t+1}+\gamma^{2}r_{t+2}+\dots=\sum_{k=t}^{T}\gamma^{\,k-t}\,r_k,\qquad \mathcal{L}(\phi)=\big(V_\phi(s_t)-\hat G_t\big)^2\]
+  <p>头上的 ^ 表示这是一次采样得到的数，不是“准确的回报”：不需要知道真实的期望，只要把这一局玩完、把看到的奖励加起来就行。因为 \(V^\pi(s_t)=\mathbb{E}\big[G_t\mid s_t\big]\)，用大量样本做平方回归，最优解正好是这个条件期望，所以这个目标<strong>没有偏差</strong>。代价有两个：必须等一局结束才能算；而且之后每一步的随机性（策略的随机选择、环境的随机转移）都叠加在 \(\hat G_t\) 里，<strong>方差很大</strong>，需要很多样本才能平均准。</p>
+
+  <h4>目标二：TD 目标（自举）</h4>
+  <p>另一种做法只看一步真实奖励，剩下的部分交给 Critic 自己估计：</p>
+  \[y_t=r_t+\gamma\,V_\phi(s_{t+1}),\qquad \mathcal{L}(\phi)=\big(V_\phi(s_t)-y_t\big)^2=\delta_t^{\,2}\]
+  <p>其中</p>
   \[\delta_t=r_t+\gamma\,V_\phi(s_{t+1})-V_\phi(s_t)\]
-  <p>它的含义是：实际拿到的奖励 \(r_t\)，加上对下一个状态的估值，比原先对 \(s_t\) 的估值多出了多少。</p>
+  <p>叫作 <strong>TD 误差</strong>（时序差分误差）。它的含义是：实际拿到的奖励 \(r_t\)，加上对下一个状态的估值，比原先对 \(s_t\) 的估值多出了多少。训练 Critic 就是不断采样、把 \(\delta_t\) 压小。这样走一步就能更新，不用等一局结束，方差也小得多。</p>
+  <p>代价是目标里用到了 Critic 自己的估值，这叫<strong>自举</strong>（bootstrapping）：Critic 还不准时，目标也跟着不准，所以<strong>有偏差</strong>。它能学对，是因为 \(r_t\) 是真实的：每更新一次，真实奖励的信息就往前传一步。靠近终点的状态最先学准，再带动它前面的状态，一路传回起点。</p>
+  <div class="call warn"><span class="ct">实现细节：目标要停住梯度</span>
+    <p>求梯度时要把 \(y_t\) 当作常数，只对 \(V_\phi(s_t)\) 求导；代码里对目标做 <code>detach</code>，这叫<strong>半梯度</strong>（semi-gradient）方法。如果连 \(V_\phi(s_{t+1})\) 也一起求导，等于直接最小化 \(\delta_t^2\)：网络在把 \(V(s_t)\) 拉向目标的同时，也会把 \(V(s_{t+1})\) 往回推，让两边互相迁就。环境转移有随机性时，这会收敛到错误的解。</p>
+    <p>用神经网络做 TD 学习还可能不稳定，因为目标本身随着网络一起变。DQN 这类方法因此另外保留一个更新较慢的“目标网络”来计算 \(y_t\)。</p>
+  </div>
+<pre><code>v      = critic(s)                                          <span class="c"># V_φ(s_t)</span>
+target = (r + gamma * critic(s_next) * (1 - done)).detach() <span class="c"># y_t，当作常数</span>
+loss   = ((v - target) ** 2).mean()                         <span class="c"># 即 δ_t² 的平均</span></code></pre>
+
+  <h4>两者之间：看几步真实奖励</h4>
+  <p>两种目标是同一条线的两端：先看 \(n\) 步真实奖励，再用 Critic 估计剩下的部分。</p>
+  <div class="tbl"><table>
+    <thead><tr><th>Critic 的目标</th><th>真实奖励</th><th>偏差</th><th>方差</th><th>什么时候能算</th></tr></thead>
+    <tbody>
+      <tr><td>TD(0)：\(r_t+\gamma V_\phi(s_{t+1})\)</td><td>1 步</td><td>大</td><td>小</td><td>走完一步</td></tr>
+      <tr><td>\(n\) 步：\(\sum_{k=0}^{n-1}\gamma^{k}r_{t+k}+\gamma^{n}V_\phi(s_{t+n})\)</td><td>\(n\) 步</td><td>中</td><td>中</td><td>走完 \(n\) 步</td></tr>
+      <tr><td>蒙特卡洛：\(\hat G_t\)</td><td>到结束</td><td>无</td><td>大</td><td>一局结束</td></tr>
+    </tbody>
+  </table></div>
+  <p>下一节的 GAE 用一个参数 \(\lambda\) 在这条线上连续调节：\(\lambda=0\) 对应 TD(0)，\(\lambda=1\) 对应蒙特卡洛。PPO 的常见实现把 Critic 的回归目标写成 \(\hat A_t^{\mathrm{GAE}}+V_{\phi_{\text{old}}}(s_t)\)，也就是下一节代码最后一行的 <code>returns = A + V</code>。它介于两端之间，叫作 \(\lambda\)-回报。所以在 PPO 代码里看到 \(\big(V_\phi(s_t)-\hat G_t\big)^2\) 时，那个 \(\hat G_t\) 通常已经是部分自举的目标，而不是整局回报。</p>
+
+  <div class="call key"><span class="ct">同一个 δ，两个用途</span>
+    <p>对 Critic，\(\delta_t\) 是要压小的误差。对 Actor，它是优势的一步估计：做了 \(a_t\) 之后的实际结果 \(r_t+\gamma V(s_{t+1})\)，比这个状态的平均水平 \(V(s_t)\) 好多少。Critic 准确时，\(\mathbb{E}\big[\delta_t\mid s_t,a_t\big]=Q^\pi(s_t,a_t)-V^\pi(s_t)=A^\pi(s_t,a_t)\)。下一节的 GAE 把多步的 \(\delta\) 加权相加，得到更好的优势估计。</p>
+  </div>
+  <p>在大模型的 RLHF 里，\(\gamma\) 通常取 1，奖励基本在回答结束时才给。一段回答生成完，蒙特卡洛回报立刻就能算出来，所以“等一局结束”不再是负担；难处变成了 Critic 要从结尾的一个分数，学会给每个 token 位置估价值（第 10 章）。</p>
 
   <h3><span class="sn">3.5</span>GAE：在偏差和方差之间调一个旋钮</h3>
   <p>只看一步的 \(\delta_t\) 方差很小，但完全依赖 Critic 准不准，偏差大；用整条 \(G_t-V(s_t)\) 没有偏差，但方差大。Schulman 等人在 2015 年提出的<strong>广义优势估计</strong>（GAE）把两者按指数权重混合起来：</p>
