@@ -545,7 +545,7 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   <p>结论：应该限制的是<strong>策略（分布）变了多少</strong>，而不是参数变了多少。普通梯度假设参数空间是平的，每个方向同样敏感，看不到这种“曲率”。要把它考虑进来，就需要二阶信息，这正是自然梯度和普通梯度的区别。</p>
 
   <h3><span class="sn">4.3</span>用 KL 散度衡量策略的变化</h3>
-  <p>衡量两个概率分布的差异，最常用的是 <strong>KL 散度</strong>（相对熵）：</p>
+  <p>衡量两个概率分布的差异，最常用的是 <strong><a href="../kl-divergence/">KL 散度</a></strong>（相对熵）：</p>
   \[D_{\mathrm{KL}}(P\,\Vert\,Q)=\sum_x P(x)\log\frac{P(x)}{Q(x)}\]
   <p>把更新的约束从参数距离换成 KL 散度（对访问到的状态取平均）：</p>
   \[\max_{\Delta\theta}\;J(\theta+\Delta\theta)\quad\text{s.t.}\quad \mathbb{E}_{s}\Big[D_{\mathrm{KL}}\big(\pi_\theta(\cdot\mid s)\,\Vert\,\pi_{\theta+\Delta\theta}(\cdot\mid s)\big)\Big]\le\epsilon\]
