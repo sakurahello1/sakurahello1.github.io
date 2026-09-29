@@ -412,16 +412,28 @@ loss   = ((v - target) ** 2).mean()                         <span class="c"># �
   \[\hat A^{(k)}_t=\sum_{l=0}^{k-1}\gamma^{l}\,\delta_{t+l}=\underbrace{r_t+\gamma r_{t+1}+\dots+\gamma^{k-1}r_{t+k-1}}_{k\ \text{步真实奖励}}+\underbrace{\gamma^{k}V(s_{t+k})}_{\text{Critic 估计剩下的}}-V(s_t)\]
   <p>\(k\) 一直加到一局结束时，最后那个 \(V\) 项消失，就回到蒙特卡洛：\(\hat A^{(\infty)}_t=G_t-V(s_t)\)。所以 \(k\) 越小越信 Critic（方差小、偏差大），\(k\) 越大越信实际奖励（偏差小、方差大）。这和 3.4 节 Critic 的 \(n\) 步目标是同一条线。</p>
 
-  <h4>第二步：不挑某一个 k，按几何权重全部平均</h4>
-  <p>选 \(k=3\) 还是 \(k=10\) 都显得随意。GAE 的做法是把所有 \(\hat A^{(k)}_t\) 加权平均，第 \(k\) 个的权重是 \((1-\lambda)\lambda^{k-1}\)。这些权重加起来正好是 1，平均下来相当于看 \(1/(1-\lambda)\) 步。整理之后，结果是一个很简洁的式子：</p>
-  \[\hat A_t^{\mathrm{GAE}(\gamma,\lambda)}=(1-\lambda)\Big(\hat A^{(1)}_t+\lambda\hat A^{(2)}_t+\lambda^{2}\hat A^{(3)}_t+\dots\Big)=\sum_{l=0}^{\infty}(\gamma\lambda)^{l}\,\delta_{t+l}\]
-  <details class="derive"><summary>展开推导：几何平均为什么化成 δ 的加权和</summary>
+  <h4>第二步：用一个连续的量控制“看几步”</h4>
+  <p>第一步把矛盾摆清楚了：只看一步，方差小但偏差大；看完一整条路径，偏差小但方差大。真正要决定的是<strong>用多少步</strong>。可 \(k\) 是整数，只能 1、2、3 地跳；想在 TD 和蒙特卡洛之间平滑地调节，需要一个连续的量来控制“看几步”。</p>
+  <p>GAE 的办法是把“看几步”变成一串顺序的决定。每看完一步真实奖励，都问一次：<strong>现在就停下，把剩下的交给 Critic 估计；还是再往下看一步？</strong>每一步都以同样的概率 \(\lambda\) 继续、以 \(1-\lambda\) 停下。于是停在第 \(k\) 步的概率是</p>
+  \[P(K=k)=(1-\lambda)\,\lambda^{k-1},\qquad k=1,2,3,\dots\]
+  <p>这是几何分布，平均看 \(1/(1-\lambda)\) 步：\(\lambda=0\) 时只看 1 步，\(\lambda=0.9\) 时约 10 步，\(\lambda=0.95\) 时约 20 步，\(\lambda\to1\) 时一直看到结束。\(\lambda\) 在 \([0,1]\) 里连续变化，“看几步”也就从 TD 连续地过渡到蒙特卡洛。GAE 取的就是在这个随机步数下，\(k\) 步估计的期望：</p>
+  \[\hat A_t^{\mathrm{GAE}(\gamma,\lambda)}=\mathbb{E}_K\big[\hat A^{(K)}_t\big]=(1-\lambda)\Big(\hat A^{(1)}_t+\lambda\hat A^{(2)}_t+\lambda^{2}\hat A^{(3)}_t+\dots\Big)=\sum_{l=0}^{\infty}(\gamma\lambda)^{l}\,\delta_{t+l}\]
+  <p>“停下还是继续”这个规则自带一个关键性质：<strong>越远的奖励，权重自动越小</strong>。第 \(t+l\) 步的意外 \(\delta_{t+l}\) 要被算进来，前提是前面 \(l\) 次都选了“继续”，这件事的概率是 \(\lambda^l\)。所以它的权重是 \((\gamma\lambda)^l\)：\(\gamma^l\) 是问题本身的折扣，\(\lambda^l\) 是“还愿意相信这么远的真实奖励”的程度。离得越远，结果受之后其他动作和运气的影响越多，权重也越小，方差正是这样被压下去的。</p>
+  <details class="derive"><summary>展开推导：为什么期望化成 δ 的加权和</summary>
     <div class="db">
-      <p>把每个 \(\hat A^{(k)}_t=\sum_{l=0}^{k-1}\gamma^l\delta_{t+l}\) 代进去，按 \(\delta\) 重新归类。\(\delta_t\) 出现在所有 \(k\ge1\) 的估计里，\(\gamma\delta_{t+1}\) 出现在 \(k\ge2\) 的估计里，依此类推：</p>
-      \[(1-\lambda)\Big[\delta_t\big(1+\lambda+\lambda^2+\dots\big)+\gamma\delta_{t+1}\big(\lambda+\lambda^2+\dots\big)+\gamma^2\delta_{t+2}\big(\lambda^2+\lambda^3+\dots\big)+\dots\Big]\]
-      <p>每个括号都是等比级数：\(\lambda^l+\lambda^{l+1}+\dots=\lambda^l/(1-\lambda)\)。乘上前面的 \((1-\lambda)\) 后，\(\gamma^l\delta_{t+l}\) 的系数就是 \(\lambda^l\)，合起来正是 \(\sum_l(\gamma\lambda)^l\delta_{t+l}\)。</p>
+      <p>把每个 \(\hat A^{(k)}_t=\sum_{l=0}^{k-1}\gamma^l\delta_{t+l}\) 代进去，按 \(\delta\) 重新归类。\(\gamma^l\delta_{t+l}\) 出现在所有 \(k&gt;l\) 的估计里，所以对<strong>任意</strong>一种停步分布都有：</p>
+      \[\mathbb{E}_K\big[\hat A^{(K)}_t\big]=\sum_{l=0}^{\infty}\gamma^{l}\,P(K&gt;l)\,\delta_{t+l}\]
+      <p>也就是说，第 \(l\) 步之后那个意外的权重，等于“看的步数超过 \(l\)”的概率。对几何分布，\(P(K&gt;l)\) 就是前 \(l\) 次都继续的概率 \(\lambda^l\)；也可以直接把等比级数加起来验证：</p>
+      \[\begin{aligned}&(1-\lambda)\Big[\delta_t\big(1+\lambda+\lambda^2+\dots\big)+\gamma\delta_{t+1}\big(\lambda+\lambda^2+\dots\big)+\gamma^2\delta_{t+2}\big(\lambda^2+\lambda^3+\dots\big)+\dots\Big]\\&\quad=\delta_t+\gamma\lambda\,\delta_{t+1}+(\gamma\lambda)^2\delta_{t+2}+\dots=\sum_{l}(\gamma\lambda)^l\delta_{t+l}\end{aligned}\]
     </div>
   </details>
+  <div class="call intu"><span class="ct">为什么不直接把两头线性混合</span>
+    <p>另一个看起来更省事的连续旋钮，是把两个端点直接按比例混合：\(\hat A_t=(1-\alpha)\,\delta_t+\alpha\,\big(G_t-V(s_t)\big)\)。它也能从 TD 连续调到蒙特卡洛，但按 \(\delta\) 展开后，\(\delta_t\) 的权重是 1，之后每一步的意外<strong>不管隔多远</strong>，权重都是同一个 \(\alpha\)（再乘 \(\gamma\) 的折扣）。</p>
+    <p>这等于跳过了中间所有的步数，没有回答“看几步”这个核心问题：隔了 100 步的运气，和紧挨着的下一步分量相同，方差并没有随距离被压下去。几何分布的“继续或停下”则让信任随距离一步步衰减，这才是在偏差和方差之间真正做了取舍。</p>
+  </div>
+  <p>顺序决定还顺带给出了算法。在第 \(t\) 步，不管停不停，\(\delta_t\) 都要算上；如果继续（概率 \(\lambda\)），接下来面对的正是从 \(t+1\) 开始的同一个问题，再乘一次 \(\gamma\)。所以</p>
+  \[\hat A_t=\delta_t+\gamma\lambda\,\hat A_{t+1}\]
+  <p>从一局的末尾往前扫一遍就全部算完，只需要记住一个数。能写成这样一步递推，靠的正是“每一步继续的概率都相同”；换成别的权重（比如在前 10 步里均匀平均），就得给每个时刻维护一个滑动窗口。一个连续旋钮、远处自动降权、一步递推，三件事由同一个简单规则同时给出，这是 GAE 设计得漂亮的地方。</p>
 
   <h4>第三步：读懂这个式子</h4>
   <p>把 \(\delta_{t+l}\) 看成第 \(t+l\) 步的“意外”：那一步的实际结果比 Critic 原先的估计好了多少（或差了多少）。GAE 说的是：<strong>动作 \(a_t\) 的优势，等于它之后每一步的意外之和，离得越远的意外打的折扣越多，每远一步乘一次 \(\gamma\lambda\)</strong>。</p>
@@ -474,7 +486,7 @@ loss   = ((v - target) ** 2).mean()                         <span class="c"># �
     <p>同一条登顶轨迹里，有前进，也有一次后退。拖动 λ，看看最后的奖励怎样沿着 TD 误差传回前面的动作：λ 小时功劳只落在最后几步，λ 大时一路传回起点。</p>
   <div class="lab" data-lab="classic" id="lab-gae"></div>
 
-  <p>实际计算时不用真的做无穷求和。因为 \(\hat A_t=\delta_t+\gamma\lambda\big(\delta_{t+1}+\gamma\lambda\,\delta_{t+2}+\dots\big)\)，括号里正好是 \(\hat A_{t+1}\)，所以从一局的末尾往前递推一遍就够了：\(\hat A_t=\delta_t+\gamma\lambda\,\hat A_{t+1}\)。</p>
+  <p>实际计算用的就是第二步那条递推 \(\hat A_t=\delta_t+\gamma\lambda\,\hat A_{t+1}\)，从一局的末尾往前扫一遍：</p>
 <pre><code>adv = 0
 <span class="k">for</span> t <span class="k">in</span> reversed(range(T)):
     delta = r[t] + gamma * V[t+1] * (1 - done[t]) - V[t]
