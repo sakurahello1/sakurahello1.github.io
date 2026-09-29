@@ -398,27 +398,91 @@ loss   = ((v - target) ** 2).mean()                         <span class="c"># �
   <p>在大模型的 RLHF 里，\(\gamma\) 通常取 1，奖励基本在回答结束时才给。一段回答生成完，蒙特卡洛回报立刻就能算出来，所以“等一局结束”不再是负担；难处变成了 Critic 要从结尾的一个分数，学会给每个 token 位置估价值（第 10 章）。</p>
 
   <h3><span class="sn">3.5</span>GAE：在偏差和方差之间调一个旋钮</h3>
-  <p>只看一步的 \(\delta_t\) 方差很小，但完全依赖 Critic 准不准，偏差大；用整条 \(G_t-V(s_t)\) 没有偏差，但方差大。Schulman 等人在 2015 年提出的<strong>广义优势估计</strong>（GAE）把两者按指数权重混合起来：</p>
-  \[\hat A_t^{\mathrm{GAE}(\gamma,\lambda)}=\sum_{l=0}^{\infty}(\gamma\lambda)^{l}\,\delta_{t+l}\]
+  <p>上一节讲的是 Critic 自己怎么训练；这一节换到 Actor 这边：有了 Critic 之后，策略梯度里的优势 \(\hat A_t\) 该怎么估？两个极端已经出现过了：</p>
+  <ul>
+    <li>只看一步：\(\hat A_t=\delta_t\)。方差很小，但完全依赖 Critic 准不准，偏差大。</li>
+    <li>看到结束：\(\hat A_t=G_t-V(s_t)\)。没有偏差，但整局的随机性都算进来，方差大。</li>
+  </ul>
+  <p>Schulman 等人在 2015 年提出的<strong>广义优势估计</strong>（Generalized Advantage Estimation，GAE）不在两者之间二选一，而是把中间所有方案加权平均。加权的方式由一个参数 \(\lambda\in[0,1]\) 决定，<strong>它就是这个旋钮</strong>。下面分三步推出来。</p>
+
+  <h4>第一步：从看 1 步到看 k 步</h4>
+  <p>只看一步的估计是 \(\hat A^{(1)}_t=\delta_t=r_t+\gamma V(s_{t+1})-V(s_t)\)。如果多看一步真实奖励，再用 Critic 估计之后的部分，就得到两步估计。把两个 \(\delta\) 加起来，中间的 \(V(s_{t+1})\) 正好消掉：</p>
+  \[\begin{aligned}\hat A^{(2)}_t=\delta_t+\gamma\,\delta_{t+1}&=\big(r_t+\gamma V(s_{t+1})-V(s_t)\big)+\gamma\big(r_{t+1}+\gamma V(s_{t+2})-V(s_{t+1})\big)\\&=r_t+\gamma r_{t+1}+\gamma^{2}V(s_{t+2})-V(s_t)\end{aligned}\]
+  <p>一般地，看 \(k\) 步真实奖励的估计是：</p>
+  \[\hat A^{(k)}_t=\sum_{l=0}^{k-1}\gamma^{l}\,\delta_{t+l}=\underbrace{r_t+\gamma r_{t+1}+\dots+\gamma^{k-1}r_{t+k-1}}_{k\ \text{步真实奖励}}+\underbrace{\gamma^{k}V(s_{t+k})}_{\text{Critic 估计剩下的}}-V(s_t)\]
+  <p>\(k\) 一直加到一局结束时，最后那个 \(V\) 项消失，就回到蒙特卡洛：\(\hat A^{(\infty)}_t=G_t-V(s_t)\)。所以 \(k\) 越小越信 Critic（方差小、偏差大），\(k\) 越大越信实际奖励（偏差小、方差大）。这和 3.4 节 Critic 的 \(n\) 步目标是同一条线。</p>
+
+  <h4>第二步：不挑某一个 k，按几何权重全部平均</h4>
+  <p>选 \(k=3\) 还是 \(k=10\) 都显得随意。GAE 的做法是把所有 \(\hat A^{(k)}_t\) 加权平均，第 \(k\) 个的权重是 \((1-\lambda)\lambda^{k-1}\)。这些权重加起来正好是 1，平均下来相当于看 \(1/(1-\lambda)\) 步。整理之后，结果是一个很简洁的式子：</p>
+  \[\hat A_t^{\mathrm{GAE}(\gamma,\lambda)}=(1-\lambda)\Big(\hat A^{(1)}_t+\lambda\hat A^{(2)}_t+\lambda^{2}\hat A^{(3)}_t+\dots\Big)=\sum_{l=0}^{\infty}(\gamma\lambda)^{l}\,\delta_{t+l}\]
+  <details class="derive"><summary>展开推导：几何平均为什么化成 δ 的加权和</summary>
+    <div class="db">
+      <p>把每个 \(\hat A^{(k)}_t=\sum_{l=0}^{k-1}\gamma^l\delta_{t+l}\) 代进去，按 \(\delta\) 重新归类。\(\delta_t\) 出现在所有 \(k\ge1\) 的估计里，\(\gamma\delta_{t+1}\) 出现在 \(k\ge2\) 的估计里，依此类推：</p>
+      \[(1-\lambda)\Big[\delta_t\big(1+\lambda+\lambda^2+\dots\big)+\gamma\delta_{t+1}\big(\lambda+\lambda^2+\dots\big)+\gamma^2\delta_{t+2}\big(\lambda^2+\lambda^3+\dots\big)+\dots\Big]\]
+      <p>每个括号都是等比级数：\(\lambda^l+\lambda^{l+1}+\dots=\lambda^l/(1-\lambda)\)。乘上前面的 \((1-\lambda)\) 后，\(\gamma^l\delta_{t+l}\) 的系数就是 \(\lambda^l\)，合起来正是 \(\sum_l(\gamma\lambda)^l\delta_{t+l}\)。</p>
+    </div>
+  </details>
+
+  <h4>第三步：读懂这个式子</h4>
+  <p>把 \(\delta_{t+l}\) 看成第 \(t+l\) 步的“意外”：那一步的实际结果比 Critic 原先的估计好了多少（或差了多少）。GAE 说的是：<strong>动作 \(a_t\) 的优势，等于它之后每一步的意外之和，离得越远的意外打的折扣越多，每远一步乘一次 \(\gamma\lambda\)</strong>。</p>
+  <ul>
+    <li>\(\lambda=0\)：只算紧跟着的那一次意外 \(\delta_t\)，后面发生什么都不记到 \(a_t\) 头上。</li>
+    <li>\(\lambda=1\)：之后所有的意外都算上（只按 \(\gamma\) 折扣），把 \(\delta\) 全部加起来就等于 \(G_t-V(s_t)\)。</li>
+    <li>中间取值：近处的意外几乎全算，远处的逐渐淡出。例如 \(\gamma=0.99,\ \lambda=0.95\) 时 \(\gamma\lambda\approx0.94\)，一次意外的权重大约每隔 11 步减半。</li>
+  </ul>
+
+  <h4>例子一：Critic 还没学好时，λ 太小会怎样</h4>
+  <p>一局有 4 步，只有最后一步拿到奖励 1，\(\gamma=1\)。Critic 刚初始化，对所有状态都估 0，于是 \(\delta=(0,\,0,\,0,\,1)\)：前三步“没有意外”，所有意外都集中在最后。四个动作的优势是：</p>
   <div class="tbl"><table>
-    <thead><tr><th>λ</th><th>等价于</th><th>偏差</th><th>方差</th></tr></thead>
+    <thead><tr><th>λ</th><th>\(\hat A_0\)</th><th>\(\hat A_1\)</th><th>\(\hat A_2\)</th><th>\(\hat A_3\)</th></tr></thead>
     <tbody>
-      <tr><td>0</td><td>\(\delta_t\)，只看一步</td><td>大（全靠 Critic）</td><td>小</td></tr>
-      <tr><td>0.9 – 0.97</td><td>近处的 TD 误差权重大，远处的逐渐衰减</td><td>中</td><td>中</td></tr>
-      <tr><td>1</td><td>\(G_t-V(s_t)\)，蒙特卡洛</td><td>无</td><td>大</td></tr>
+      <tr><td>0</td><td>0</td><td>0</td><td>0</td><td>1</td></tr>
+      <tr><td>0.5</td><td>0.125</td><td>0.25</td><td>0.5</td><td>1</td></tr>
+      <tr><td>0.9</td><td>0.729</td><td>0.81</td><td>0.9</td><td>1</td></tr>
+      <tr><td>1</td><td>1</td><td>1</td><td>1</td><td>1</td></tr>
     </tbody>
   </table></div>
-    <p>同一条登顶轨迹里，有前进，也有一次后退。拖动 λ，看看最后的奖励怎样沿着 TD 误差传回前面的动作。</p>
+  <p>\(\lambda=0\) 时，只有最后一个动作得到功劳，前三个动作的优势都是 0：Critic 什么都不知道，就等于说“前面这几步无所谓”。这就是偏差。前面的动作要等 Critic 自己一步步学会“这些状态值钱”之后，才能分到功劳，学得很慢。\(\lambda\) 越大，结尾的奖励就越直接地传回前面的动作。</p>
+
+  <h4>例子二：Critic 已经准了，λ 太大又会怎样</h4>
+  <p>还是 4 步，但最后一步的奖励纯靠运气：抛硬币，一半概率得 1、一半得 0，和之前做了什么无关。Critic 已经学准了，每个状态都估 0.5。这一局运气好，拿到了 1，于是 \(\delta=(0,\,0,\,0,\,+0.5)\)；运气差就是 \(-0.5\)。第一个动作的优势：</p>
+  <div class="tbl"><table>
+    <thead><tr><th>λ</th><th>运气好时 \(\hat A_0\)</th><th>运气差时 \(\hat A_0\)</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td>0</td><td>0</td></tr>
+      <tr><td>0.5</td><td>+0.0625</td><td>−0.0625</td></tr>
+      <tr><td>1</td><td>+0.5</td><td>−0.5</td></tr>
+    </tbody>
+  </table></div>
+  <p>第一个动作本来和结果毫无关系，正确的优势是 0。\(\lambda=1\) 却让它随着硬币正反被奖励或惩罚 0.5，这就是方差：要靠大量样本才能把这些正负号平均掉。\(\lambda=0\) 时，Critic 已经把运气的平均值 0.5 算进了 \(V\)，前面的动作一点噪声也不沾。</p>
+  <p>两个例子合起来，就是 \(\lambda\) 的全部含义：<strong>\(\lambda\) 越小，越相信 Critic；\(\lambda\) 越大，越相信实际拿到的奖励</strong>。Critic 不准时，小 \(\lambda\) 有偏差；结果里运气成分大时，大 \(\lambda\) 方差大。实践中常取 0.9 到 0.97，两头都照顾一些。</p>
+
+  <div class="call key"><span class="ct">γ 和 λ 都出现在 γλ 里，但分工不同</span>
+    <p><strong>\(\gamma\) 是目标的一部分</strong>：它规定了“未来的奖励打几折”，定义了我们到底要最大化什么，也决定了 \(V\) 和 \(A\) 本身是什么。改 \(\gamma\) 就是换了一个问题。</p>
+    <p><strong>\(\lambda\) 只是估计方法</strong>：\(\gamma\) 定下之后，\(\lambda\) 只决定用多少真实奖励、多少 Critic 估值去凑这个优势。如果 Critic 完全准确，任何 \(\lambda\) 算出的 \(\hat A_t\) 期望都一样，都没有偏差，区别只在方差。\(\lambda<1\) 带来的偏差，完全来自 Critic 不准。</p>
+  </div>
+
+  <div class="tbl"><table>
+    <thead><tr><th>λ</th><th>等价于</th><th>平均看几步真实奖励</th><th>偏差</th><th>方差</th></tr></thead>
+    <tbody>
+      <tr><td>0</td><td>\(\delta_t\)</td><td>1 步</td><td>大（全靠 Critic）</td><td>小</td></tr>
+      <tr><td>0.9</td><td>近处的意外权重大，远处逐渐衰减</td><td>约 10 步</td><td>中</td><td>中</td></tr>
+      <tr><td>0.95</td><td>同上，衰减更慢</td><td>约 20 步</td><td>中偏小</td><td>中偏大</td></tr>
+      <tr><td>1</td><td>\(G_t-V(s_t)\)，蒙特卡洛</td><td>到结束</td><td>无</td><td>大</td></tr>
+    </tbody>
+  </table></div>
+    <p>同一条登顶轨迹里，有前进，也有一次后退。拖动 λ，看看最后的奖励怎样沿着 TD 误差传回前面的动作：λ 小时功劳只落在最后几步，λ 大时一路传回起点。</p>
   <div class="lab" data-lab="classic" id="lab-gae"></div>
 
-  <p>实际计算时，从一局的末尾往前递推：\(\hat A_t=\delta_t+\gamma\lambda\,\hat A_{t+1}\)。</p>
+  <p>实际计算时不用真的做无穷求和。因为 \(\hat A_t=\delta_t+\gamma\lambda\big(\delta_{t+1}+\gamma\lambda\,\delta_{t+2}+\dots\big)\)，括号里正好是 \(\hat A_{t+1}\)，所以从一局的末尾往前递推一遍就够了：\(\hat A_t=\delta_t+\gamma\lambda\,\hat A_{t+1}\)。</p>
 <pre><code>adv = 0
 <span class="k">for</span> t <span class="k">in</span> reversed(range(T)):
     delta = r[t] + gamma * V[t+1] * (1 - done[t]) - V[t]
     adv   = delta + gamma * lam * (1 - done[t]) * adv
     A[t]  = adv
 returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code></pre>
-  <p>第 10 章会看到，大模型 RLHF 里的 PPO 就是把这段代码原样用在 token 序列上。</p>
+  <p>代码里的 <code>(1 - done[t])</code> 保证一局结束时不再往后看，递推从下一局重新开始。最后一行把优势加回 \(V\)：\(\hat A_t+V(s_t)\) 就是 3.4 节说的 \(\lambda\)-回报，拿来当 Critic 的回归目标。所以同一个 \(\lambda\) 同时决定了 Actor 用的优势和 Critic 学的目标；第 14 章提到的 VAPO 用“解耦 GAE”把两者分开，给 Critic 和策略各用一个 \(\lambda\)。</p>
+  <p>常见取值：经典控制任务里 \(\gamma=0.99\)、\(\lambda=0.95\)；大模型 RLHF 里奖励在回答末尾，常取 \(\gamma=1\)、\(\lambda=0.95\) 左右。第 10 章会看到，大模型 RLHF 里的 PPO 就是把这段代码原样用在 token 序列上。</p>
 
   <p class="next"><span class="lab">留下的问题</span><span>“往哪走”现在有了靠谱得多的估计。但即使方向对了，步子迈多大仍然没有答案。在强化学习里，这个问题比在监督学习里危险得多。<a href="#ch4">→ 第 4 章</a></span></p>
 </section>
