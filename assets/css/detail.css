@@ -37,6 +37,9 @@
 .rules li::before { content: "R" counter(r); font-family: var(--cond); font-weight: 700; font-size: 2rem; line-height: 1; color: var(--clay); }
 .rules li b { font-size: .98rem; }
 .rules li span { font-size: .86rem; color: var(--ink-2); line-height: 1.65; }
+/* 结论卡：同一组件，编号改成 01、02…，卡片更宽 */
+.rules.takeaways { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.rules.takeaways li::before { content: "0" counter(r); }
 
 /* Pi Lab 开关 */
 .lab { background: var(--night); color: var(--cream-on-night); border-radius: 16px; padding: 22px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 22px; }

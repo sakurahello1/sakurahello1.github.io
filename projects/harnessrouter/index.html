@@ -63,7 +63,7 @@
     <div class="detail-cover cover clay"><canvas data-cover="hr" aria-hidden="true"></canvas><span class="tag mono">Four harnesses · one hub · first-column completion</span></div>
     <div class="note plain">
       <span class="mono">一句话版本</span>
-      <p>同一个模型，放进不同的 agent 运行框架（harness），做完同一道题所需的时间和调用量可能差很多。我给上游项目加了一套公开任务评测：除了看答案对不对，也记录耗时、用量和失败原因，把“偷看答案”“评分器出错”这类情况单独列出来。后来换到编码任务，发现评测环境本身就会漏答案，于是断网、清掉 git 历史再重跑：同一个模型、同样的思考强度，五个 harness 做对的题数只差几道，花费却差到 1.9 倍。下一步是固定模型和任务，每次只改变一个运行机制，分清省下的资源到底来自哪里。</p>
+      <p>同一个模型，放进不同的 agent 运行框架（harness），做完同一道题所需的时间和调用量可能差很多。我给上游项目加了一套公开任务评测：除了看答案对不对，也记录耗时、用量和失败原因，把“偷看答案”“评分器出错”这类情况单独列出来。后来换到编码任务，发现评测环境本身就会漏答案，于是断网、清掉 git 历史再重跑：同一个模型、同样的思考强度，五个 harness 做对的题数只差几道，花费却差到 1.9 倍。所以报告成绩时，应该把模型、harness 和 benchmark 当成一个三元组一起写。下一步是固定模型和任务，每次只改变一个运行机制，分清省下的资源到底来自哪里。</p>
     </div>
   </div>
 </section>
@@ -252,9 +252,27 @@
   </div>
 </section>
 
+<section class="dsec" data-sec="Takeaways">
+  <div class="wrap">
+    <div class="prose">
+      <h2><span class="n">10 · Takeaways</span>三轮下来的结论</h2>
+      <p>三轮一共 410 次运行，任务、评分方式各不相同，下面几条是它们共同指向的东西。需要先说明：它们都只基于 deepseek-v4.1-flash 这一个模型、每题一次运行，是观察，不是定论。</p>
+    </div>
+    <ol class="rules takeaways">
+      <li><b>harness 几乎不改变模型能做什么</b><span>SWE-bench Pro 的 22 题里，有 15 题五家的对错完全相同，通过数只在 12 到 15 之间；首轮表格任务的完成率也都落在 77% 到 85%。一道题做不做得出来，主要看模型。</span></li>
+      <li><b>好的 harness 防的是卡死和打转</b><span>拉开差距的往往不是聪明程度，而是护栏。Pi Lab 输掉的两题，都是一条 grep 在没有超时的 bash 里卡了一小时；dsh 在 GDPval 上没交出的 3 个文件，是长回复被截断、或者流断开后没有重试。命令超时、失败重试、输出截断这些细节，决定了模型卡住以后还能不能回来。</span></li>
+      <li><b>综合成本差距很大</b><span>同一个模型、同样的思考强度，SWE-bench Pro 上每次运行从 0.24 元到 0.45 元，差 1.9 倍；首轮表格任务里，pi 和 cline 的 token 用量差 2.2 到 2.6 倍，总耗时差 1.9 倍。花多少钱，很大程度上由 harness 决定。</span></li>
+      <li><b>同一组合换一道题也差很多</b><span>同一个 harness，便宜的题一次 0.14 元，难题要 0.78 元，差 5 倍多；做不出来的题反而最费钱，模型会在里面反复尝试。GDPval 上同一组合的交付物有时很出色，有时连文件类型都交错。只看一两道题、一次运行，说明不了一个 harness。</span></li>
+    </ol>
+    <div class="prose">
+      <p><b>所以，报告成绩时应该写全三元组：模型 × harness × benchmark。</b>“某个模型在某个 benchmark 上得了多少分”这句话本身是不完整的：同一个模型换一个 harness，成本可能差一倍，遇到会卡死的情况，分数也跟着变。DeepSeek 在 V4.1 Flash 的模型卡里分别报了它在 Claude Code、Codex、Pi 等 harness 下的 DeepSWE 分数，就是这个方向。除了三元组，还应该一起写清运行了几次、花了多少钱、评测环境有没有隔离（断网、清掉 git 历史），不然分数可能是抄来的。</p>
+    </div>
+  </div>
+</section>
+
 <section class="dsec" data-sec="Status">
   <div class="wrap prose">
-    <h2><span class="n">10 · Status</span>反馈与现状</h2>
+    <h2><span class="n">11 · Status</span>反馈与现状</h2>
     <blockquote class="bigquote">
       <p>Reviewed from first principles today; the design stands and the table re-renders from your records unchanged.</p>
       <footer class="mono">richard-epsilla · 维护者 · <a href="https://github.com/HarnessRouter/harnessrouter/pull/231#issuecomment-5769343082" target="_blank" rel="noopener">PR #231 评论</a></footer>
@@ -272,7 +290,7 @@
       <li class="done"><time>2026-09-30</time><div><b>SWE-bench Pro · 第三轮</b><span>断网、清理 git 历史后重跑，22 题 × 5 个 harness 全部完成。</span></div></li>
     </ol>
 
-    <h2><span class="n">11 · Also merged</span>评测带出来的修复</h2>
+    <h2><span class="n">12 · Also merged</span>评测带出来的修复</h2>
     <ul>
       <li><a href="https://github.com/HarnessRouter/harnessrouter/pull/209" target="_blank" rel="noopener">#209</a>：cline 的 inputTokens 是整段 prompt，像 codex 一样扣除缓存部分，避免重复计量。</li>
       <li><a href="https://github.com/HarnessRouter/harnessrouter/pull/216" target="_blank" rel="noopener">#216</a>：opencode 的输出以可见文本为准，并补上被漏计的 reasoning tokens。</li>
@@ -280,7 +298,7 @@
       <li><a href="https://github.com/HarnessRouter/harnessrouter/pull/285" target="_blank" rel="noopener">#285</a>：pi 会重试的 agent_end 不算最终失败。</li>
     </ul>
 
-    <h2><span class="n">12 · Links</span>链接</h2>
+    <h2><span class="n">13 · Links</span>链接</h2>
     <ul>
       <li><a href="https://github.com/HarnessRouter/harnessrouter/issues/205" target="_blank" rel="noopener">issue #205 · 提案</a> · <a href="https://github.com/HarnessRouter/harnessrouter/pull/231" target="_blank" rel="noopener">PR #231 · 实现</a> · <a href="https://github.com/HarnessRouter/harnessrouter/issues/280" target="_blank" rel="noopener">issue #280 · Pi Lab</a> · <a href="https://github.com/HarnessRouter/harnessrouter/pull/318" target="_blank" rel="noopener">PR #318 · Pi Lab 实现</a></li>
       <li><a href="https://github.com/HarnessRouter/harnessrouter/tree/main/scripts/benchmark" target="_blank" rel="noopener">scripts/benchmark</a> · <a href="https://github.com/HarnessRouter/harnessrouter/blob/main/docs/benchmark.md" target="_blank" rel="noopener">docs/benchmark.md · 首列公开报告</a></li>
