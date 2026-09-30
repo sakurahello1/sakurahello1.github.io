@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LoopX · 开源贡献 · 吕灏</title>
+<meta name="description" content="LoopX 是给长程 agent 用的开源、本地优先控制平面。我的贡献：让 Lark 测试不再随日历失效（已合并），以及提交前的词表提示、隐私文本判定、SHA-256 摘要构造三处“单一 owner”改造（评审中）。">
+<meta property="og:title" content="LoopX · 开源贡献">
+<meta property="og:image" content="https://sakurahello1.github.io/assets/img/og.jpg">
+<meta name="theme-color" content="#EDE8DE">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="../../assets/css/core.css">
+<link rel="stylesheet" href="../../assets/css/site.css">
+<link rel="stylesheet" href="../../assets/css/detail.css">
+<script>
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) document.documentElement.classList.add('js-motion');
+</script>
+<script src="../../assets/js/site.js" defer></script>
+</head>
+<body>
+
+<header class="hud-top">
+  <a class="badge" href="../../" aria-label="回到主页"><span class="dot" aria-hidden="true"></span><span class="idx" id="hud-idx">01</span>吕灏 Hao Lyu</a>
+  <button class="navtoggle" id="navtoggle" type="button" aria-expanded="false" aria-controls="navlinks">Index</button>
+  <ul class="navlinks" id="navlinks">
+    <li><a href="../../">Home</a></li>
+    <li><a href="../../#work">Work</a></li>
+    <li><a href="../../#paper">Paper</a></li>
+    <li><a href="../../#oss">Open Source</a></li>
+    <li><a href="../../blog/">Writing</a></li>
+  </ul>
+</header>
+
+<div class="hud-frame" id="hud" aria-hidden="true">
+  <span class="corner bl"></span><span class="corner br"></span>
+  <span class="tc mono"><b id="hud-tc">00:00</b>TC</span>
+  <span class="ruler" id="hud-ruler"><span class="rest"></span><span class="bar"></span></span>
+  <span class="sec mono"><b id="hud-count">01/05</b><span id="hud-name">LoopX</span></span>
+</div>
+
+<main id="main">
+
+<section class="detail-top" data-sec="LoopX">
+  <div class="wrap">
+    <p class="crumb mono"><a href="../../">Home</a> / <a href="../../#work">Work</a> / P-04</p>
+    <p class="spec-label mono" data-spec="lx-type">P-04 <span class="sep">/</span> Open-source contribution <span class="sep">/</span> <span data-px>170</span> px</p>
+    <div class="specimen">
+      <h1 class="bigtype" id="lx-type" data-type data-guides>LoopX</h1>
+      <div class="measure mono" data-measure="lx-type"><span>— px</span></div>
+    </div>
+    <p class="detail-lede">LoopX 让 agent 跨会话持续推进同一个目标。我做的是它的维护面：让测试不再随日历失效，让同一个判断只在一个地方做。</p>
+    <div class="factbar mono">
+      <div><span>Role</span><b>外部贡献者</b></div>
+      <div><span>Merged</span><b>#5316</b></div>
+      <div><span>In review</span><b>3 PRs</b></div>
+      <div><span>Issue</span><b>#5336</b></div>
+      <div><span>Repo</span><b>★ 6.1k</b></div>
+    </div>
+    <div class="detail-cover cover cream"><canvas data-cover="loop" aria-hidden="true"></canvas><span class="tag mono">Sessions end · state stays</span></div>
+    <div class="note plain">
+      <span class="mono">一句话版本</span>
+      <p>LoopX 是长程 agent 的“控制平面”：会话会结束，目标、决策和证据要留下来，下一次接着做。我给它提了 4 个 PR：修好一处会随日期自己变红的测试，已经合并；另外三处是把分散在各处的同一个判断收拢到唯一的 owner，评审都要求修改，目前在按评审意见改。</p>
+    </div>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Context">
+  <div class="wrap prose">
+    <h2><span class="n">01 · Context</span>LoopX 是什么</h2>
+    <p>LoopX 是一个开源（Apache-2.0）、本地优先的控制平面，面向长程 agent 和个人 agent 团队。模型和工具由 Codex、Claude Code、DeepSeek Harness 这些运行时提供；LoopX 负责记住目标、接下来做什么、哪些结果已被接受、什么时候该来问人，让工作在会话、重启和 harness 之间延续下去。项目自己报告，在 LHTB 的 46 道长程任务上（GPT-5.6 Sol），LoopX 1.0.3 的平均 reward 比原版 Codex 高 17.3%。仓库约 6.1k star。</p>
+    <p>它和我在 HarnessRouter 里做的事是同一个问题的两面：HarnessRouter 那边比较的是同一个模型放进不同 harness 差多少，LoopX 是 harness 之上的一层，管的是一件事怎么跨很多次会话做完。</p>
+    <p>这个仓库对贡献的要求很严：每个 PR 要写清目标和可观察的前后变化、公开与私有内容的边界，以及逐项验证表；评审者针对精确的 head 提交做中英双语评审，会自己构造反例，在真实入口上复现。下面的评审结论都来自这个流程。</p>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Contributions">
+  <div class="wrap prose">
+    <h2><span class="n">02 · Contributions</span>四个 PR</h2>
+    <table>
+      <thead><tr><th>PR</th><th>做什么</th><th>规模</th><th>状态</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/loopx-project/loopx/pull/5316" target="_blank" rel="noopener">#5316</a></td><td>Lark 测试夹具改用相对时间</td><td>+20 / −24</td><td>已合并</td></tr>
+        <tr><td><a href="https://github.com/loopx-project/loopx/pull/5317" target="_blank" rel="noopener">#5317</a></td><td>提交前就对新词表做处置提示</td><td>+843</td><td>要求修改</td></tr>
+        <tr><td><a href="https://github.com/loopx-project/loopx/pull/5335" target="_blank" rel="noopener">#5335</a></td><td>凭据“词”与凭据“值”分开判定</td><td>+628 / −80</td><td>要求修改</td></tr>
+        <tr><td><a href="https://github.com/loopx-project/loopx/pull/5337" target="_blank" rel="noopener">#5337</a></td><td>SHA-256 摘要信封只由一个 owner 构造</td><td>+455 / −28</td><td>要求修改</td></tr>
+      </tbody>
+    </table>
+
+    <h3>#5316 · 会随日历失效的测试（已合并）</h3>
+    <p>issue #4797 报告：Lark manager 上下文的测试夹具里写死了 9 月 13 日的时间戳，而产品规则只保留 7 天内的上下文，于是到 9 月 20 日，main 在没有任何代码改动的情况下自己变红，所有打开的 PR 都跟着失败。当时主干靠在测试里冻结生产时钟暂时绕过去。</p>
+    <p>我的改法：测试模块加载时取一次整分钟的 UTC 时间作锚点，背景消息定在 61 分钟前、授权消息定在 60 分钟前，同一条消息多次使用时拿到逐字节相同的时间戳；再删掉对生产时钟的替换，让测试真正走生产的保留期判断。只改一个测试文件，7 天的产品规则不动。维护者批准时的评价是“完整、有界的测试维护修复”，并指出它撤掉了“会遮蔽真实 retention 路径的时钟替身”。</p>
+
+    <h3>#5317 · 新词表写下的那一刻就问一句（要求修改）</h3>
+    <p>LoopX 有一套词表注册：哪些字符串集合是共享的语义、归谁管。但分类只发生在提交之后的全仓扫描里，一个 agent 或开发者新写出一个 Enum、Literal 时，没有人问“该复用已有的，还是新建”。issue #4743 里维护者给的方向是先做“只提示、不拦截”的一小步。我给现有的 inventory 脚本加了 <code>--changed-from REVISION</code>：只看当前 diff 里新引入的 Python Enum、Literal、命名集合和 TypeScript <code>as const</code> 数组，列出和已注册词表的重合作为线索，没有重合也照样提问；结果只作提示，退出码为 0，不加账本、不加 CI 门禁。</p>
+    <p><b>评审发现：</b>暂存区里的内容会被工作区版本盖掉。把一个新值 <code>git add</code> 进暂存区，再把工作区文件恢复原样，工具就报告“没有改动”；暂存区和工作区各有一个不同的新值时，只报出工作区那个。原因是收集阶段把两份 Git 快照合成了一份。修复方向是分别读取暂存区和工作区，并把这两个反例加进测试。</p>
+
+    <h3>#5335 · “像不像隐私”只该有一个答案（要求修改）</h3>
+    <p>issue #5136 指出，仓库里有两个模块都自称“判断一段文字是否私密”的权威，而且结论互相矛盾。其中四个文本 owner 用的规则会拒绝 <code>the Bearer token expired</code> 这样的普通句子，却会放行没有标签的真实 token、私钥和本机路径。我按维护者在 issue 里定下的方向（写进内部状态的文字可以比公开 PR 宽松，但带真实值的凭据必须拦住），把“凭据词”和“凭据值”拆成两类，把四个 owner（其中一个在 TypeScript 里）迁到共享的分类器，用同一份语料在 Python 和 TypeScript 两个运行时里验证结论一致。</p>
+    <p><b>评审发现两个 P1：</b>一是“带值”只靠三条正则识别，password 后面用 is 接一个短值、Bearer 后面加个逗号再接值，这些写法会被放行，而 Bearer 后面跟一个长的普通英文单词反而仍被当成 token；二是改动挪动了代码行号，没有重新生成 registry I/O 清单，让必需的 CI 失败。评审还指出，我的大规模枚举测试是拿“没命中实现里的正则”当“安全”，这是从实现推出来的预期，不能独立证明安全边界。</p>
+
+    <h3>#5337 · 摘要怎么写，也只该有一个 owner（要求修改）</h3>
+    <p>这一个是我先开 issue（#5336）再动手的。仓库里有一个 owner 专门回答“存储的 SHA-256 长什么样”，但它只负责识别，不负责构造：我在主干上数到 81 个 Python 文件里有 94 处、17 个 TypeScript 文件里有 26 处在手写 <code>"sha256:"</code> 拼接，其中约 30 个是内容几乎一样的私有 helper。结果是读的一方有校验，写的一方没有。PR 加了唯一的构造函数，构造完用识别规则自检；先迁移 periodic_report 这一个包里的 10 处，并加了扫描测试，防止迁过的文件再手写。</p>
+    <p><b>评审发现：</b>新写的扫描器把所有作用域里的同名变量压进一张表，不遵守 Python 的作用域，既会误报也会漏报，而仓库里已有一套会区分作用域的实现，我没有复用；同一个包里还留着 3 处手写没有迁移，一个“已迁移”的包里新旧两种写法并存，新增的 381 行测试和收益不相称。建议先把整个包迁完、复用现有实现、把扫描收窄。</p>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Review">
+  <div class="wrap prose">
+    <h2><span class="n">03 · Review</span>评审教会我的</h2>
+    <p>三个被要求修改的 PR，评审意见指向同一件事：我的测试多半证明的是“代码做了它写的事”，而评审者会另外构造反例，在真实的 CLI 和真实的 owner 入口上，拿合并基点和 PR 的 head 做对照。部分暂存、带逗号的凭据、跨作用域的同名变量，都是这样找出来的。</p>
+    <p>这和我在 HarnessRouter 评测里碰到的是同一个教训：一套检查只和自己对得上是不够的，得有一个不依赖被测实现的标准。三个 PR 都还开着，我在按评审意见修改；合并状态会在这里和首页同步更新。</p>
+
+    <ol class="timeline">
+      <li class="done"><time>2026-09-29</time><div><b>#5316 · #5317 · 提交</b><span>测试夹具修复与提交前的词表提示。</span></div></li>
+      <li class="done"><time>2026-09-30</time><div><b>#5316 · 合并</b><span>维护者批准并合并。</span></div></li>
+      <li class="done"><time>2026-09-30</time><div><b>issue #5336 · #5335 · #5337 · 提交</b><span>先开 issue 量出 94 处手写摘要，再提两个单一 owner 的改造。</span></div></li>
+      <li><time>2026-09-30</time><div><b>#5317 · #5335 · #5337 · 要求修改</b><span>评审分别给出可复现的反例和最小修复方向，修改中。</span></div></li>
+    </ol>
+
+    <h2><span class="n">04 · Links</span>链接</h2>
+    <ul>
+      <li><a href="https://github.com/loopx-project/loopx/pull/5316" target="_blank" rel="noopener">PR #5316</a> · <a href="https://github.com/loopx-project/loopx/pull/5317" target="_blank" rel="noopener">PR #5317</a> · <a href="https://github.com/loopx-project/loopx/pull/5335" target="_blank" rel="noopener">PR #5335</a> · <a href="https://github.com/loopx-project/loopx/pull/5337" target="_blank" rel="noopener">PR #5337</a> · <a href="https://github.com/loopx-project/loopx/issues/5336" target="_blank" rel="noopener">issue #5336</a></li>
+      <li><a href="https://github.com/loopx-project/loopx" target="_blank" rel="noopener">上游仓库</a> · <a href="https://loopx-project.github.io/loopx/" target="_blank" rel="noopener">loopx-project.github.io/loopx</a></li>
+    </ul>
+    <p class="mono" style="color:var(--mute)">状态统计日期 2026-09-30。</p>
+  </div>
+
+  <div class="wrap">
+    <nav class="next" aria-label="其他项目">
+      <a href="../inkreel/"><span class="mono">← P-03</span><b>Inkreel</b></a>
+      <a href="../ppt-studio/" style="text-align:right"><span class="mono">P-01 →</span><b>PPT Studio</b></a>
+    </nav>
+  </div>
+</section>
+
+</main>
+
+<footer class="foot night" data-dark>
+  <div class="wrap">
+    <p class="bigtype" data-type>Hao Lyu</p>
+    <div class="foot-row mono">
+      <span>吕灏 · Tongji University · 2026</span>
+      <span><a href="../../">Home</a> · <a href="https://github.com/sakurahello1" rel="me noopener" target="_blank">GitHub</a></span>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -334,6 +334,48 @@
       });
       ctx.fillStyle = INK; ctx.fillRect(bx0 - gap, base, (bw + gap) * 4 + gap, 1.5);
     },
+    loop: function (ctx, W, H, t) {        // 一圈圈推进的目标：会话会结束，状态留下来
+      ctx.clearRect(0, 0, W, H);
+      var cx = W * 0.34, cy = H * 0.53, R = Math.min(W * 0.22, H * 0.33), lap = 6;
+      var u = (t % lap) / lap, ang = -Math.PI / 2 + u * Math.PI * 2, done = Math.floor(t / lap) % 5;
+      var fs = Math.max(8, Math.min(H * 0.036, W * 0.019));
+      ctx.font = '500 ' + fs + 'px "JetBrains Mono", monospace'; ctx.textBaseline = 'middle';
+      ctx.lineCap = 'round'; ctx.lineWidth = Math.max(8, H * 0.034);
+      ctx.strokeStyle = 'rgba(20,20,19,.1)'; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
+      ctx.strokeStyle = CLAY; ctx.beginPath(); ctx.arc(cx, cy, R, -Math.PI / 2, ang); ctx.stroke();
+      ['GOAL', 'DECIDE', 'EVIDENCE', 'HANDOFF'].forEach(function (lb, i) {
+        var a = -Math.PI / 2 + i * Math.PI / 2, x = cx + R * Math.cos(a), y = cy + R * Math.sin(a), d = H * 0.036;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(Math.PI / 4);
+        ctx.fillStyle = u * 4 >= i ? INK : PAPER; ctx.strokeStyle = INK; ctx.lineWidth = 1.5;
+        ctx.fillRect(-d / 2, -d / 2, d, d); ctx.strokeRect(-d / 2, -d / 2, d, d); ctx.restore();
+        // 上下两个标签放在环外，左右两个放在菱形正下方，窄屏上也不出画布
+        var side = i % 2 === 1, lx = x, ly = side ? y + H * 0.075 : y + Math.sin(a) * H * 0.075;
+        ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.fillText(lb, lx, ly);
+      });
+      ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(cx + R * Math.cos(ang), cy + R * Math.sin(ang), H * 0.028, 0, 7); ctx.fill();
+      // 中间是持久的状态：每走完一圈多一条记录
+      var kw = R * 0.78, kh = R * 0.78, kx = cx - kw / 2, ky = cy - kh / 2, rows = 5, rh = kh / (rows + 1);
+      ctx.fillStyle = INK; ctx.beginPath(); rr(ctx, kx, ky, kw, kh, kw * 0.1); ctx.fill();
+      for (var k = 0; k <= done; k++) {
+        var grow = k < done ? 1 : Math.min(1, u * 1.4);
+        ctx.fillStyle = k === done ? CLAY : 'rgba(237,232,222,.75)';
+        ctx.beginPath(); rr(ctx, kx + kw * 0.14, ky + kh - (k + 1) * rh - rh * 0.15, (kw * 0.72) * grow, rh * 0.5, rh * 0.25); ctx.fill();
+      }
+      // 右侧：一次次会话各自结束，状态线一直连着
+      var x0 = W * 0.66, x1 = W * 0.93, sy = H * 0.4, ly2 = H * 0.62, n = 5, sg = (x1 - x0) / n;
+      ctx.fillStyle = 'rgba(20,20,19,.55)'; ctx.textAlign = 'left';
+      ctx.fillText('SESSIONS', x0, sy - H * 0.1); ctx.fillText('STATE', x0, ly2 + H * 0.1);
+      for (var s = 0; s < n; s++) {
+        var on = s === done, past = s < done;
+        ctx.fillStyle = on ? CLAY : past ? INK : 'rgba(20,20,19,.15)';
+        ctx.beginPath(); rr(ctx, x0 + s * sg, sy - H * 0.03, sg * (on ? 0.72 * Math.min(1, u * 1.2) + 0.02 : 0.74), H * 0.06, H * 0.03); ctx.fill();
+      }
+      var reach = x0 + (done + u) * sg;
+      ctx.lineWidth = Math.max(3, H * 0.014); ctx.strokeStyle = INK;
+      ctx.beginPath(); ctx.moveTo(x0, ly2); ctx.lineTo(Math.min(x1, reach), ly2); ctx.stroke();
+      ctx.setLineDash([2, 6]); ctx.strokeStyle = 'rgba(20,20,19,.3)'; ctx.beginPath(); ctx.moveTo(Math.min(x1, reach), ly2); ctx.lineTo(x1, ly2); ctx.stroke(); ctx.setLineDash([]);
+      for (var q = 0; q <= done; q++) { ctx.beginPath(); ctx.moveTo(x0 + q * sg + sg * 0.37, sy + H * 0.04); ctx.lineTo(x0 + q * sg + sg * 0.37, ly2); ctx.strokeStyle = 'rgba(20,20,19,.25)'; ctx.lineWidth = 1; ctx.stroke(); }
+    },
     ink: function (ctx, W, H, t) {         // 胶片：逐帧的几何动画
       ctx.clearRect(0, 0, W, H);
       var fh = H * 0.46, fw = fh * 1.25, gap = fh * 0.12, y = H * 0.24, off = (t * 40) % (fw + gap);

@@ -49,6 +49,9 @@
 .work:hover { transform: translateY(-6px); box-shadow: 0 30px 60px -36px rgba(20, 20, 19, .45); color: inherit; }
 .cover { position: relative; aspect-ratio: 16 / 10; overflow: hidden; }
 .work.feature .cover { aspect-ratio: auto; min-height: 440px; }
+/* 通栏卡：比主力卡矮，封面在右 */
+.work.wide { grid-column: span 12; display: grid; grid-template-columns: 1fr 1.35fr; }
+.work.wide .cover { aspect-ratio: auto; min-height: 320px; order: 2; }
 .cover canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .cover .tag { position: absolute; left: 16px; top: 14px; z-index: 1; }
 .cover.clay { background: var(--clay); color: var(--ink); }
@@ -65,7 +68,7 @@
 .go { display: inline-flex; align-items: center; gap: .5rem; color: var(--ink); margin-top: .2rem; }
 .go::after { content: "→"; font-family: var(--sans); transition: transform .4s var(--ease); }
 .work:hover .go::after, .post:hover .go::after { transform: translateX(6px); }
-@media (max-width: 900px) { .work, .work.feature { grid-column: span 12; } .work.feature { grid-template-columns: 1fr; } .work.feature .cover { min-height: 0; aspect-ratio: 16 / 10; } }
+@media (max-width: 900px) { .work, .work.feature, .work.wide { grid-column: span 12; } .work.feature, .work.wide { grid-template-columns: 1fr; } .work.feature .cover, .work.wide .cover { min-height: 0; aspect-ratio: 16 / 10; order: 0; } }
 
 .paper { display: grid; grid-template-columns: 1fr 1.05fr; gap: clamp(32px, 5vw, 80px); align-items: start; }
 .paper .orb { position: sticky; top: 90px; }

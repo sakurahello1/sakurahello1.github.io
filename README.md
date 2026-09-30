@@ -7,7 +7,7 @@
 | 路径 | 用途 |
 | --- | --- |
 | `index.html` | 首页：About、Work、Paper、Patent、Honors、Open Source、Writing |
-| `projects/<slug>/index.html` | PPT Studio、HarnessRouter、Inkreel 三个项目详情页 |
+| `projects/<slug>/index.html` | PPT Studio、HarnessRouter、Inkreel、LoopX 四个项目详情页 |
 | `blog/index.html` | 博客目录 |
 | `blog/rl-post-training/`、`blog/agent-theory/` | 两篇长文。RL 长文直接在这里编辑（`css/`、`js/art.js` 是代码绘制的图版）；Agent 手册由源码 `G:\homepage-blog-src\agent-theory` 的 `python build.py --site <本目录>` 生成，不要手改输出 |
 | `blog/kl-divergence/` | 《KL 散度从哪里来》，RL 长文 4.3 节的 “KL 散度” 链到这里，暂未列入博客目录。`index.html` 由 `G:\homepage-blog-src\kl-divergence` 的 `node build.cjs --site <本目录>` 生成（预渲染 KaTeX，并复制 `css/katex.css` 与 `fonts/`），不要手改；`css/page.css`、`css/kl.css`、`js/` 直接在这里编辑 |
@@ -31,7 +31,7 @@ python -m http.server 8000
 
 1. 复制 `tools/templates/project-detail.html` 到 `projects/<slug>/index.html`，其中 `<slug>` 与首页卡片的链接一致。模板和目标页距离根目录都是两级，所以 `../../assets/...` 资源路径可以直接沿用。
 2. 修改 `<title>`、description、面包屑、英文大标题、中文介绍、事实栏和三个正文段落。`data-sec="Work"` 供 HUD 读取；大标题的 `data-type`、`data-guides` 和 `data-spec` 供 `site.js` 生成效果。
-3. 选择封面画布的 `data-cover` 值：`ppt`、`hr` 或 `ink`。图片另放在 `assets/img/`，在页面中以 `../../assets/img/文件名` 引用。
+3. 选择封面画布的 `data-cover` 值：`ppt`、`hr`、`ink` 或 `loop`。图片另放在 `assets/img/`，在页面中以 `../../assets/img/文件名` 引用。
 4. 检查 `index.html` 的 Work 卡片 `href`、标题、摘要和数据；若新加卡片，再调整相应内容。把新页面加入 `sitemap.xml`，运行链接检查和本地预览。
 
 ## 新增博客文章
