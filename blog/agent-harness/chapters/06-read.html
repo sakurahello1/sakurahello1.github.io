@@ -1,0 +1,227 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Python + OpenAI SDK：最小可运行ReAct</title>
+<link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"></head>
+<body><main class="course"><p><a href="../#lesson-6">返回完整课程与交互实验</a></p>
+<h1>Python + OpenAI SDK：最小可运行ReAct</h1><article class="chapter"><p>现在把前面的概念压缩进一个小例子。目标很克制：模型查询虚构供应商报价，再向用户解释。工具只能读取固定字典，既不能购买，也不能执行任意代码。这样我们可以把注意力放在协议闭环，而不把安全边界藏在一个复杂框架后面。</p>
+<p>以下示例沿用 DeepSeek 当前官方文档中的 OpenAI 兼容接口和模型名称。SDK 是官方 <code>openai</code> 包，API 服务由 <code>base_url</code> 决定；使用 OpenAI SDK 不意味着请求会发给 OpenAI。密钥从本地环境变量读取，不能写进仓库、前端静态资源或日志。示例未声称经过付费在线端到端测试。<a href="https://api-docs.deepseek.com/" rel="noopener noreferrer">来源：DeepSeek 首次调用</a>、<a href="https://github.com/openai/openai-python" rel="noopener noreferrer">官方 OpenAI Python SDK</a></p>
+<pre><code>&quot;&quot;&quot;Bounded Python reference harness. Mock by default; live needs explicit --live.
+
+No eval, shell, network tools, automatic retries or credential logging.
+&quot;&quot;&quot;
+from __future__ import annotations
+
+import argparse
+import asyncio
+import json
+import os
+from dataclasses import dataclass
+from urllib.parse import urlsplit
+
+VENDORS = {
+    &quot;clay&quot;: {&quot;price&quot;: 6800, &quot;tax&quot;: 0.1, &quot;delivery&quot;: &quot;2026-10-03&quot;, &quot;source&quot;: &quot;quote-clay-v2&quot;},
+    &quot;ink&quot;: {&quot;price&quot;: 6400, &quot;tax&quot;: 0.1, &quot;delivery&quot;: &quot;2026-10-12&quot;, &quot;source&quot;: &quot;quote-ink-v3&quot;},
+    &quot;paper&quot;: {&quot;price&quot;: 7100, &quot;tax&quot;: 0.1, &quot;delivery&quot;: &quot;2026-10-04&quot;, &quot;source&quot;: &quot;quote-paper-v1&quot;},
+}
+GOAL = (
+    &quot;虚构采购：买一台笔记本，含税预算7600元，2026-10-05前交付。&quot;
+    &quot;核查三家本地报价，最终用JSON返回vendor,total,delivery,source。不是实际采购。&quot;
+)
+TOOLS = [
+    {&quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {
+        &quot;name&quot;: &quot;lookup_vendor&quot;, &quot;description&quot;: &quot;读取虚构供应商报价与交期；无副作用&quot;,
+        &quot;parameters&quot;: {&quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {
+            &quot;id&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;enum&quot;: list(VENDORS)}},
+            &quot;required&quot;: [&quot;id&quot;], &quot;additionalProperties&quot;: False}}},
+    {&quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {
+        &quot;name&quot;: &quot;compute_total&quot;, &quot;description&quot;: &quot;本地计算含税总价&quot;,
+        &quot;parameters&quot;: {&quot;type&quot;: &quot;object&quot;, &quot;properties&quot;: {
+            &quot;id&quot;: {&quot;type&quot;: &quot;string&quot;, &quot;enum&quot;: list(VENDORS)},
+            &quot;quantity&quot;: {&quot;type&quot;: &quot;integer&quot;}},
+            &quot;required&quot;: [&quot;id&quot;, &quot;quantity&quot;], &quot;additionalProperties&quot;: False}}},
+]
+
+
+def dispatch(call: dict) -&gt; dict:
+    if call.get(&quot;type&quot;) != &quot;function&quot;:
+        raise ValueError(&quot;unknown tool type&quot;)
+    fn = call.get(&quot;function&quot;, {})
+    name = fn.get(&quot;name&quot;)
+    if name not in {&quot;lookup_vendor&quot;, &quot;compute_total&quot;}:
+        raise ValueError(&quot;tool not permitted&quot;)
+    raw = fn.get(&quot;arguments&quot;)
+    if not isinstance(raw, str) or len(raw.encode()) &gt; 4096:
+        raise ValueError(&quot;arguments too large or invalid&quot;)
+    args = json.loads(raw)
+    expected = {&quot;id&quot;, &quot;quantity&quot;} if name == &quot;compute_total&quot; else {&quot;id&quot;}
+    if not isinstance(args, dict) or set(args) != expected:
+        raise ValueError(&quot;unexpected fields&quot;)
+    if not isinstance(args[&quot;id&quot;], str) or args[&quot;id&quot;] not in VENDORS:
+        raise ValueError(&quot;unknown vendor&quot;)
+    vendor = VENDORS[args[&quot;id&quot;]]
+    if name == &quot;lookup_vendor&quot;:
+        return {&quot;id&quot;: args[&quot;id&quot;], **vendor}
+    qty = args[&quot;quantity&quot;]
+    if type(qty) is not int or not 1 &lt;= qty &lt;= 3:
+        raise ValueError(&quot;quantity policy: integer 1..3&quot;)
+    return {&quot;total&quot;: round(vendor[&quot;price&quot;] * (1 + vendor[&quot;tax&quot;]) * qty),
+            &quot;source&quot;: vendor[&quot;source&quot;]}
+
+
+def verify(content: str) -&gt; dict:
+    try:
+        result = json.loads(content)
+    except (ValueError, TypeError):
+        return {&quot;parse&quot;: False}
+    if not isinstance(result, dict):
+        return {&quot;parse&quot;: False}
+    return {
+        &quot;parse&quot;: True, &quot;vendor&quot;: result.get(&quot;vendor&quot;) == &quot;clay&quot;,
+        &quot;total&quot;: type(result.get(&quot;total&quot;)) is int and result.get(&quot;total&quot;) == 7480,
+        &quot;delivery&quot;: result.get(&quot;delivery&quot;) == &quot;2026-10-03&quot;,
+        &quot;source&quot;: result.get(&quot;source&quot;) == &quot;quote-clay-v2&quot;,
+    }
+
+
+def base_url(value: str) -&gt; str:
+    p = urlsplit(value)
+    if p.scheme != &quot;https&quot; or not p.hostname or p.username or p.password or p.query or p.fragment:
+        raise ValueError(&quot;base URL must be HTTPS without credentials/query/fragment&quot;)
+    return value.rstrip(&quot;/&quot;)
+
+
+class MockModel:
+    def __init__(self):
+        self.step = 0
+
+    async def call(self, messages: list, tools: list) -&gt; tuple[dict, int | None]:
+        self.step += 1
+        if self.step == 1:
+            calls = [{&quot;id&quot;: f&quot;mock-{name}&quot;, &quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {
+                &quot;name&quot;: &quot;lookup_vendor&quot;, &quot;arguments&quot;: json.dumps({&quot;id&quot;: name})}}
+                for name in VENDORS]
+        elif self.step == 2:
+            calls = [{&quot;id&quot;: &quot;mock-total&quot;, &quot;type&quot;: &quot;function&quot;, &quot;function&quot;: {
+                &quot;name&quot;: &quot;compute_total&quot;, &quot;arguments&quot;: &#x27;{&quot;id&quot;:&quot;clay&quot;,&quot;quantity&quot;:1}&#x27;}}]
+        else:
+            return {&quot;role&quot;: &quot;assistant&quot;, &quot;content&quot;: json.dumps({
+                &quot;vendor&quot;: &quot;clay&quot;, &quot;total&quot;: 7480, &quot;delivery&quot;: &quot;2026-10-03&quot;,
+                &quot;source&quot;: &quot;quote-clay-v2&quot;})}, None
+        return {&quot;role&quot;: &quot;assistant&quot;, &quot;content&quot;: None, &quot;tool_calls&quot;: calls}, None
+
+
+class SDKModel:
+    def __init__(self, key: str, base: str, model: str, thinking: bool):
+        from openai import AsyncOpenAI
+        import httpx
+
+        self.client = AsyncOpenAI(api_key=key, base_url=base, max_retries=0, timeout=60,
+                                  http_client=httpx.AsyncClient(follow_redirects=False))
+        self.model, self.thinking = model, thinking
+
+    async def call(self, messages: list, tools: list) -&gt; tuple[dict, int | None]:
+        if len(json.dumps(messages, ensure_ascii=False).encode()) &gt; 32768:
+            raise ValueError(&quot;context exceeds 32 KiB&quot;)
+        response = await self.client.chat.completions.create(
+            model=self.model, messages=messages, tools=tools, max_tokens=1200,
+            extra_body={&quot;thinking&quot;: {&quot;type&quot;: &quot;enabled&quot; if self.thinking else &quot;disabled&quot;}},
+        )
+        if not response.choices or response.choices[0].finish_reason not in {&quot;stop&quot;, &quot;tool_calls&quot;}:
+            raise ValueError(&quot;incomplete model response&quot;)
+        # Includes provider extra reasoning_content. Keep it in live history, never print it.
+        message = response.choices[0].message.model_dump(exclude_none=True)
+        # SDK response-only fields are not request history fields.
+        message = {k: v for k, v in message.items()
+                   if k in {&quot;role&quot;, &quot;content&quot;, &quot;tool_calls&quot;, &quot;reasoning_content&quot;}}
+        return message, response.usage.total_tokens if response.usage else None
+
+    async def close(self):
+        await self.client.close()
+
+
+@dataclass
+class Budget:
+    calls: int = 0
+    tools: int = 0
+    tokens: int = 0
+    usage_known: bool = False
+
+
+async def run(model, emit=print) -&gt; dict:
+    messages = [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: GOAL}]
+    budget = Budget()
+    seen_ids = set()
+    for _ in range(3):
+        budget.calls += 1  # Reserve before dispatch, not after response.
+        message, tokens = await model.call(messages, TOOLS)
+        if tokens is not None:
+            budget.tokens += tokens
+            budget.usage_known = True
+        messages.append(message)
+        calls = message.get(&quot;tool_calls&quot;, [])
+        if not calls:
+            checks = verify(message.get(&quot;content&quot;, &quot;&quot;))
+            emit(json.dumps({&quot;event&quot;: &quot;verification&quot;, &quot;checks&quot;: checks}, ensure_ascii=False))
+            return {&quot;passed&quot;: all(checks.values()), &quot;calls&quot;: budget.calls,
+                    &quot;tools&quot;: budget.tools, &quot;tokens&quot;: budget.tokens if budget.usage_known else None}
+        for call in calls:
+            if budget.tools &gt;= 4:
+                raise ValueError(&quot;tool budget exhausted&quot;)
+            if not call.get(&quot;id&quot;) or call[&quot;id&quot;] in seen_ids:
+                raise ValueError(&quot;duplicate/missing call ID&quot;)
+            seen_ids.add(call[&quot;id&quot;])
+            budget.tools += 1
+            try:
+                result = dispatch(call)
+            except (ValueError, TypeError):
+                result = {&quot;error&quot;: &quot;tool contract or policy rejected&quot;}
+            # Whitelisted summaries only: no raw model text, arguments, headers or keys.
+            emit(json.dumps({&quot;event&quot;: &quot;tool&quot;, &quot;sequence&quot;: budget.tools,
+                             &quot;status&quot;: &quot;rejected&quot; if &quot;error&quot; in result else &quot;ok&quot;}))
+            messages.append({&quot;role&quot;: &quot;tool&quot;, &quot;tool_call_id&quot;: call[&quot;id&quot;],
+                             &quot;content&quot;: json.dumps(result)})
+    raise ValueError(&quot;model call budget exhausted&quot;)
+
+
+async def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(&quot;--live&quot;, action=&quot;store_true&quot;)
+    parser.add_argument(&quot;--thinking&quot;, action=&quot;store_true&quot;)
+    parser.add_argument(&quot;--base-url&quot;, default=&quot;https://api.deepseek.com&quot;)
+    parser.add_argument(&quot;--model&quot;, default=&quot;deepseek-flash&quot;,
+                        choices=[&quot;deepseek-flash&quot;, &quot;deepseek-v4-pro&quot;])
+    parser.add_argument(&quot;--approve-destination&quot;, help=&quot;Must exactly equal normalized base URL&quot;)
+    args = parser.parse_args()
+    model = MockModel()
+    if args.live:
+        base = base_url(args.base_url)
+        if args.approve_destination != base:
+            parser.error(&quot;explicit --approve-destination required for this exact base URL&quot;)
+        key = os.environ.get(&quot;DEEPSEEK_API_KEY&quot;, &quot;&quot;)
+        if not key or &quot;\n&quot; in key or &quot;\r&quot; in key:
+            parser.error(&quot;set DEEPSEEK_API_KEY locally; never paste it in chat or commit it&quot;)
+        print(f&quot;LIVE destination={base}/chat/completions model={args.model}; &quot;
+              &quot;3 calls / 1200 output tokens each / 4 local tools / 120s total; no retries&quot;)
+        model = SDKModel(key, base, args.model, args.thinking)
+    try:
+        result = await asyncio.wait_for(run(model), timeout=120)
+        print(json.dumps(result, ensure_ascii=False))
+        return 0 if result[&quot;passed&quot;] else 1
+    except (Exception, asyncio.CancelledError):
+        # Avoid SDK exception bodies containing sensitive echoed data.
+        print(&quot;Run failed/cancelled/incomplete; raw provider error omitted. Usage may be unknown.&quot;)
+        return 2
+    finally:
+        if isinstance(model, SDKModel):
+            await model.close()
+
+
+if __name__ == &quot;__main__&quot;:
+    raise SystemExit(asyncio.run(main()))
+</code></pre>
+<p>读这段代码时，重点看三个位置。第一处是 <code>dispatch</code>：只有写在注册边界里的能力才能执行，工具名不会被传给 <code>eval</code>。第二处是 <code>tool_call_id</code>：结果必须对应模型请求的那一次调用，否则历史关系会断裂。第三处是循环预算：当模型持续请求工具时，系统有明确的停止机制，不会无限消耗余额。</p>
+<p>这段程序还缺什么？它把结果打印出来，却没有机器验证最终推荐。生产版应要求模型给出结构化候选，比如供应商 ID、报价版本和引用，再由程序读取权威 fixture 校验预算与日期。不要用“回答中包含 B”充当正确性判断：模型可能写的是“不要选 B”，也可能引用了错误版本。验证应针对结构化语义与源数据。</p>
+<p>它也没有实现持久状态、全局 deadline、流式组装和副作用恢复。SDK 的单次 timeout 不能替代整项任务的时限；取消本地请求也不保证 provider 已停止计算。自动重试在这个例子中关闭，是为了让调用次数更容易理解，并避免教程掩盖不确定的重复行为。扩展到写工具时，需要额外加入授权、幂等与事后核验。</p>
+<p>练习可以从替换一条 fixture 开始：把 B 的交付日期改为截止日之后。正确系统应承认没有符合条件的方案，而不是因为题目说“推荐”就硬选一家。这个反例很好地检验了 agent 是否在尊重环境事实，也为下一部分埋下问题：任务进行很久、数据发生变化时，它还能记住哪些约束，知道自己读的是哪个版本吗？</p>
+<p>保存聊天记录很容易，让另一次模型调用在正确状态下继续工作却困难得多。模型看到的上下文、磁盘里的记录、当前正在运行的任务、以后可能复用的经验，具有不同的用途与生命周期。这一部分把它们拆开，讨论压缩、位置、检索、存储和技能如何协作。</p>
+<h4>与实际下载包的对应</h4>
+<p>上方为配套harness.py完整实现，默认mock无需依赖和密钥。统一可运行fixture使用clay、ink、paper，预算7600、截止2026-10-05；其他讲的A/B报价为单独的教学例子。模型候选必须是JSON，验证器检查字段及source。完整依赖、命令行、取消与目的地确认见<a href="/blog/agent-harness/examples/README.md" rel="noopener noreferrer">运行说明</a>。浏览器用JS实现流式协议，Python在本机运行，不在浏览器执行。</p></article></main></body></html>

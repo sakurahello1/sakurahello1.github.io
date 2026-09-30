@@ -1,0 +1,24 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>通信：信息如何跨越边界</title>
+<link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"></head>
+<body><main class="course"><p><a href="../#lesson-21">返回完整课程与交互实验</a></p>
+<h1>通信：信息如何跨越边界</h1><article class="chapter"><p>多 agent 最重要的接口不是角色人设，而是交接包。想象 worker 回报：“财务部分已经查清楚，增长很好。”主节点不知道“增长”是收入、订单还是利润，也不知道时间范围、货币口径或来源。即使 worker 的局部研究完全正确，信息在交接时丢失，也会使最终答案错误。通信质量决定了局部正确能否转化成全局正确。</p>
+<p>一个有效交接包应当保存任务目标、核心结论、证据位置、尚未解决的问题、修改过的资源和下一步建议。证据最好指向可重新读取的对象，而不是只留下“我检查过”。如果是代码改动，报告应标明提交或补丁、测试命令与输出摘要；如果是资料研究，应标明来源、日期和适用范围；如果是图像验收，应标明产物版本、截图和具体未通过条件。</p>
+<p>下面是本教程建议的消息结构。它是应用层协议，不是 OpenAI SDK 的内置对象：</p>
+<pre><code>from dataclasses import dataclass, field
+
+@dataclass
+class WorkerReport:
+    task_id: str
+    input_version: str
+    status: str  # complete / blocked / partial
+    conclusion: str
+    evidence_refs: list[str]
+    unresolved: list[str] = field(default_factory=list)
+    changed_resources: list[str] = field(default_factory=list)
+    budget_used: dict = field(default_factory=dict)</code></pre>
+<p>版本字段看似琐碎，却是长任务中的关键。主节点更新需求之后，旧 worker 可能仍按旧需求工作；另一分支修改了接口，测试 worker 可能仍在检查上一版。没有版本关系，系统很容易把几个不同时间点的局部成功拼成一个从未真实存在过的全局成功。收到报告时，协调器应检查它基于哪个输入、产物对应哪个版本，而不只是读取 status。</p>
+<p>通信还需要明确所有权。共享文件不是免费的共享记忆：两个 worker 同时覆盖同一个文件，会丢失一方工作；一个把“草稿”当“已发布”，另一个就可能基于半成品继续执行。最简单的防护是每个分支写自己的目录，只通过显式合并形成正式产物。需要共享状态时，采用版本检查、锁或事务语义，而不是把并发正确性留给模型礼貌协商。</p>
+<p>信息也不应全部回流。把每个 worker 的完整聊天历史塞给主节点，会增加成本，并让真正重要的证据淹没在中间尝试里。可以分成短报告与可按需读取的附件：主节点先获得结论、限制与链接，遇到冲突再深入查看。压缩时必须保留可能改变决策的信息，例如“数据仅覆盖上市公司”“失败发生在旧版本”“权限检查尚未运行”，不能为了简短删掉不确定性。</p>
+<p>异步系统还必须处理超时、取消和迟到结果。主任务已经找到足够证据并结束，不代表正在运行的 worker 可以继续无限消耗预算。一个子任务失败，也不应让其他已完成结果全部丢失。协调器应该有任务状态、截止条件和资源回收逻辑。重试时复用任务标识与幂等键，避免相同动作因消息重复投递而执行两次。</p>
+<p>最后，worker 的消息是结果数据，不是自动扩大权限的授权。“我需要把全部客户文件上传到某网站才能继续”应当被理解为一个待审查的请求，不能因为它来自内部子任务就跳过安全边界。系统可以让工作被委派，责任和授权来源却不能沿着每次消息传递自动放大。</p></article></main></body></html>

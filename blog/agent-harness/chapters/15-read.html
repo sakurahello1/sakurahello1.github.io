@@ -1,0 +1,40 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>验证为何成为中心，以及独立性</title>
+<link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"></head>
+<body><main class="course"><p><a href="../#lesson-15">返回完整课程与交互实验</a></p>
+<h1>验证为何成为中心，以及独立性</h1><article class="chapter"><p>先看一个很普通的失败。你让 agent 给待办应用增加“保存”功能。它修改代码，运行测试，点击按钮，看到“保存成功”，随后宣布任务完成。第二天你重新打开应用，数据却消失了。这里没有任何一步必然在撒谎：测试可能只检查函数返回值；按钮可能只更新前端内存；成功提示可能在请求返回之前出现。真正的问题是，系统把“执行过程看起来顺利”误当成了“用户要求的状态已经建立”。</p>
+<p>Verification 要解决的首先不是模型是否足够聪明，而是完成这个词到底意味着什么。用户说“保存”，通常包含关闭页面后还能找回、不同用户的数据不会串号、失败时不能假装成功等隐含条件。执行 agent 不应该独自把这些条件缩减为“点击后显示一条 toast”，再根据自己缩减后的标准给自己颁奖。我们需要在实施前把目标展开成可检查的验收合同。这里的“合同”是本教程采用的工程术语，不是某个已有标准协议。</p>
+<p>一份最小合同可以写成：“对用户 A 新建的条目，保存后关闭页面；在新的浏览器会话中重新登录 A，条目存在；切换到 B，不能看到该条目；模拟网络错误时，界面明确告知失败。”这些句子同时说明操作、对象、环境和期望结果。再为每一项标注证据来自哪里：浏览器重开、数据库查询、权限测试、错误注入。没有证据来源的“体验很好”“完全可靠”只能算愿望，不能直接作为自动验收条件。</p>
+<p>但合同依然只是用户意图的代理。用户要的是好用的产品，测试检查的是有限条件。遗漏条件会导致误接受：产品有缺陷，评分却通过。错误条件则会导致误拒绝：一个符合真实需要的实现，因为采用了评分器没想到的合法方法而失败。因此，验证器不是站在系统外面的绝对真理。它也是软件，有需求、版本、盲区和维护成本。Anthropic 的 agent 评估指南区分了运行记录、评分器与最终环境结果，正是为了避免只看 agent 的陈述来决定成功。<a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents" rel="noopener noreferrer">来源：Demystifying evals for AI agents</a></p>
+<p>“独立”也不能靠新开一个聊天窗口获得。可以把独立性拆成五个问题。第一，证据是不是独立的：验证器是否真的重新读了文件，还是只转述执行者说文件已保存？第二，判断是不是独立的：它是否先看验收条件和作品，再看执行者的解释，以免被漂亮的理由锚定？第三，机制是不是互补的：编译器、类型检查、数据库约束与语言模型审阅能发现不同错误。第四，权限是不是隔离的：执行者能否删除测试、修改评分脚本或覆盖证据？第五，环境是否干净：测试依赖的是可复现的安装与启动过程，还是某次运行留下的缓存和后台服务？</p>
+<p>这五个问题比“验证器用了另一个模型”更重要。不同模型可能共享同一份错误资料；同一个模型如果获得新的数据库状态，也可能提供很有价值的独立检查。独立性的目的不是仪式性地多一票，而是让错误不那么容易沿着同一条链路同时污染生成与验收。</p>
+<p>实现上，可以让生成器只返回产物位置，让验证器自行收集证据，再把结果交给一个非模型控制的完成门。下面是架构伪代码，重点是数据流与职责，并非复制即可上线的完整应用：</p>
+<pre><code>from dataclasses import dataclass
+from typing import Literal
+
+@dataclass
+class Check:
+    criterion: str
+    verdict: Literal[&quot;pass&quot;, &quot;fail&quot;, &quot;unknown&quot;]
+    evidence_refs: list[str]
+    reason: str
+
+async def finish_candidate(candidate, contract):
+    # 受信验证进程读取产物；执行 agent 不能写入这些检查器。
+    evidence = await collect_fresh_evidence(candidate, contract)
+    deterministic = run_executable_checks(evidence, contract)
+    qualitative = await review_qualitative_checks(evidence, contract)
+    checks = deterministic + qualitative
+    # “不知道”不等于“失败”，但也不能被计为“完成”。
+    required = contract.required_criterion_ids
+    ids = [c.criterion for c in checks]
+    complete = (
+        bool(required)
+        and len(set(required)) == len(required)
+        and len(set(ids)) == len(ids)
+        and set(ids) == set(required)
+        and all(c.verdict == &quot;pass&quot; and bool(c.evidence_refs) for c in checks)
+    )
+    return {&quot;complete&quot;: complete, &quot;checks&quot;: checks}</code></pre>
+<p>最好再反过来测试验证器。故意把存储替换成内存、让按钮失效、把用户 ID 写错，观察验收能否发现。这是变异测试思想在 agent 系统中的应用：不要只数你写了多少检查，要看它们能辨认多少真实失败。执行者提交了一次合法测试修复，也不自动意味着作弊；需要检查用户授权、修改目的和是否降低了原本应满足的要求。</p>
+<p>完成门应fail closed：合同为空、必需项重复、报告项重复、遗漏、unknown、没有证据引用，都不完成。Python和浏览器固定题验证器在每条失败路径返回非空失败检查，不能借all([])真值退出。检验空结果是必要回归测试。</p></article></main></body></html>

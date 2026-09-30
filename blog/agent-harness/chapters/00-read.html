@@ -1,0 +1,10 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>模型说做了，系统怎样知道真做了？</title>
+<link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"></head>
+<body><main class="course"><p><a href="../#lesson-0">返回完整课程与交互实验</a></p>
+<h1>模型说做了，系统怎样知道真做了？</h1><article class="chapter"><p>设想一个采购练习：给三家虚构供应商的报价，要求选出含税总价不超过 8,000 元、满足内存要求、能在指定日期前到货的电脑。裸模型收到问题以后，可以根据已有知识和输入组织答案。然而，最新报价在本地文件里，库存需要查询，税费需要计算。模型如果看不到这些东西，语言再流畅也无法补出可靠事实。</p>
+<p>最小 agent 为它增加一个循环：获取观察，提出下一项动作，执行动作，再根据结果继续。模型的输出因此有两种用途：有些内容给用户看，有些内容交给程序执行。把后一类输出安全、准确地落实到环境中的那层运行设施，就是这里所说的 harness。这个词没有统一到每个细节的行业定义，但它通常覆盖上下文组装、模型调用、工具路由、权限、预算、日志与恢复。Anthropic 的一项代表性架构将 session、harness、sandbox 分开：会话保存事件，harness 驱动执行，sandbox 提供代码和文件环境。这是一种有帮助的责任划分，而非所有实现必须照搬的规范。<a href="https://www.anthropic.com/engineering/managed-agents" rel="noopener noreferrer">来源：Managed Agents</a></p>
+<p>我们可以把采购 agent 拆成五个角色。模型选择“先查供应商 B 的交付日期”；harness 检查这是不是允许的工具、参数是否合法、当前预算够不够；工具读取版本化的报价文件；环境提供实际记录；验证器检查最后的推荐是否满足预算与交付约束。模型能够提出“看起来完成了”，完成判定仍要回到证据上。</p>
+<p>为什么要把这些责任写得这么细？因为出错时，修复位置不同。模型查错供应商，可能要改善工具描述与选择上下文；工具读到缓存旧价格，要修数据更新策略；同一个订单提交两遍，要修幂等与恢复流程；测试还没结束就向用户报告成功，要修完成状态机。把一切叫作“模型幻觉”，会让工程诊断失去抓手。</p>
+<p>一个实用的 harness 不需要从巨大框架开始。你可以先写一个有界循环，用固定工具注册表，只允许查询教学数据；记录每次输入、动作和结果；达到调用上限就停止；最后用确定性条件检查答案。这已经足以呈现 agent 的核心机制。之后才逐步增加持久日志、并发调度、权限确认和断点恢复。</p>
+<p>状态也值得明确命名：<code>running</code> 表示还在工作，<code>waiting_for_user</code> 表示缺少必要信息或授权，<code>incomplete</code> 表示预算耗尽但目标未达成，<code>failed</code> 表示当前执行失败，<code>completed</code> 才表示完成条件已满足。不要把所有退出路径都包装成“任务完成”。可靠系统的一个重要能力，是准确说明自己停在了哪里。</p></article></main></body></html>

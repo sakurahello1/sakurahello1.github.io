@@ -1,0 +1,24 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Markdown、检索与知识图谱</title>
+<link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"></head>
+<body><main class="course"><p><a href="../#lesson-12">返回完整课程与交互实验</a></p>
+<h1>Markdown、检索与知识图谱</h1><article class="chapter"><p>如果你只有几十条项目笔记，第一版记忆系统可以非常朴素：按主题组织 Markdown 或 JSON，记录来源和时间，用文件名与关键词检索。这样做的好处是透明、易修复、容易让人确认到底记了什么。它是一条低成本工程起点，不是对所有规模和查询类型的最终答案。</p>
+<p>下面是一条适合文件系统的事实记录：</p>
+<pre><code>{
+  &quot;id&quot;: &quot;quote-B-v2-delivery&quot;,
+  &quot;project&quot;: &quot;procurement-demo&quot;,
+  &quot;kind&quot;: &quot;fact&quot;,
+  &quot;statement&quot;: &quot;报价 B v2 的交付日期为 2026-10-08&quot;,
+  &quot;source_id&quot;: &quot;quote-B-v2&quot;,
+  &quot;observed_at&quot;: &quot;2026-09-30T10:00:00Z&quot;,
+  &quot;valid_for&quot;: &quot;quote-B-v2&quot;,
+  &quot;supersedes&quot;: &quot;quote-B-v1-delivery&quot;,
+  &quot;status&quot;: &quot;active&quot;
+}</code></pre>
+<p>文件名、项目字段和 source ID 让精确查找很便宜。查询“quote-B-v2”时，关键词检索往往直接有效。查询“之前那家送货挺快的厂商”时，词面变化就会让单纯 grep 吃力。问题的表达差异，才是考虑语义检索的重要理由之一。</p>
+<p>SQL 适合明确实体、字段、状态和时间范围。例如“列出当前项目仍有效且总价低于预算的报价”，条件本身很结构化，没必要先做向量相似度。向量检索擅长找表达不同但语义相近的材料，却需要 metadata filter 与原文核验：语义相似的旧报价仍可能是错误答案，另一个用户的相似笔记也不应跨权限边界返回。</p>
+<p>图适用于关系本身是查询核心的情况。例如“哪些供应商依赖同一个零件厂，哪些项目又同时依赖这些供应商”，多跳关系可以帮助组织查询。但建立图需要实体消歧、关系抽取、来源记录和时间更新。把“林青”和“林 青”错误合并，或者把已经解除的依赖当作当前关系，图遍历会非常自信地传播错误。</p>
+<p>GraphRAG 的原始工作用实体关系与社区摘要支持面向全局主题的查询，研究问题包括 query-focused summarization。它有助于理解为什么某些全局问题无法仅靠抓几个相似片段解决；它并没有证明个人 agent 的几十条笔记都应该建图。<a href="https://arxiv.org/abs/2404.16130" rel="noopener noreferrer">来源：GraphRAG</a></p>
+<p>选型时比较总成本，而不是单次查询看起来多先进。文件方案的成本可能在人工组织；向量方案还需切分、嵌入、重建和过滤；图方案还需抽取、实体合并、关系维护与错误修正。新资料写入后多久能查到？旧记录如何失效？用户要求删除时，摘要、索引和缓存是否同步处理？这些问题往往比首次演示更决定系统能否长期使用。</p>
+<p>一个实用的混合流程是先用精确字段缩小到项目、时间和权限范围，再用关键词或向量找相关内容；需要关系路径时才走图；最终回到可引用的原始记录。检索器返回的是候选证据，不是自动生效的事实。</p>
+<p>公平比较也应包含不同查询类型：精确名称、同义改写、多跳关系、全局主题和时效更正。只拿多跳题测图，再宣布图全面胜出，和只拿文件名测 grep 再宣布向量无用，一样缺乏说服力。</p></article></main></body></html>

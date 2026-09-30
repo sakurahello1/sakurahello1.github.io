@@ -1,0 +1,11 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>为什么think：改进决策而非拉长文字</title>
+<link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"></head>
+<body><main class="course"><p><a href="../#lesson-5">返回完整课程与交互实验</a></p>
+<h1>为什么think：改进决策而非拉长文字</h1><article class="chapter"><p>“让模型多想一会儿”可能指三件不同的事。第一种是提示它先生成中间步骤；第二种是模型经过训练，具有特定推理能力并在推理阶段使用额外计算；第三种是 harness 在关键工具调用之间安排检查或规划步骤。它们可能共同改善结果，却不是同一个机制。</p>
+<p>最有价值的思考机会常出现在决策分叉处：观察与原计划冲突，需要重新定位问题；两个工具都有用，要比较信息收益；准备执行不可逆操作，需要核对对象和前置条件。相反，已知两个整数相加，通常直接用确定性工具更划算。计算预算应服务于减少实际决策错误，而不是让每一轮都生成长篇文字。</p>
+<p>OpenAI 的 o1 研究展示了特定实验中测试时计算与任务表现的关系，但这不构成“输出思考越长，所有任务就越好”的普遍定律。Anthropic 关于 think tool 的文章也报告了某些复杂政策工具任务上的改善，其模型、提示与 benchmark 配置都有具体边界。工程上值得做的是把“增加思考”当成一个可测试变量，固定其他条件后观察是否真的减少违规动作或错误结论。<a href="https://openai.com/index/learning-to-reason-with-llms/" rel="noopener noreferrer">来源：Learning to reason with LLMs</a>、<a href="https://www.anthropic.com/engineering/claude-think-tool" rel="noopener noreferrer">The think tool</a></p>
+<p>举个有用的检查步骤。推荐采购方案之前，让系统生成一个简短证据清单：预算从哪里来，含税价格如何计算，交付日期对应哪个版本，仍有哪个字段未知。这个清单不必复述私有推理；它可以直接作为可审核的外部产物。随后由确定性验证器核对金额和日期。如果字段缺失，暂停推荐并补查。这样，思考被接到了证据和行动上。</p>
+<p>也不要把漂亮的推理文本当作可信解释。研究发现，模型的可见推理可能未忠实披露影响答案的提示线索。读起来完整，不代表我们已经掌握了内部因果过程。日志应该帮助复盘执行事实，而不是用大量“我认真想过”的文字代替测试。<a href="https://arxiv.org/abs/2305.04388" rel="noopener noreferrer">来源：Language Models Don&#x27;t Always Say What They Think</a>、<a href="https://arxiv.org/abs/2505.05410" rel="noopener noreferrer">Reasoning Models Don&#x27;t Always Say What They Think</a></p>
+<p>使用 API 时，还要区分展示需求与协议需求。依据当前 DeepSeek 文档，thinking 默认开启，教程应显式选择开启或关闭，避免预算行为不清楚。工具调用场景中，返回的 <code>reasoning_content</code> 需要按协议保留并回传，包括相应历史 assistant 消息；这类内容可在当前运行的内部历史中维护，不必默认展示或导出。thinking 模式下温度参数不产生通常预期的影响，过小输出上限也可能让模型耗尽预算而未给出最终答案。<a href="https://api-docs.deepseek.com/guides/thinking_mode/" rel="noopener noreferrer">来源：DeepSeek Thinking Mode</a></p>
+<p>下面的实践先显式关闭 thinking，让读者看清工具协议。之后再开启，并测量完成率、约束错误、token、延迟与费用。没有实际跑出的对照数据，就只提出假设，不填写“提升百分之多少”的装饰性数字。</p></article></main></body></html>
