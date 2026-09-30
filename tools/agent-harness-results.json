@@ -1,0 +1,111 @@
+{
+  "font_policy": "explicit system Chinese fallback; local display fonts retained",
+  "responsive": [
+    {
+      "width": 1440,
+      "overflow": false,
+      "page_errors": [],
+      "cold_chapters": 0,
+      "cold_labs": 0
+    },
+    {
+      "width": 1100,
+      "overflow": false,
+      "page_errors": [],
+      "cold_chapters": 0,
+      "cold_labs": 0
+    },
+    {
+      "width": 768,
+      "overflow": false,
+      "page_errors": [],
+      "cold_chapters": 0,
+      "cold_labs": 0
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "page_errors": [],
+      "cold_chapters": 0,
+      "cold_labs": 0
+    },
+    {
+      "width": 360,
+      "overflow": false,
+      "page_errors": [],
+      "cold_chapters": 0,
+      "cold_labs": 0
+    }
+  ],
+  "experiments": [
+    {
+      "kind": "react",
+      "offline": "passed"
+    },
+    {
+      "kind": "schema",
+      "offline": "passed"
+    },
+    {
+      "kind": "grammar",
+      "offline": "passed"
+    },
+    {
+      "kind": "budget",
+      "offline": "passed"
+    },
+    {
+      "kind": "compact",
+      "offline": "passed"
+    },
+    {
+      "kind": "position",
+      "offline": "passed"
+    },
+    {
+      "kind": "memory",
+      "offline": "passed"
+    },
+    {
+      "kind": "selection",
+      "offline": "passed"
+    },
+    {
+      "kind": "skill",
+      "offline": "passed"
+    },
+    {
+      "kind": "verify",
+      "offline": "passed"
+    },
+    {
+      "kind": "repair",
+      "offline": "passed"
+    },
+    {
+      "kind": "hitl",
+      "offline": "passed"
+    },
+    {
+      "kind": "workers",
+      "offline": "passed"
+    },
+    {
+      "kind": "security",
+      "offline": "passed"
+    },
+    {
+      "kind": "trace",
+      "offline": "passed"
+    }
+  ],
+  "behaviors": [
+    "30 chapters loaded; 15 experiment types mounted and exercised",
+    "mock native-fetch live stream passed; sentinel absent from visible text/URL",
+    "mixed usage keeps total unknown; hostile HTML inert; synthetic key redacted",
+    "destination change clears retained key and consent",
+    "custom destination survives tab/device refresh without consent auto-approval",
+    "no-JS standalone chapter readable",
+    "desktop/mobile body/code/lab screenshots; deep-link single-chapter load; keyboard activation"
+  ]
+}

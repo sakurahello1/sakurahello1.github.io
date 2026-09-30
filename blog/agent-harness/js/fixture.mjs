@@ -13,7 +13,7 @@ export const tools = [{type: 'function', function: {name: 'lookup_vendor',
 export function dispatch(call) {
   if (call.type !== 'function' || !['lookup_vendor', 'compute_total'].includes(call.function?.name))
     throw new Error('工具不在白名单');
-  if (typeof call.function.arguments !== 'string' || call.function.arguments.length > 4096)
+  if (typeof call.function.arguments !== 'string' || new TextEncoder().encode(call.function.arguments).length > 4096)
     throw new Error('参数长度无效');
   let a; try { a = JSON.parse(call.function.arguments); } catch { throw new Error('参数不是 JSON'); }
   const compute = call.function.name === 'compute_total';
@@ -21,7 +21,8 @@ export function dispatch(call) {
   if (!a || typeof a !== 'object' || Array.isArray(a) ||
       Object.keys(a).length !== expected.length || Object.keys(a).some(k => !expected.includes(k)))
     throw new Error('参数字段不符合契约');
-  if (!Object.hasOwn(vendors, a.id)) throw new Error('供应商枚举无效');
+  if (typeof a.id !== 'string' || a.id.length > 32 || !Object.hasOwn(vendors, a.id))
+    throw new Error('供应商枚举无效');
   if (compute && (!Number.isInteger(a.quantity) || a.quantity < 1 || a.quantity > 3))
     throw new Error('业务策略：quantity 仅允许 1–3');
   const v = vendors[a.id];
@@ -32,4 +33,9 @@ export function verify(text) {
   if (!x || typeof x !== 'object' || Array.isArray(x)) return {parse: false};
   return {parse: true, vendor: x.vendor === 'clay', price: x.total === 7480,
     evidence: x.source === 'quote-clay-v2', deadline: x.delivery === '2026-10-03'};
+}
+export function isComplete(checks) {
+  const required = ['parse', 'vendor', 'price', 'evidence', 'deadline'];
+  return !!checks && Object.keys(checks).length === required.length &&
+    required.every(id => Object.hasOwn(checks, id) && checks[id] === true);
 }

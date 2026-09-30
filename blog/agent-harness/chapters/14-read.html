@@ -5,7 +5,7 @@
 <h1>经验记忆与Skill</h1><article class="chapter"><p>当你重复执行同一种任务，就会发现一些步骤每次都要重新解释。比如 CSV 数据质检：先确认编码与列名，检查字段类型，统计缺失、重复和越界，输出报告，最后核对行数是否对得上。把这些程序性知识整理成可发现、按需加载的资源，就是 skill 的一种典型用途。</p>
 <p>Agent Skills 开放规范采用目录与 <code>SKILL.md</code> 组织，可附带脚本、参考资料和资源文件。它强调逐步加载：先让 agent 看到名称与描述，相关时再读正文，更深入时才加载脚本或参考。这种设计减少了把所有流程一次塞进上下文的必要性，也给知识维护提供了独立单位。<a href="https://agentskills.io/specification" rel="noopener noreferrer">来源：Agent Skills Specification</a></p>
 <p>一个简化的 CSV 质检 skill 可以这样组织：</p>
-<pre><code>csv-quality/
+<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>csv-quality/
   SKILL.md
   scripts/
     validate.py
@@ -15,7 +15,7 @@
     report-template.md</code></pre>
 <p><code>SKILL.md</code> 写清何时使用、需要什么输入、步骤与完成标准；<code>validate.py</code> 实现确定性检查；领域规则文件解释某列允许范围与例外；模板帮助结果保持稳定结构。把所有说明堆进一个巨大正文虽然也能工作，却会失去按需加载的好处。</p>
 <p>正文可以从这样的内容开始：</p>
-<pre><code>---
+<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>---
 name: csv-quality
 description: 检查 CSV 的字段、缺失、重复和范围，并生成可核验报告。
 ---

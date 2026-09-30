@@ -57,7 +57,10 @@ def render(md: str) -> str:
             if code is None:
                 code = []
             else:
-                result.append("<pre><code>" + html.escape("\n".join(code)) + "</code></pre>")
+                block = '<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>' + html.escape("\n".join(code)) + "</code></pre>"
+                if len(code) > 80:
+                    block = f'<details class="full-code"><summary>完整可运行代码 · {len(code)}行 · 展开阅读</summary>{block}</details>'
+                result.append(block)
                 code = None
             continue
         if code is not None:
@@ -113,7 +116,7 @@ def build():
 <h1>{html.escape(TITLES[i])}</h1><article class="chapter">{body.replace('href="examples/', 'href="../examples/')}</article></main></body></html>'''
             (chapters / f"{i:02}-read.html").write_text(standalone, encoding="utf-8")
             cards.append(f'''<section class="lesson" id="lesson-{i}" data-sec="{name}">
-<div class="lesson-head"><span class="number">{i+1:02}</span><div><h3>{html.escape(TITLES[i])}</h3>
+<div class="lesson-head"><span class="number">{i+1:02}</span><div><h3><a href="#lesson-{i}">{html.escape(TITLES[i])}</a></h3>
 <button type="button" data-chapter="{i:02}" aria-controls="body-{i:02}" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/{i:02}-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-{i:02}" hidden></article></section>''')

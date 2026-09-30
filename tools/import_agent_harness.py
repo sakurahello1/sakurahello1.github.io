@@ -29,6 +29,9 @@ def import_manuscripts(path):
     reference = (ARTICLE / "examples/harness.py").read_text(encoding="utf-8")
     chapters[6] = re.sub(r"```python[\s\S]*?```", lambda _: "```python\n" + reference + "\n```", chapters[6], count=1)
     chapters[6] = chapters[6].replace("推荐 B", "推荐符合条件的供应商")
+    chapters[6] = re.sub(r"这段程序还缺什么？[^\n]+", "完整程序已经要求最终JSON并校验供应商、含税价、日期与证据ID。它不靠关键词包含判断：‘不要选clay’也包含clay，不能当作正确推荐。当前验证器只覆盖固定fixture；扩展题目时应同时扩展验收合同，而不是让模型迎合一个写死的答案。", chapters[6])
+    chapters[6] = re.sub(r"它也没有实现[^\n]+", "这个小程序没有生产级持久会话或副作用恢复；Python采用非流式SDK，让协议容易阅读，浏览器实现流式组装。完整代码同时设置单次60秒与整项120秒deadline，Ctrl+C取消，但本地取消不保证provider停止计费。自动重试关闭，以便调用次数清楚，也避免不确定动作重复。扩展写工具仍需授权、幂等与事后核验。", chapters[6])
+    chapters[6] = re.sub(r"练习可以从[^\n]+", "练习可以把clay交期改到截止日之后，再设计结构化‘无可行方案’结果及相应验证器。不能只改fixture还沿用固定正确答案，也不能因为用户说推荐就硬选一家。这个反例把我们带入下一部分：任务进行很久、数据变化时，系统还能记住哪些约束，知道读的是哪个版本吗？", chapters[6])
     chapters[6] += "\n\n### 与实际下载包的对应\n\n上方为配套harness.py完整实现，默认mock无需依赖和密钥。统一可运行fixture使用clay、ink、paper，预算7600、截止2026-10-05；其他讲的A/B报价为单独的教学例子。模型候选必须是JSON，验证器检查字段及source。完整依赖、命令行、取消与目的地确认见[运行说明](../agent-harness/examples/README.md)。浏览器用JS实现流式协议，Python在本机运行，不在浏览器执行。"
     gate = '''required = contract.required_criterion_ids
     ids = [c.criterion for c in checks]

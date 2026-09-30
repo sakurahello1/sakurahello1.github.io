@@ -45,3 +45,8 @@ python -m http.server 8000
 ## 发布
 
 GitHub Pages 配置为从 `main` 分支根目录发布。推送到 `main` 后由 GitHub Pages 发布；保留根目录的 `.nojekyll`，以便静态文件直接送达。发布前运行链接检查，并用本地服务器检查首页、博客和 404 页面。
+
+
+## Agent & harness course
+
+新增课程维护、Windows模块预览、离线/SDK mock与浏览器验收命令见 [tools/AGENT-HARNESS.md](tools/AGENT-HARNESS.md)。正文源在 `blog/agent-harness/source/`，修改后运行 `python tools/build_agent_harness.py`；完整Python下载包运行 `python tools/integrate_agent_harness.py` 更新。禁止使用真实密钥或付费推理做开发验收。

@@ -10,7 +10,7 @@
 <p>实际系统可以给每条证据加上采集时间、环境标识和对象版本。例如截图属于 build-17，而数据库检查来自 build-16，就不能把两者拼成同一版本已经通过的证明。异步系统还要明确等待条件：点击保存之后，等待的是按钮恢复可点、请求返回，还是新值已经能通过独立读取看到？固定睡眠三秒只说明等了三秒，不说明系统达到了目标状态。</p>
 <p>以下是可选的其他供应商示例，需另配OPENAI_API_KEY与支持视觉的模型，不沿用本页DeepSeek凭据或baseURL。APPROVED_SCREENSHOT_URL必须指向已明确授权发送的截图；仅为接口示意，开发未在线调用。</p>
 <p>在 OpenAI 官方 Python SDK 中，可以通过 Responses API 向支持图像输入的模型传入文本与截图 URL。下面演示的是视觉审阅这一小环节，模型名与图像权限须由部署环境配置；它没有代替浏览器执行、持久层检查或最终完成门。<a href="https://github.com/openai/openai-python" rel="noopener noreferrer">接口依据：OpenAI Python SDK</a></p>
-<pre><code>import os
+<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>import os
 from openai import OpenAI
 
 client = OpenAI()

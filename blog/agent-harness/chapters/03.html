@@ -2,7 +2,7 @@
 <p><code>{&quot;date&quot;:&quot;2026-02-30&quot;}</code> 是合法 JSON。如果 schema 只要求 <code>date</code> 是字符串，它也符合 schema；日期仍然不存在。<code>{&quot;recipient_id&quot;:&quot;u_18&quot;}</code> 可以通过严格结构检查，却指向同名的另一位用户。即使对象和权限都正确，发送服务也可能拒绝请求。我们至少要区分可解析、符合结构、事实与业务正确、经过授权、真实执行成功这几层。</p>
 <p>JSON mode 通常改善语法层面的可解析性；结构化输出在支持的 schema 范围内进一步约束字段、类型与枚举；function calling 则给应用一个动作请求。模型生成 <code>get_quote</code> 调用之后，真正读取报价的仍是你的 Python 程序。应用执行，再把带对应调用 ID 的结果送回模型，下一轮才有机会利用该事实。<a href="https://developers.openai.com/api/docs/guides/structured-outputs" rel="noopener noreferrer">来源：Structured Outputs</a>、<a href="https://developers.openai.com/api/docs/guides/function-calling" rel="noopener noreferrer">Function calling</a></p>
 <p>用函数调用的好处，是把面向用户的语言与机器可执行请求分开。你不必从“我认为可以查一下 A 的报价”里正则提取供应商。模型可以明确请求：</p>
-<pre><code>{
+<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>{
   &quot;name&quot;: &quot;get_quote&quot;,
   &quot;arguments&quot;: &quot;{\&quot;vendor_id\&quot;:\&quot;A\&quot;}&quot;
 }</code></pre>

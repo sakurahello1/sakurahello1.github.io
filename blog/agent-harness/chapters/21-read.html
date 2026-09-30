@@ -5,7 +5,7 @@
 <h1>通信：信息如何跨越边界</h1><article class="chapter"><p>多 agent 最重要的接口不是角色人设，而是交接包。想象 worker 回报：“财务部分已经查清楚，增长很好。”主节点不知道“增长”是收入、订单还是利润，也不知道时间范围、货币口径或来源。即使 worker 的局部研究完全正确，信息在交接时丢失，也会使最终答案错误。通信质量决定了局部正确能否转化成全局正确。</p>
 <p>一个有效交接包应当保存任务目标、核心结论、证据位置、尚未解决的问题、修改过的资源和下一步建议。证据最好指向可重新读取的对象，而不是只留下“我检查过”。如果是代码改动，报告应标明提交或补丁、测试命令与输出摘要；如果是资料研究，应标明来源、日期和适用范围；如果是图像验收，应标明产物版本、截图和具体未通过条件。</p>
 <p>下面是本教程建议的消息结构。它是应用层协议，不是 OpenAI SDK 的内置对象：</p>
-<pre><code>from dataclasses import dataclass, field
+<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>from dataclasses import dataclass, field
 
 @dataclass
 class WorkerReport:

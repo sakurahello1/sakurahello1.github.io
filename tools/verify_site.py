@@ -7,6 +7,7 @@ script. It uses the installed Python Playwright package and Chromium.
 from __future__ import annotations
 
 import json
+import argparse
 from pathlib import Path
 
 from playwright.sync_api import sync_playwright
@@ -26,6 +27,10 @@ LOCAL_FONT_PAGES = {"home", "blog", "404"}
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--offline-fonts', action='store_true',
+                        help='Explicitly use system Chinese font fallback; local display fonts still checked')
+    args = parser.parse_args()
     SHOTS.mkdir(parents=True, exist_ok=True)
     results = []
     with sync_playwright() as playwright:
@@ -38,6 +43,9 @@ def main() -> int:
                     reduced_motion="reduce",
                 )
                 page = context.new_page()
+                if args.offline_fonts:
+                    page.route('https://fonts.googleapis.com/**',
+                               lambda route: route.fulfill(status=200, content_type='text/css', body=''))
                 console_errors = []
                 page_errors = []
                 failed_local = []
@@ -77,6 +85,7 @@ def main() -> int:
                 shot = SHOTS / f"{name}-{label}.png"
                 page.screenshot(path=str(shot), full_page=False, animations="disabled")
                 result = {
+                    "offline_font_fallback": args.offline_fonts,
                     "page": name,
                     "viewport": width,
                     "http": response.status if response else None,

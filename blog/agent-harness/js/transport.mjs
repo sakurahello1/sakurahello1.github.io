@@ -25,19 +25,28 @@ export class Credentials {
     } catch { this.value.mode = 'memory'; return false; }
     return true;
   }
-  read(base) {
-    base = normalizeBase(base);
+  record() {
     let v = this.value;
     if (!v) for (const s of [this.session, this.local]) {
       try { v = JSON.parse(s.getItem(SLOT) || 'null'); } catch { v = null; }
       if (v) break;
     }
     if (!v) return null;
-    if (v.base !== base || !['memory', 'tab', 'device'].includes(v.mode) || typeof v.key !== 'string' || !v.key ||
+    if (!['memory', 'tab', 'device'].includes(v.mode) || typeof v.key !== 'string' || !v.key || /[\r\n]/.test(v.key) ||
         (v.mode === 'device' && (!Number.isFinite(v.expiresAt) || this.now() >= v.expiresAt))) {
       this.clear(); return null;
     }
     this.value = v; return {...v};
+  }
+  metadata() {
+    const v = this.record();
+    if (!v) return null;
+    try { return {base: normalizeBase(v.base), mode: v.mode, expiresAt: v.expiresAt}; }
+    catch { this.clear(); return null; }
+  }
+  read(base) {
+    const v = this.record();
+    return v?.base === normalizeBase(base) ? v : null;
   }
 }
 export async function readChatStream(response, signal, onText = () => {}) {
@@ -97,6 +106,7 @@ export async function readChatStream(response, signal, onText = () => {}) {
 }
 export async function chat({base, key, model, messages, tools, signal, onText, fetcher = fetch}) {
   const body = JSON.stringify({model, messages, stream: true, max_tokens: 1200,
+    stream_options: {include_usage: true},
     thinking: {type: 'disabled'}, ...(tools ? {tools, tool_choice: 'auto'} : {})});
   if (new TextEncoder().encode(body).length > 32768) throw new Error('请求超过 32 KiB');
   const controller = new AbortController();

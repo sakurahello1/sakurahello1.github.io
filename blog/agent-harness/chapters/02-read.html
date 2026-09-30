@@ -6,7 +6,7 @@
 <p>好的工具契约至少回答五个问题：做什么，接收什么输入，需要什么前置条件，会产生什么副作用，失败意味着什么。例如 <code>lookup_quote(vendor_id, version)</code> 是只读查询；<code>submit_order(quote_id, quantity, operation_id)</code> 会产生订单，要求报价有效且用户已授权。它们即使参数外形相似，执行策略也应完全不同。</p>
 <p>输入 schema 描述形状，业务验证描述现实约束。<code>quantity</code> 是整数，不意味着 999 台采购量合理；供应商 ID 是字符串，不意味着当前用户能访问该供应商；<code>operation_id</code> 格式正确，不意味着请求可以重复执行。把这些检查放在 host 程序或服务端，才不会让安全性依赖模型刚好遵守提示。<a href="https://developers.openai.com/api/docs/guides/function-calling" rel="noopener noreferrer">来源：OpenAI Function calling</a></p>
 <p>返回值也需要设计。直接把一万行日志塞回上下文，会挤掉当前任务的重要信息；只返回 <code>logs.txt</code>，模型又可能不知道里面有什么、是否值得打开、该从哪一行开始。比较实用的模式是“小结论直接返回，大证据稳定引用”：</p>
-<pre><code>{
+<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>{
   &quot;status&quot;: &quot;partial&quot;,
   &quot;operation_id&quot;: &quot;test-run-083&quot;,
   &quot;summary&quot;: &quot;23 个测试中有 1 个失败&quot;,

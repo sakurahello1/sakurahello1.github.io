@@ -83,6 +83,11 @@ def base_url(value: str) -> str:
     return value.rstrip("/")
 
 
+def is_complete(checks: dict) -> bool:
+    required = {"parse", "vendor", "total", "delivery", "source"}
+    return set(checks) == required and all(value is True for value in checks.values())
+
+
 class MockModel:
     def __init__(self):
         self.step = 0
@@ -137,7 +142,7 @@ class Budget:
     calls: int = 0
     tools: int = 0
     tokens: int = 0
-    usage_known: bool = False
+    usage_calls: int = 0
 
 
 async def run(model, emit=print) -> dict:
@@ -147,16 +152,16 @@ async def run(model, emit=print) -> dict:
     for _ in range(3):
         budget.calls += 1  # Reserve before dispatch, not after response.
         message, tokens = await model.call(messages, TOOLS)
-        if tokens is not None:
+        if type(tokens) is int and tokens >= 0:
             budget.tokens += tokens
-            budget.usage_known = True
+            budget.usage_calls += 1
         messages.append(message)
         calls = message.get("tool_calls", [])
         if not calls:
             checks = verify(message.get("content", ""))
             emit(json.dumps({"event": "verification", "checks": checks}, ensure_ascii=False))
-            return {"passed": all(checks.values()), "calls": budget.calls,
-                    "tools": budget.tools, "tokens": budget.tokens if budget.usage_known else None}
+            return {"passed": is_complete(checks), "calls": budget.calls,
+                    "tools": budget.tools, "tokens": budget.tokens if budget.usage_calls == budget.calls else None}
         for call in calls:
             if budget.tools >= 4:
                 raise ValueError("tool budget exhausted")

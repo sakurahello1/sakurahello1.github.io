@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {Credentials, SLOT, normalizeBase, readChatStream, chat} from '../blog/agent-harness/js/transport.mjs';
-import {dispatch, verify} from '../blog/agent-harness/js/fixture.mjs';
+import {dispatch, verify, isComplete} from '../blog/agent-harness/js/fixture.mjs';
 const storage=()=>{const m=new Map();return {getItem:k=>m.get(k),setItem:(k,v)=>m.set(k,v),removeItem:k=>m.delete(k)};};
 const sentinel='synthetic-test-sentinel-not-a-real-key';
 function response(text, chunk=1, status=200){
@@ -41,7 +41,7 @@ test('credential tab refresh, memory default, destination binding, TTL expires',
   const session=storage(),local=storage();let now=100;const v=new Credentials(session,local,()=>now);
   v.save(sentinel,'https://api.deepseek.com','memory');assert.equal(new Credentials(session,local).read('https://api.deepseek.com'),null);
   v.save(sentinel,'https://api.deepseek.com','tab');assert.equal(new Credentials(session,local).read('https://api.deepseek.com').key,sentinel);
-  assert.equal(v.read('https://other.example'),null);assert.equal(session.getItem(SLOT),undefined);
+  assert.equal(v.read('https://other.example'),null);assert.ok(session.getItem(SLOT));
   v.save(sentinel,'https://api.deepseek.com','device',15);now+=900001;assert.equal(v.read('https://api.deepseek.com'),null);assert.equal(local.getItem(SLOT),undefined);
 });
 test('blocked storage falls back to memory; malformed expiry rejects',()=>{
@@ -50,17 +50,31 @@ test('blocked storage falls back to memory; malformed expiry rejects',()=>{
   assert.equal(v.read('https://api.deepseek.com').mode,'memory');
 });
 test('destinations and schema reject spoofing, unknown tool, extra fields, bad ranges',()=>{
+  assert.equal(isComplete({}),false);assert.equal(isComplete({parse:true}),false);
   for(const url of ['http://localhost','https://user@host','https://host?key=x','https://host#x'])assert.throws(()=>normalizeBase(url));
   for(const [name,args] of [['constructor','{}'],['lookup_vendor','{"id":"__proto__"}'],
-    ['lookup_vendor','{"id":"clay","extra":1}'],['compute_total','{"id":"clay","quantity":999}']])
+    ['lookup_vendor','{"id":"clay","extra":1}'],['lookup_vendor','{"id":["clay"]}'],
+    ['lookup_vendor','{"id":null}'],['lookup_vendor','{"id":{}}'],['compute_total','{"id":"clay","quantity":999}']])
     assert.throws(()=>dispatch({type:'function',function:{name,arguments:args}}));
   assert.equal(verify('{}').vendor,false);assert.equal(verify('clay 7480 quote-clay-v2').parse,false);
+});
+test('custom endpoint tab/device records preserve binding across refresh',()=>{
+  for(const mode of ['tab','device']){
+    const session=storage(),local=storage(),v=new Credentials(session,local);
+    v.save(sentinel,'https://personal.example/beta',mode,15);
+    const refreshed=new Credentials(session,local);
+    assert.equal(refreshed.metadata().base,'https://personal.example/beta');
+    assert.equal(refreshed.read('https://api.deepseek.com'),null);
+    assert.equal(refreshed.read(refreshed.metadata().base).key,sentinel);
+    refreshed.clear();assert.equal(refreshed.metadata(),null);
+  }
 });
 test('native fetch uses bound endpoint, abort signal, no redirects, no retries',async()=>{
   const c=new AbortController();let calls=0;
   const fetcher=async(url,init)=>{calls++;assert.equal(url,'https://api.deepseek.com/chat/completions');
     assert.equal(init.redirect,'error');assert.equal(init.credentials,'omit');assert.equal(init.referrerPolicy,'no-referrer');
-    assert.equal(JSON.parse(init.body).max_tokens,1200);return response(stream);};
+    assert.equal(JSON.parse(init.body).max_tokens,1200);
+    assert.equal(JSON.parse(init.body).stream_options.include_usage,true);return response(stream);};
   await chat({base:'https://api.deepseek.com',key:sentinel,model:'deepseek-flash',messages:[],signal:c.signal,fetcher});
   assert.equal(calls,1);c.abort();await assert.rejects(chat({base:'https://api.deepseek.com',key:sentinel,model:'deepseek-flash',messages:[],signal:c.signal,fetcher}));
 });

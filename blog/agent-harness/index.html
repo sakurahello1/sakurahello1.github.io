@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>agent&amp;harness从入门到精通</title>
 <meta name="description" content="30讲中文工程课程：Execute、Persist、验证、多Agent与可靠性安全。原始论文、Python OpenAI SDK参考harness和按需加载的交互实验。">
@@ -26,7 +26,7 @@
 <div class="measure mono">EXECUTE → PERSIST → GOVERN</div>
 <h1>agent&amp;harness从入门到精通</h1>
 <p class="dek">模型提出动作，系统让动作真实发生；上下文会结束，工作状态不能归零；宣称完成之后，还需要证据。这是一门从原理走到可运行 Python harness 的中文课程，每讲连接机制、论文边界和动手实验。</p>
-<p class="meta mono">30讲 · 28187 中文字（不含代码） · 离线实验 + 自愿BYOK · 约120分钟起</p>
+<p class="meta mono">30讲 · 28140 中文字 · 离线实验 + 自愿BYOK · 约120分钟起</p>
 <a class="action" href="#course">开始阅读</a><a class="action" href="examples/reference.zip" download>下载 Python 完整示例</a>
 <nav class="nav-mini" aria-label="课程分部"><a href="#part-0">Execute</a><a href="#part-7">Persist</a><a href="#part-15">Govern I</a><a href="#part-20">Multi Agent</a><a href="#part-25">Govern II</a></nav>
 <p class="caption">正文仅在展开该讲时加载，实验仅在点击加载时导入。无JavaScript也可独立阅读。模拟结果与论文测量严格分开。</p></header>
@@ -49,156 +49,156 @@
 <p><a href="https://api-docs.deepseek.com/">官方API</a> · <a href="https://api-docs.deepseek.com/quick_start/pricing/">动态价格与密钥入口</a> · <a href="examples/README.md">本机运行说明</a></p></details></section>
 <section id="course" aria-label="课程正文"><div class="part-head" id="part-0"><p class="spec-label mono">EXECUTE</p><h2>让动作真实发生</h2></div>
 <section class="lesson" id="lesson-0" data-sec="EXECUTE">
-<div class="lesson-head"><span class="number">01</span><div><h3>模型说做了，系统怎样知道真做了？</h3>
+<div class="lesson-head"><span class="number">01</span><div><h3><a href="#lesson-0">模型说做了，系统怎样知道真做了？</a></h3>
 <button type="button" data-chapter="00" aria-controls="body-00" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/00-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-00" hidden></article></section>
 <section class="lesson" id="lesson-1" data-sec="EXECUTE">
-<div class="lesson-head"><span class="number">02</span><div><h3>ReAct：行动带来新证据</h3>
+<div class="lesson-head"><span class="number">02</span><div><h3><a href="#lesson-1">ReAct：行动带来新证据</a></h3>
 <button type="button" data-chapter="01" aria-controls="body-01" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/01-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-01" hidden></article></section>
 <section class="lesson" id="lesson-2" data-sec="EXECUTE">
-<div class="lesson-head"><span class="number">03</span><div><h3>工具注册与完整契约</h3>
+<div class="lesson-head"><span class="number">03</span><div><h3><a href="#lesson-2">工具注册与完整契约</a></h3>
 <button type="button" data-chapter="02" aria-controls="body-02" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/02-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-02" hidden></article></section>
 <section class="lesson" id="lesson-3" data-sec="EXECUTE">
-<div class="lesson-head"><span class="number">04</span><div><h3>JSON与函数调用的五层正确性</h3>
+<div class="lesson-head"><span class="number">04</span><div><h3><a href="#lesson-3">JSON与函数调用的五层正确性</a></h3>
 <button type="button" data-chapter="03" aria-controls="body-03" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/03-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-03" hidden></article></section>
 <section class="lesson" id="lesson-4" data-sec="EXECUTE">
-<div class="lesson-head"><span class="number">05</span><div><h3>约束解码：动态收窄下一步</h3>
+<div class="lesson-head"><span class="number">05</span><div><h3><a href="#lesson-4">约束解码：动态收窄下一步</a></h3>
 <button type="button" data-chapter="04" aria-controls="body-04" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/04-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-04" hidden></article></section>
 <section class="lesson" id="lesson-5" data-sec="EXECUTE">
-<div class="lesson-head"><span class="number">06</span><div><h3>为什么think：改进决策而非拉长文字</h3>
+<div class="lesson-head"><span class="number">06</span><div><h3><a href="#lesson-5">为什么think：改进决策而非拉长文字</a></h3>
 <button type="button" data-chapter="05" aria-controls="body-05" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/05-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-05" hidden></article></section>
 <section class="lesson" id="lesson-6" data-sec="EXECUTE">
-<div class="lesson-head"><span class="number">07</span><div><h3>Python + OpenAI SDK：最小可运行ReAct</h3>
+<div class="lesson-head"><span class="number">07</span><div><h3><a href="#lesson-6">Python + OpenAI SDK：最小可运行ReAct</a></h3>
 <button type="button" data-chapter="06" aria-controls="body-06" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/06-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-06" hidden></article></section>
 <div class="part-head" id="part-7"><p class="spec-label mono">PERSIST</p><h2>让工作能够恢复</h2></div>
 <section class="lesson" id="lesson-7" data-sec="PERSIST">
-<div class="lesson-head"><span class="number">08</span><div><h3>窗口会满，任务不能归零</h3>
+<div class="lesson-head"><span class="number">08</span><div><h3><a href="#lesson-7">窗口会满，任务不能归零</a></h3>
 <button type="button" data-chapter="07" aria-controls="body-07" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/07-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-07" hidden></article></section>
 <section class="lesson" id="lesson-8" data-sec="PERSIST">
-<div class="lesson-head"><span class="number">09</span><div><h3>Claude Code compact与恢复</h3>
+<div class="lesson-head"><span class="number">09</span><div><h3><a href="#lesson-8">Claude Code compact与恢复</a></h3>
 <button type="button" data-chapter="08" aria-controls="body-08" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/08-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-08" hidden></article></section>
 <section class="lesson" id="lesson-9" data-sec="PERSIST">
-<div class="lesson-head"><span class="number">10</span><div><h3>位置、干扰与注意力</h3>
+<div class="lesson-head"><span class="number">10</span><div><h3><a href="#lesson-9">位置、干扰与注意力</a></h3>
 <button type="button" data-chapter="09" aria-controls="body-09" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/09-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-09" hidden></article></section>
 <section class="lesson" id="lesson-10" data-sec="PERSIST">
-<div class="lesson-head"><span class="number">11</span><div><h3>标称窗口与有效上下文</h3>
+<div class="lesson-head"><span class="number">11</span><div><h3><a href="#lesson-10">标称窗口与有效上下文</a></h3>
 <button type="button" data-chapter="10" aria-controls="body-10" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/10-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-10" hidden></article></section>
 <section class="lesson" id="lesson-11" data-sec="PERSIST">
-<div class="lesson-head"><span class="number">12</span><div><h3>记忆分类的两条轴</h3>
+<div class="lesson-head"><span class="number">12</span><div><h3><a href="#lesson-11">记忆分类的两条轴</a></h3>
 <button type="button" data-chapter="11" aria-controls="body-11" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/11-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-11" hidden></article></section>
 <section class="lesson" id="lesson-12" data-sec="PERSIST">
-<div class="lesson-head"><span class="number">13</span><div><h3>Markdown、检索与知识图谱</h3>
+<div class="lesson-head"><span class="number">13</span><div><h3><a href="#lesson-12">Markdown、检索与知识图谱</a></h3>
 <button type="button" data-chapter="12" aria-controls="body-12" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/12-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-12" hidden></article></section>
 <section class="lesson" id="lesson-13" data-sec="PERSIST">
-<div class="lesson-head"><span class="number">14</span><div><h3>参数记忆与可更新外部事实</h3>
+<div class="lesson-head"><span class="number">14</span><div><h3><a href="#lesson-13">参数记忆与可更新外部事实</a></h3>
 <button type="button" data-chapter="13" aria-controls="body-13" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/13-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-13" hidden></article></section>
 <section class="lesson" id="lesson-14" data-sec="PERSIST">
-<div class="lesson-head"><span class="number">15</span><div><h3>经验记忆与Skill</h3>
+<div class="lesson-head"><span class="number">15</span><div><h3><a href="#lesson-14">经验记忆与Skill</a></h3>
 <button type="button" data-chapter="14" aria-controls="body-14" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/14-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-14" hidden></article></section>
 <div class="part-head" id="part-15"><p class="spec-label mono">GOVERN I</p><h2>以证据判断完成</h2></div>
 <section class="lesson" id="lesson-15" data-sec="GOVERN I">
-<div class="lesson-head"><span class="number">16</span><div><h3>验证为何成为中心，以及独立性</h3>
+<div class="lesson-head"><span class="number">16</span><div><h3><a href="#lesson-15">验证为何成为中心，以及独立性</a></h3>
 <button type="button" data-chapter="15" aria-controls="body-15" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/15-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-15" hidden></article></section>
 <section class="lesson" id="lesson-16" data-sec="GOVERN I">
-<div class="lesson-head"><span class="number">17</span><div><h3>外部证据与自我纠错</h3>
+<div class="lesson-head"><span class="number">17</span><div><h3><a href="#lesson-16">外部证据与自我纠错</a></h3>
 <button type="button" data-chapter="16" aria-controls="body-16" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/16-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-16" hidden></article></section>
 <section class="lesson" id="lesson-17" data-sec="GOVERN I">
-<div class="lesson-head"><span class="number">18</span><div><h3>多模态验证：截图、状态与因果</h3>
+<div class="lesson-head"><span class="number">18</span><div><h3><a href="#lesson-17">多模态验证：截图、状态与因果</a></h3>
 <button type="button" data-chapter="17" aria-controls="body-17" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/17-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-17" hidden></article></section>
 <section class="lesson" id="lesson-18" data-sec="GOVERN I">
-<div class="lesson-head"><span class="number">19</span><div><h3>Human-in-the-loop：把人放在正确位置</h3>
+<div class="lesson-head"><span class="number">19</span><div><h3><a href="#lesson-18">Human-in-the-loop：把人放在正确位置</a></h3>
 <button type="button" data-chapter="18" aria-controls="body-18" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/18-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-18" hidden></article></section>
 <section class="lesson" id="lesson-19" data-sec="GOVERN I">
-<div class="lesson-head"><span class="number">20</span><div><h3>Human-out-of-the-loop：有边界的自主</h3>
+<div class="lesson-head"><span class="number">20</span><div><h3><a href="#lesson-19">Human-out-of-the-loop：有边界的自主</a></h3>
 <button type="button" data-chapter="19" aria-controls="body-19" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/19-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-19" hidden></article></section>
 <div class="part-head" id="part-20"><p class="spec-label mono">MULTI AGENT</p><h2>改变计算分配与信息流</h2></div>
 <section class="lesson" id="lesson-20" data-sec="MULTI AGENT">
-<div class="lesson-head"><span class="number">21</span><div><h3>五种agent架构</h3>
+<div class="lesson-head"><span class="number">21</span><div><h3><a href="#lesson-20">五种agent架构</a></h3>
 <button type="button" data-chapter="20" aria-controls="body-20" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/20-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-20" hidden></article></section>
 <section class="lesson" id="lesson-21" data-sec="MULTI AGENT">
-<div class="lesson-head"><span class="number">22</span><div><h3>通信：信息如何跨越边界</h3>
+<div class="lesson-head"><span class="number">22</span><div><h3><a href="#lesson-21">通信：信息如何跨越边界</a></h3>
 <button type="button" data-chapter="21" aria-controls="body-21" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/21-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-21" hidden></article></section>
 <section class="lesson" id="lesson-22" data-sec="MULTI AGENT">
-<div class="lesson-head"><span class="number">23</span><div><h3>核心论文：从+80.8%到−70.0%</h3>
+<div class="lesson-head"><span class="number">23</span><div><h3><a href="#lesson-22">核心论文：从+80.8%到−70.0%</a></h3>
 <button type="button" data-chapter="22" aria-controls="body-22" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/22-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-22" hidden></article></section>
 <section class="lesson" id="lesson-23" data-sec="MULTI AGENT">
-<div class="lesson-head"><span class="number">24</span><div><h3>能力饱和与协调税</h3>
+<div class="lesson-head"><span class="number">24</span><div><h3><a href="#lesson-23">能力饱和与协调税</a></h3>
 <button type="button" data-chapter="23" aria-controls="body-23" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/23-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-23" hidden></article></section>
 <section class="lesson" id="lesson-24" data-sec="MULTI AGENT">
-<div class="lesson-head"><span class="number">25</span><div><h3>等预算比较：token、美元与墙钟</h3>
+<div class="lesson-head"><span class="number">25</span><div><h3><a href="#lesson-24">等预算比较：token、美元与墙钟</a></h3>
 <button type="button" data-chapter="24" aria-controls="body-24" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/24-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-24" hidden></article></section>
 <div class="part-head" id="part-25"><p class="spec-label mono">GOVERN II</p><h2>把可靠性与安全做成边界</h2></div>
 <section class="lesson" id="lesson-25" data-sec="GOVERN II">
-<div class="lesson-head"><span class="number">26</span><div><h3>权限：提议、许可、执行</h3>
+<div class="lesson-head"><span class="number">26</span><div><h3><a href="#lesson-25">权限：提议、许可、执行</a></h3>
 <button type="button" data-chapter="25" aria-controls="body-25" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/25-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-25" hidden></article></section>
 <section class="lesson" id="lesson-26" data-sec="GOVERN II">
-<div class="lesson-head"><span class="number">27</span><div><h3>沙箱：限制可达能力</h3>
+<div class="lesson-head"><span class="number">27</span><div><h3><a href="#lesson-26">沙箱：限制可达能力</a></h3>
 <button type="button" data-chapter="26" aria-controls="body-26" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/26-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-26" hidden></article></section>
 <section class="lesson" id="lesson-27" data-sec="GOVERN II">
-<div class="lesson-head"><span class="number">28</span><div><h3>提示注入与不可信数据</h3>
+<div class="lesson-head"><span class="number">28</span><div><h3><a href="#lesson-27">提示注入与不可信数据</a></h3>
 <button type="button" data-chapter="27" aria-controls="body-27" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/27-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-27" hidden></article></section>
 <section class="lesson" id="lesson-28" data-sec="GOVERN II">
-<div class="lesson-head"><span class="number">29</span><div><h3>Trace与replay：可见不等于可复现</h3>
+<div class="lesson-head"><span class="number">29</span><div><h3><a href="#lesson-28">Trace与replay：可见不等于可复现</a></h3>
 <button type="button" data-chapter="28" aria-controls="body-28" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/28-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-28" hidden></article></section>
 <section class="lesson" id="lesson-29" data-sec="GOVERN II">
-<div class="lesson-head"><span class="number">30</span><div><h3>可靠性：把成本、延迟和复现一起验收</h3>
+<div class="lesson-head"><span class="number">30</span><div><h3><a href="#lesson-29">可靠性：把成本、延迟和复现一起验收</a></h3>
 <button type="button" data-chapter="29" aria-controls="body-29" aria-expanded="false">展开本讲正文</button>
 <a class="action" href="chapters/29-read.html">独立阅读 / 无JS</a></div></div>
 <article class="chapter" id="body-29" hidden></article></section></section>

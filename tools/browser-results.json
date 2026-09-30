@@ -1,5 +1,6 @@
 [
   {
+    "offline_font_fallback": true,
     "page": "home",
     "viewport": 1280,
     "http": 200,
@@ -29,11 +30,11 @@
     },
     "font_responses": [
       [
-        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-500-latin.woff2",
         200
       ],
       [
-        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-500-latin.woff2",
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
         200
       ],
       [
@@ -51,15 +52,16 @@
     "screenshot": "tools/shots/home-desktop.png"
   },
   {
+    "offline_font_fallback": true,
     "page": "home",
     "viewport": 360,
     "http": 200,
     "dimensions": {
       "viewport": 360,
-      "html": 371,
+      "html": 360,
       "body": 371,
-      "actualScrollX": 11,
-      "horizontalScroll": true,
+      "actualScrollX": 0,
+      "horizontalScroll": false,
       "overflowNodes": [
         {
           "tag": "SPAN",
@@ -93,11 +95,11 @@
     },
     "font_responses": [
       [
-        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
+        "http://127.0.0.1:8000/assets/fonts/barlow-condensed-700-latin.woff2",
         200
       ],
       [
-        "http://127.0.0.1:8000/assets/fonts/barlow-condensed-700-latin.woff2",
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
         200
       ],
       [
@@ -115,6 +117,7 @@
     "screenshot": "tools/shots/home-mobile.png"
   },
   {
+    "offline_font_fallback": true,
     "page": "blog",
     "viewport": 1280,
     "http": 200,
@@ -144,11 +147,11 @@
     },
     "font_responses": [
       [
-        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-500-latin.woff2",
         200
       ],
       [
-        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-500-latin.woff2",
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
         200
       ],
       [
@@ -162,6 +165,7 @@
     "screenshot": "tools/shots/blog-desktop.png"
   },
   {
+    "offline_font_fallback": true,
     "page": "blog",
     "viewport": 360,
     "http": 200,
@@ -191,11 +195,15 @@
     },
     "font_responses": [
       [
+        "http://127.0.0.1:8000/assets/fonts/barlow-condensed-700-latin.woff2",
+        200
+      ],
+      [
         "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
         200
       ],
       [
-        "http://127.0.0.1:8000/assets/fonts/barlow-condensed-700-latin.woff2",
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-500-latin.woff2",
         200
       ]
     ],
@@ -205,121 +213,184 @@
     "screenshot": "tools/shots/blog-mobile.png"
   },
   {
+    "offline_font_fallback": true,
     "page": "rl-post-training",
     "viewport": 1280,
     "http": 200,
     "dimensions": {
       "viewport": 1280,
       "html": 1280,
-      "body": 1264,
+      "body": 1280,
       "actualScrollX": 0,
       "horizontalScroll": false,
       "overflowNodes": [],
       "barlow": true,
-      "barlowFaces": [],
-      "headingFamily": "\"Noto Sans SC\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", system-ui, sans-serif"
+      "barlowFaces": [
+        {
+          "weight": "500",
+          "status": "unloaded"
+        },
+        {
+          "weight": "600",
+          "status": "loaded"
+        },
+        {
+          "weight": "700",
+          "status": "loaded"
+        }
+      ],
+      "headingFamily": "\"Barlow Condensed\", Bahnschrift, \"DIN Condensed\", \"Arial Narrow\", sans-serif"
     },
-    "font_responses": [],
+    "font_responses": [
+      [
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
+        200
+      ],
+      [
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-500-latin.woff2",
+        200
+      ],
+      [
+        "http://127.0.0.1:8000/assets/fonts/barlow-condensed-700-latin.woff2",
+        200
+      ],
+      [
+        "http://127.0.0.1:8000/assets/fonts/barlow-condensed-600-latin.woff2",
+        200
+      ]
+    ],
     "console_errors": [],
     "page_errors": [],
     "failed_local": [],
     "screenshot": "tools/shots/rl-post-training-desktop.png"
   },
   {
+    "offline_font_fallback": true,
     "page": "rl-post-training",
     "viewport": 360,
     "http": 200,
     "dimensions": {
       "viewport": 360,
-      "html": 376,
-      "body": 368,
-      "actualScrollX": 16,
-      "horizontalScroll": true,
+      "html": 360,
+      "body": 360,
+      "actualScrollX": 0,
+      "horizontalScroll": false,
       "overflowNodes": [
         {
           "tag": "svg",
           "id": "trail-svg",
           "className": "",
-          "right": 924
+          "right": 930
         },
         {
-          "tag": "path",
+          "tag": "line",
           "id": "",
           "className": "",
-          "right": 924
+          "right": 908
         },
         {
-          "tag": "path",
+          "tag": "line",
           "id": "",
           "className": "",
-          "right": 924
+          "right": 908
         },
         {
-          "tag": "path",
+          "tag": "line",
           "id": "",
           "className": "",
-          "right": 924
+          "right": 908
         },
         {
-          "tag": "path",
+          "tag": "line",
           "id": "",
           "className": "",
-          "right": 924
+          "right": 908
         },
         {
-          "tag": "path",
+          "tag": "line",
           "id": "",
           "className": "",
-          "right": 924
+          "right": 908
         },
         {
-          "tag": "path",
+          "tag": "line",
           "id": "",
           "className": "",
-          "right": 924
+          "right": 908
         },
         {
-          "tag": "path",
+          "tag": "line",
           "id": "",
           "className": "",
-          "right": 924
-        },
-        {
-          "tag": "path",
-          "id": "",
-          "className": "",
-          "right": 407
-        },
-        {
-          "tag": "path",
-          "id": "",
-          "className": "",
-          "right": 868
+          "right": 908
         },
         {
           "tag": "text",
           "id": "",
           "className": "",
-          "right": 624
+          "right": 629
         },
         {
           "tag": "path",
           "id": "",
           "className": "",
-          "right": 407
+          "right": 413
+        },
+        {
+          "tag": "path",
+          "id": "",
+          "className": "",
+          "right": 874
+        },
+        {
+          "tag": "path",
+          "id": "",
+          "className": "",
+          "right": 533
         }
       ],
       "barlow": true,
-      "barlowFaces": [],
-      "headingFamily": "\"Noto Sans SC\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", system-ui, sans-serif"
+      "barlowFaces": [
+        {
+          "weight": "500",
+          "status": "unloaded"
+        },
+        {
+          "weight": "600",
+          "status": "loaded"
+        },
+        {
+          "weight": "700",
+          "status": "loaded"
+        }
+      ],
+      "headingFamily": "\"Barlow Condensed\", Bahnschrift, \"DIN Condensed\", \"Arial Narrow\", sans-serif"
     },
-    "font_responses": [],
+    "font_responses": [
+      [
+        "http://127.0.0.1:8000/assets/fonts/barlow-condensed-600-latin.woff2",
+        200
+      ],
+      [
+        "http://127.0.0.1:8000/assets/fonts/barlow-condensed-700-latin.woff2",
+        200
+      ],
+      [
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
+        200
+      ],
+      [
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-500-latin.woff2",
+        200
+      ]
+    ],
     "console_errors": [],
     "page_errors": [],
     "failed_local": [],
     "screenshot": "tools/shots/rl-post-training-mobile.png"
   },
   {
+    "offline_font_fallback": true,
     "page": "agent-theory",
     "viewport": 1280,
     "http": 200,
@@ -331,110 +402,172 @@
       "horizontalScroll": false,
       "overflowNodes": [],
       "barlow": true,
-      "barlowFaces": [],
-      "headingFamily": "TextCM, NSC, \"Noto Serif SC\", \"Source Han Serif SC\", \"Songti SC\", STSong, serif"
+      "barlowFaces": [
+        {
+          "weight": "500",
+          "status": "unloaded"
+        },
+        {
+          "weight": "600",
+          "status": "loaded"
+        },
+        {
+          "weight": "700",
+          "status": "loaded"
+        }
+      ],
+      "headingFamily": "\"Barlow Condensed\", \"Arial Narrow\", sans-serif"
     },
-    "font_responses": [],
+    "font_responses": [
+      [
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
+        200
+      ],
+      [
+        "http://127.0.0.1:8000/assets/fonts/barlow-condensed-700-latin.woff2",
+        200
+      ],
+      [
+        "http://127.0.0.1:8000/assets/fonts/barlow-condensed-600-latin.woff2",
+        200
+      ],
+      [
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-500-latin.woff2",
+        200
+      ]
+    ],
     "console_errors": [],
     "page_errors": [],
     "failed_local": [],
     "screenshot": "tools/shots/agent-theory-desktop.png"
   },
   {
+    "offline_font_fallback": true,
     "page": "agent-theory",
     "viewport": 360,
     "http": 200,
     "dimensions": {
       "viewport": 360,
-      "html": 664,
-      "body": 664,
-      "actualScrollX": 304,
-      "horizontalScroll": true,
+      "html": 360,
+      "body": 718,
+      "actualScrollX": 0,
+      "horizontalScroll": false,
       "overflowNodes": [
         {
           "tag": "semantics",
           "id": "",
           "className": "",
-          "right": 394
+          "right": 439
         },
         {
           "tag": "mrow",
           "id": "",
           "className": "",
-          "right": 394
+          "right": 439
         },
         {
           "tag": "msub",
           "id": "",
           "className": "",
-          "right": 388
-        },
-        {
-          "tag": "mrow",
-          "id": "",
-          "className": "",
-          "right": 385
-        },
-        {
-          "tag": "mo",
-          "id": "",
-          "className": "",
-          "right": 374
-        },
-        {
-          "tag": "mn",
-          "id": "",
-          "className": "",
-          "right": 385
-        },
-        {
-          "tag": "mo",
-          "id": "",
-          "className": "",
-          "right": 394
-        },
-        {
-          "tag": "semantics",
-          "id": "",
-          "className": "",
-          "right": 442
-        },
-        {
-          "tag": "mrow",
-          "id": "",
-          "className": "",
-          "right": 442
-        },
-        {
-          "tag": "msub",
-          "id": "",
-          "className": "",
-          "right": 375
-        },
-        {
-          "tag": "mrow",
-          "id": "",
-          "className": "",
-          "right": 363
+          "right": 381
         },
         {
           "tag": "mi",
           "id": "",
           "className": "",
-          "right": 363
+          "right": 372
+        },
+        {
+          "tag": "mi",
+          "id": "",
+          "className": "",
+          "right": 378
+        },
+        {
+          "tag": "mo",
+          "id": "",
+          "className": "",
+          "right": 385
+        },
+        {
+          "tag": "msub",
+          "id": "",
+          "className": "",
+          "right": 432
+        },
+        {
+          "tag": "mi",
+          "id": "",
+          "className": "",
+          "right": 399
+        },
+        {
+          "tag": "mrow",
+          "id": "",
+          "className": "",
+          "right": 429
+        },
+        {
+          "tag": "mi",
+          "id": "",
+          "className": "",
+          "right": 405
+        },
+        {
+          "tag": "mo",
+          "id": "",
+          "className": "",
+          "right": 418
+        },
+        {
+          "tag": "mn",
+          "id": "",
+          "className": "",
+          "right": 429
         }
       ],
       "barlow": true,
-      "barlowFaces": [],
-      "headingFamily": "TextCM, NSC, \"Noto Serif SC\", \"Source Han Serif SC\", \"Songti SC\", STSong, serif"
+      "barlowFaces": [
+        {
+          "weight": "500",
+          "status": "unloaded"
+        },
+        {
+          "weight": "600",
+          "status": "loaded"
+        },
+        {
+          "weight": "700",
+          "status": "loaded"
+        }
+      ],
+      "headingFamily": "\"Barlow Condensed\", \"Arial Narrow\", sans-serif"
     },
-    "font_responses": [],
+    "font_responses": [
+      [
+        "http://127.0.0.1:8000/assets/fonts/barlow-condensed-700-latin.woff2",
+        200
+      ],
+      [
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
+        200
+      ],
+      [
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-500-latin.woff2",
+        200
+      ],
+      [
+        "http://127.0.0.1:8000/assets/fonts/barlow-condensed-600-latin.woff2",
+        200
+      ]
+    ],
     "console_errors": [],
     "page_errors": [],
     "failed_local": [],
     "screenshot": "tools/shots/agent-theory-mobile.png"
   },
   {
+    "offline_font_fallback": true,
     "page": "404",
     "viewport": 1280,
     "http": 200,
@@ -464,15 +597,15 @@
     },
     "font_responses": [
       [
+        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
+        200
+      ],
+      [
         "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-500-latin.woff2",
         200
       ],
       [
         "http://127.0.0.1:8000/assets/fonts/barlow-condensed-700-latin.woff2",
-        200
-      ],
-      [
-        "http://127.0.0.1:8000/assets/fonts/jetbrains-mono-400-latin.woff2",
         200
       ]
     ],
@@ -482,6 +615,7 @@
     "screenshot": "tools/shots/404-desktop.png"
   },
   {
+    "offline_font_fallback": true,
     "page": "404",
     "viewport": 360,
     "http": 200,

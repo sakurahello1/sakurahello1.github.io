@@ -3,7 +3,7 @@
 <p>Claude Code 的公开文档提供了一个具体案例。依据 2026 年 9 月 30 日读取的页面，文档提到 v2.1.198 的摘要请求继承会话 thinking 配置；压缩后会重新注入根级 <code>CLAUDE.md</code>、无路径限定规则、auto memory 与计划等内容，路径相关规则随后续文件读取再加载。它还描述了重读部分近期文件、技能内容重注入及后台任务提醒等机制。这些细节说明，产品并不只依赖“一段万能摘要”恢复现场。<a href="https://code.claude.com/docs/en/context-window" rel="noopener noreferrer">来源：Claude Code Context Window</a></p>
 <p>实现细节有明确版本性。例如当前页面写到最多重读五个已读或编辑文件，较大文件可能只保留路径；技能正文重注入也有单项和总量预算。学习这些设计时，更值得带走的是“分类恢复、保留索引、避免重复运行”的思想。不要把某个版本的数值写成所有 agent 都必须遵守的规则，也不要把这些产品行为推断为某种通用压缩算法的最优解。</p>
 <p>如果自己写 harness，可以从结构化检查点开始：</p>
-<pre><code>{
+<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>{
   &quot;goal&quot;: &quot;比较供应商并给出建议，不下单&quot;,
   &quot;completion&quot;: &quot;推荐满足预算和日期，且引用当前报价&quot;,
   &quot;constraints&quot;: {&quot;budget_cny&quot;: 8000, &quot;deadline&quot;: &quot;2026-10-10&quot;},

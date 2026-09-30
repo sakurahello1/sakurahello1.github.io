@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>agent&amp;harness从入门到精通</title>
 <meta name="description" content="30讲中文工程课程：Execute、Persist、验证、多Agent与可靠性安全。原始论文、Python OpenAI SDK参考harness和按需加载的交互实验。">
@@ -26,7 +26,7 @@
 <div class="measure mono">EXECUTE → PERSIST → GOVERN</div>
 <h1>agent&amp;harness从入门到精通</h1>
 <p class="dek">模型提出动作，系统让动作真实发生；上下文会结束，工作状态不能归零；宣称完成之后，还需要证据。这是一门从原理走到可运行 Python harness 的中文课程，每讲连接机制、论文边界和动手实验。</p>
-<p class="meta mono">30讲 · {{CHINESE_COUNT}} 中文字（不含代码） · 离线实验 + 自愿BYOK · 约120分钟起</p>
+<p class="meta mono">30讲 · {{CHINESE_COUNT}} 中文字 · 离线实验 + 自愿BYOK · 约120分钟起</p>
 <a class="action" href="#course">开始阅读</a><a class="action" href="examples/reference.zip" download>下载 Python 完整示例</a>
 <nav class="nav-mini" aria-label="课程分部"><a href="#part-0">Execute</a><a href="#part-7">Persist</a><a href="#part-15">Govern I</a><a href="#part-20">Multi Agent</a><a href="#part-25">Govern II</a></nav>
 <p class="caption">正文仅在展开该讲时加载，实验仅在点击加载时导入。无JavaScript也可独立阅读。模拟结果与论文测量严格分开。</p></header>

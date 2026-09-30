@@ -21,6 +21,8 @@ $('#save').addEventListener('click', () => {
   } catch (e) { status(e.message); }
 });
 try {
+  const metadata = vault.metadata();
+  if (metadata) $('#base').value = metadata.base;
   const restored = vault.read($('#base').value);
   if (restored) status('发现该目的地的保留凭据；请重新勾选目的地确认，再点击确认使用。');
 } catch {}
@@ -53,7 +55,7 @@ async function loadChapter(button) {
         open.disabled = true;
         try {
           const module = await import('./labs.mjs');
-          module.mount(open.parentElement, open.dataset.lab, {
+          await module.mount(open.parentElement, open.dataset.lab, {
             getCredentials() {
               const base = normalizeBase($('#base').value);
               const v = vault.read(base);
@@ -70,6 +72,16 @@ async function loadChapter(button) {
   })(); pending.set(id, job); await job;
 }
 for (const b of document.querySelectorAll('[data-chapter]')) b.addEventListener('click', () => loadChapter(b));
+async function followHash() {
+  const match = location.hash.match(/^#lesson-(\d+)$/);
+  if (!match || Number(match[1]) > 29) return;
+  const button = document.querySelector(`[data-chapter="${match[1].padStart(2, '0')}"]`);
+  if (!button) return;
+  const article = document.getElementById(button.getAttribute('aria-controls'));
+  if (article.hidden) await loadChapter(button);
+  button.scrollIntoView({block: 'start'});
+}
+window.addEventListener('hashchange', followHash); followHash();
 document.addEventListener('visibilitychange', () => {
   // Live calls continue only while visible; cancellation cannot guarantee no provider billing.
   if (document.hidden) controller?.abort();
