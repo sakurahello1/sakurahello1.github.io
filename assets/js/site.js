@@ -404,6 +404,23 @@
       ctx.fillStyle = INK; ctx.fillRect(fx, fy - H * 0.22, 3, H * 0.22);
       ctx.fillStyle = WHITE; ctx.beginPath(); ctx.moveTo(fx + 3, fy - H * 0.22); ctx.lineTo(fx + W * 0.07, fy - H * 0.18); ctx.lineTo(fx + 3, fy - H * 0.14); ctx.fill();
     },
+    kl: function (ctx, W, H, t) {          // 骰子的两个分布：p 是虚线框，q 是实心条，右上角是此刻的 D(p‖q)
+      ctx.clearRect(0, 0, W, H);
+      var v = [1.2, -0.6, 0.3, -1.1, 0.8, -0.6], s = 0.9 * Math.sin(t * 0.6), q = [], z = 0, d = 0, i;
+      for (i = 0; i < 6; i++) { q[i] = Math.exp(v[i] * s); z += q[i]; }
+      for (i = 0; i < 6; i++) { q[i] /= z; d += (1 / 6) * Math.log((1 / 6) / q[i]); }
+      var x0 = W * 0.38, x1 = W * 0.94, base = H * 0.8, top = H * 0.22, bw = (x1 - x0) / 6, scale = (base - top) / 0.4;
+      ctx.strokeStyle = 'rgba(237,232,222,.25)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x0, base); ctx.lineTo(x1, base); ctx.stroke();
+      for (i = 0; i < 6; i++) {
+        var x = x0 + i * bw + bw * 0.16, w = bw * 0.68, hq = q[i] * scale, hp = (1 / 6) * scale;
+        ctx.fillStyle = CLAY; ctx.beginPath(); rr(ctx, x, base - hq, w, hq, 4); ctx.fill();
+        ctx.setLineDash([4, 4]); ctx.strokeStyle = CREAM; ctx.lineWidth = 1.5; ctx.strokeRect(x, base - hp, w, hp); ctx.setLineDash([]);
+        for (var k = 0; k <= i; k++) { ctx.fillStyle = 'rgba(237,232,222,.7)'; ctx.beginPath(); ctx.arc(x + w / 2 + (k - i / 2) * H * 0.028, base + H * 0.06, H * 0.009, 0, 7); ctx.fill(); }
+      }
+      ctx.font = '500 ' + Math.max(9, Math.min(H * 0.05, W * 0.03)) + 'px "JetBrains Mono", monospace';
+      ctx.fillStyle = CREAM; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText('D(p‖q) = ' + d.toFixed(3) + ' nats', x1, H * 0.12);
+    },
     agent: function (ctx, W, H, t) {       // 中心节点与几种形状的卫星，信号沿连线往返
       ctx.clearRect(0, 0, W, H);
       var cx = W * 0.62, cy = H * 0.46, R = Math.min(W, H) * 0.34, n = 7;
