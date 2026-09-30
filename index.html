@@ -121,8 +121,8 @@
         <div class="body">
           <p class="kicker mono">开源贡献 · Benchmark 设想</p>
           <h3>HarnessRouter<small>harness × 模型 × 任务集</small></h3>
-          <p>用一个接口运行 Codex、Claude Code 等 agent harness 的开源项目。我提出并实现了在公开任务集上评测“harness × 模型”组合的 benchmark 维度，另有 4 个 runner 与 console 修复被合并。</p>
-          <div class="specs mono"><div>PRs merged<b>5</b></div><div>Runs<b>200</b></div><div>Issues<b>#205 · #280</b></div></div>
+          <p>用一个接口运行 Codex、Claude Code 等 agent harness 的开源项目。我提出并实现了在公开任务集上评测“harness × 模型”组合的 benchmark 维度，另有 4 个 runner 与 console 修复被合并；随后做了机制可逐个开关的 Pi Lab，并在隔离环境里对比了五个 harness。</p>
+          <div class="specs mono"><div>PRs merged<b>5</b></div><div>Runs<b>410</b></div><div>Pi Lab<b>#318</b></div></div>
           <span class="go mono">Read the proposal</span>
         </div>
       </a>
@@ -270,6 +270,7 @@
       <li class="reveal"><span class="no">#216</span><div><span class="repo mono">HarnessRouter / harnessrouter</span><a class="t" href="https://github.com/HarnessRouter/harnessrouter/pull/216" target="_blank" rel="noopener">runner：opencode 的输出以可见文本为准，并补上它单独保存的推理内容</a></div><span class="status merged">Merged</span></li>
       <li class="reveal"><span class="no">#214</span><div><span class="repo mono">HarnessRouter / harnessrouter</span><a class="t" href="https://github.com/HarnessRouter/harnessrouter/pull/214" target="_blank" rel="noopener">console：网关代理按声明的时长等待，而不是 undici 默认的五分钟</a></div><span class="status merged">Merged</span></li>
       <li class="reveal"><span class="no">#209</span><div><span class="repo mono">HarnessRouter / harnessrouter</span><a class="t" href="https://github.com/HarnessRouter/harnessrouter/pull/209" target="_blank" rel="noopener">runner：cline 的 inputTokens 是整段 prompt，像 codex 一样扣除缓存部分</a></div><span class="status merged">Merged</span></li>
+      <li class="reveal"><span class="no">#318</span><div><span class="repo mono">HarnessRouter / harnessrouter</span><a class="t" href="https://github.com/HarnessRouter/harnessrouter/pull/318" target="_blank" rel="noopener">pi-lab：机制可以逐个开关的 harness，从 SoL-Pi 的四项机制开始</a></div><span class="status open">In review</span></li>
       <li class="reveal"><span class="no">#29066</span><div><span class="repo mono">ggml-org / llama.cpp</span><a class="t" href="https://github.com/ggml-org/llama.cpp/pull/29066" target="_blank" rel="noopener">common：不再把生成提示词预填进输出格式语法</a></div><span class="status open">In review</span></li>
       <li class="reveal"><span class="no">#2212</span><div><span class="repo mono">kvcache-ai / ktransformers</span><a class="t" href="https://github.com/kvcache-ai/ktransformers/pull/2212" target="_blank" rel="noopener">kt-kernel：在 AVX2 MXFP4 快速路径里对激活行分块</a></div><span class="status open">In review</span></li>
       <li class="reveal"><span class="no">#246</span><div><span class="repo mono">ZSeven-W / openpencil</span><a class="t" href="https://github.com/ZSeven-W/openpencil/pull/246" target="_blank" rel="noopener">SVG 导入：支持 transform 属性和 &lt;style&gt; 规则</a></div><span class="status open">In review</span></li>

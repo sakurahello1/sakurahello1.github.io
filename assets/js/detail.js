@@ -1,4 +1,4 @@
-/* 项目详情页图示：矩阵加一维、流程高亮、首轮结果、Pi Lab 开关 */
+/* 项目详情页图示：矩阵加一维、流程高亮、首轮结果、Pi Lab 开关、SWE-bench Pro 花费与通过 */
 (function () {
   'use strict';
   var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -13,6 +13,15 @@
     { h: 'opencode', pass: 39, n: 48, med: 75, total: 5515 },
     { h: 'dsh', pass: 36, n: 46, med: 100, total: 6506 },
     { h: 'cline', pass: 36, n: 47, med: 108, total: 6882 }
+  ];
+
+  // SWE-bench Pro 22 题，deepseek-v4.1-flash，隔离后的第三轮；cost 为每次运行的平均花费（元，闲时价）
+  var PRO = [
+    { h: 'Claude Code', pass: 13, cost: 0.24 },
+    { h: 'Codex', pass: 14, cost: 0.32 },
+    { h: 'pi', pass: 13, cost: 0.36 },
+    { h: 'Pi Lab', pass: 12, cost: 0.37 },
+    { h: 'dsh', pass: 15, cost: 0.45 }
   ];
 
   function onVisible(el, fn) {
@@ -122,14 +131,55 @@
     }, 3);
   });
 
-  /* 4. Pi Lab：一次只打开一个机制 */
+  /* 4. SWE-bench Pro：每次花费 × 通过题数 */
+  $$('canvas[data-fig="cost"]').forEach(function (cv) {
+    animate(cv, 0.5, function (ctx, W, H, k) {
+      ctx.clearRect(0, 0, W, H);
+      var fs = Math.max(10, W * 0.014), left = W * 0.12, right = W * 0.92, top = H * 0.14, bottom = H * 0.8;
+      var c0 = 0.2, c1 = 0.5, p0 = 11, p1 = 16;
+      var X = function (c) { return left + (right - left) * (c - c0) / (c1 - c0); };
+      var Y = function (p) { return bottom - (bottom - top) * (p - p0) / (p1 - p0); };
+      ctx.font = '500 ' + fs + 'px ' + MONO; ctx.textBaseline = 'middle';
+      ctx.strokeStyle = 'rgba(20,20,19,.12)'; ctx.lineWidth = 1; ctx.fillStyle = MUTE;
+      for (var p = 12; p <= 15; p++) {
+        ctx.beginPath(); ctx.moveTo(left, Y(p)); ctx.lineTo(right, Y(p)); ctx.stroke();
+        ctx.textAlign = 'right'; ctx.fillText(p + '/22', left - 10, Y(p));
+      }
+      ctx.textAlign = 'center';
+      [0.2, 0.3, 0.4, 0.5].forEach(function (c) { ctx.fillText(c.toFixed(1), X(c), bottom + H * 0.07); });
+      ctx.textAlign = 'left'; ctx.fillText('通过题数', left - W * 0.07, top - H * 0.07);
+      ctx.textAlign = 'right'; ctx.fillText('每次运行花费 · 元', right, H - H * 0.04);
+      // 最省与最贵之间的跨度
+      var span = ease((k - 1.6) / 0.8);
+      if (span > 0) {
+        var yb = bottom - H * 0.05, xa = X(0.24), xb = X(0.24) + (X(0.45) - X(0.24)) * span;
+        ctx.strokeStyle = CLAY; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(xa, yb); ctx.lineTo(xb, yb); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(xa, yb - 5); ctx.lineTo(xa, yb + 5); ctx.moveTo(xb, yb - 5); ctx.lineTo(xb, yb + 5); ctx.stroke();
+        if (span > 0.9) { ctx.fillStyle = CLAY; ctx.textAlign = 'center'; ctx.fillText('× 1.9', (xa + xb) / 2, yb - H * 0.04); }
+      }
+      PRO.forEach(function (r, i) {
+        var g = ease((k - i * 0.18) / 0.7), x = X(r.cost), y = Y(r.pass), rad = Math.max(5, W * 0.009) * g;
+        if (g <= 0) return;
+        ctx.globalAlpha = g;
+        ctx.fillStyle = r.h === 'Pi Lab' ? CLAY : INK; ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fill();
+        // Claude Code 与 pi 同在 13/22，标签分放点的下方和上方
+        var below = r.h === 'Claude Code', above = r.h === 'pi', lx = x + rad + 8, ly = y;
+        if (below || above) { lx = x; ly = y + (below ? 1 : -1) * (rad + fs); }
+        ctx.fillStyle = INK; ctx.textAlign = below || above ? 'center' : 'left';
+        ctx.fillText(r.h + ' · ' + r.cost.toFixed(2), lx, ly);
+        ctx.globalAlpha = 1;
+      });
+    }, 3);
+  });
+
+  /* 5. Pi Lab：一次只打开一个机制 */
   $$('.lab').forEach(function (lab) {
     var sw = $$('.switch', lab), chips = $('.chips', lab), verdict = $('.verdict', lab);
     function render() {
       var on = sw.filter(function (b) { return b.getAttribute('aria-pressed') === 'true'; });
       chips.innerHTML = '<span class="chip">pi</span>' + on.map(function (b) { return '<span class="chip on">+ ' + b.dataset.key + '</span>'; }).join('');
       verdict.textContent = on.length
-        ? '实验组只比对照组多了“' + on[0].querySelector('b').textContent + '”。其余条件（模型、任务、预算、连接）保持不变，差异就可以归到这一个机制上。结果尚未测出，issue #280 仍在讨论。'
+        ? '实验组只比对照组多了“' + on[0].querySelector('b').textContent + '”。其余条件（模型、任务、预算、连接）保持不变，差异就可以归到这一个机制上。开关已在 PR #318 里实现，逐个机制的实验还没做。'
         : '先选一个机制。对照组始终是原版 pi，实验组只多打开这一个开关。';
     }
     sw.forEach(function (b) {

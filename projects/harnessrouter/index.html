@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>HarnessRouter · Benchmark 设想 · 吕灏</title>
-<meta name="description" content="在 HarnessRouter 的支持矩阵旁边加一个维度：harness × 模型在公开任务集上的评测。提案、实现、首轮 200 次运行的结果、Pi Lab 后续设想。">
+<meta name="description" content="在 HarnessRouter 的支持矩阵旁边加一个维度：harness × 模型在公开任务集上的评测。提案、实现、首轮 200 次运行，Pi Lab backend，GDPval 与隔离后的 SWE-bench Pro 两轮对比，以及评测环境漏答案的问题。">
 <meta property="og:title" content="HarnessRouter · Benchmark 设想">
 <meta property="og:image" content="https://sakurahello1.github.io/assets/img/og.jpg">
 <meta name="theme-color" content="#EDE8DE">
@@ -58,12 +58,12 @@
       <div><span>Proposal</span><b>#205 → #231</b></div>
       <div><span>First column</span><b>4 × 50 = 200 runs</b></div>
       <div><span>Merged PRs</span><b>5</b></div>
-      <div><span>Next</span><b>Pi Lab · #280</b></div>
+      <div><span>Pi Lab</span><b>PR #318</b></div>
     </div>
     <div class="detail-cover cover clay"><canvas data-cover="hr" aria-hidden="true"></canvas><span class="tag mono">Four harnesses · one hub · first-column completion</span></div>
     <div class="note plain">
       <span class="mono">一句话版本</span>
-      <p>同一个模型，放进不同的 agent 运行框架（harness），做完同一道题所需的时间和调用量可能差很多。我给上游项目加了一套公开任务评测：除了看答案对不对，也记录耗时、用量和失败原因，把“偷看答案”“评分器出错”这类情况单独列出来。下一步想固定模型和任务，每次只改变一个运行机制，分清省下的资源到底来自哪里。</p>
+      <p>同一个模型，放进不同的 agent 运行框架（harness），做完同一道题所需的时间和调用量可能差很多。我给上游项目加了一套公开任务评测：除了看答案对不对，也记录耗时、用量和失败原因，把“偷看答案”“评分器出错”这类情况单独列出来。后来换到编码任务，发现评测环境本身就会漏答案，于是断网、清掉 git 历史再重跑：同一个模型、同样的思考强度，五个 harness 做对的题数只差几道，花费却差到 1.9 倍。下一步是固定模型和任务，每次只改变一个运行机制，分清省下的资源到底来自哪里。</p>
     </div>
   </div>
 </section>
@@ -161,7 +161,8 @@
   <div class="wrap">
     <div class="prose">
       <h2><span class="n">06 · Next</span>Pi Lab：一次只改变一个机制</h2>
-      <p>第一列回答了“差多少”，但没回答“为什么”。不同的 harness 同时改变了许多机制，很难归因。issue #280 提出 Pi Lab：把机制做成开关，固定其余条件，比较原版 pi 与只多打开一个机制的实验组。首批机制来自 SoL-Pi。</p>
+      <p>第一列回答了“差多少”，但没回答“为什么”。不同的 harness 同时改变了许多机制，很难归因。issue #280 提出 Pi Lab：把机制做成开关，固定其余条件，比较原版 pi 与只多打开一个机制的实验组。首批机制来自 NVIDIA 的 SoL-Pi，论文里四项全开时，花费比原版 Pi 少了约三分之一，得分也掉了几分。</p>
+      <p>issue 一直没有回复，9 月 28 日我直接提交了 PR #318：一个独立的 <code>pi-lab</code> backend，四项机制各有一个开关。Pi、SoL-Pi 的源码和完整的 npm lockfile 都固定版本并做哈希校验；开关只从 harness 定义里读，工作区里的配置文件改不动它；原版 pi 完全不受影响，可以直接当对照组。控制台里能看到开关、缓存读写价格比和可选的 reducer 模型，每轮都会记录哪些机制是开着的。PR 在等待评审。</p>
     </div>
     <figure class="fig">
       <div class="lab" role="group" aria-label="Pi Lab 机制开关示意">
@@ -178,17 +179,82 @@
           <p class="verdict"></p>
         </div>
       </div>
-      <figcaption><span class="mono">Fig. 4</span><span>交互示意：打开一个开关会自动关掉其他开关，保证实验组与对照组只差一个机制。这里只演示设计，没有实验结果。</span></figcaption>
+      <figcaption><span class="mono">Fig. 4</span><span>交互示意：打开一个开关会自动关掉其他开关，保证实验组与对照组只差一个机制。一次只开一个机制的实验还没做；下面两轮对比里的 Pi Lab 是四项全开。</span></figcaption>
     </figure>
     <div class="prose">
-      <p>最初的方案是用扩展加载这些机制，后来改成独立的 <code>pi-lab</code> backend，让原版 pi 保持为干净的对照，也避免工作区配置覆盖实验开关。短的表格任务可能看不出长程机制的收益，延长任务或缩小上下文窗口是下一步的实验思路，目前还不是已经取得的结果。</p>
+      <p>最初的方案是用扩展加载这些机制，后来改成独立的 backend，让原版 pi 保持为干净的对照，也避免工作区配置覆盖实验开关。首轮的表格任务太短（中位 48 秒），机制几乎不会触发，所以接下来换成更长的任务。</p>
+    </div>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Office">
+  <div class="wrap prose">
+    <h2><span class="n">07 · Round 2</span>第二轮：GDPval 办公任务</h2>
+    <p>从 GDPval 里取 20 道要交付 Excel、Word 或 PDF 的任务，在自部署的 HarnessRouter 上交给五个 harness：pi、Pi Lab、Codex、Claude Code 和 dsh（DeepSeek 自家的 harness）。模型都是 deepseek-v4.1-flash，走同一个第三方中转，每题跑一次。评分用官方 rubric，由 GPT 独立打两遍，两遍的一致率 97.8%（κ 0.93）。另外我把其中四个 harness 的交付物打乱顺序做人工盲评，只比外观，允许并列。</p>
+    <table>
+      <thead><tr><th>harness</th><th>rubric 平均分</th><th>外观盲评平均名次</th></tr></thead>
+      <tbody>
+        <tr><td>Pi Lab</td><td>85.9%</td><td>1.95</td></tr>
+        <tr><td>Claude Code</td><td>84.3%</td><td>2.30</td></tr>
+        <tr><td>pi</td><td>83.1%</td><td>2.05</td></tr>
+        <tr><td>Codex</td><td>74.9%</td><td>2.25</td></tr>
+        <tr><td>dsh</td><td>70.7%</td><td>—</td></tr>
+      </tbody>
+    </table>
+    <p>名次 1 最好。dsh 有 3 题没有交出文件，原因是回复被这个中转的 32k 单次上限截断，或者流在中途断开后没有重试；换到另一个不截断的分组重跑这 3 题后，dsh 的平均分为 81.5%。dsh 没有参加盲评。</p>
+    <p>Pi Lab 对 pi 是 10 胜 8 负 2 平，费用低约 7%，但这都在一次运行的噪声范围内。更说明问题的是机制实际触发了多少：20 个会话里，ObservationPack 触发 7 次，Action Fusion 4 次，真正压缩上下文 1 次，Reducer 一次都没有。也就是说，这些机制在办公任务上大多闲着，Pi Lab 那点领先不能记在它们头上。外观名次和 rubric 分数几乎不相关（Spearman −0.18）；同一个模型的交付物质量起伏很大，有时连文件类型都交错，差异更多来自每一次运行，而不是 harness。</p>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Leakage">
+  <div class="wrap prose">
+    <h2><span class="n">08 · Leakage</span>评测环境本身会漏答案</h2>
+    <p>编码任务（DeepSWE、SWE-bench Pro）用的是 Harbor：每道题一个容器，harness 装进容器里跑，结束后用隐藏测试判分。第一次跑 SWE-bench Pro，31 次运行全部通过。这不合常理，我去翻了 trace，发现模型是在拿官方修复：</p>
+    <table>
+      <thead><tr><th>漏洞</th><th>模型做了什么</th><th>怎么堵</th></tr></thead>
+      <tbody>
+        <tr><td>镜像里留着上游 git 历史</td><td><code>git log --all -S</code> 搜关键字，找到修复提交，<code>git show &lt;fix&gt; | git apply</code></td><td>构建镜像时删掉 remote 和其他 ref，清空 reflog 再 gc，只留题目的基准提交；评分改成直接打测试补丁，不再依赖 git</td></tr>
+        <tr><td>容器能上网</td><td>clone 上游仓库、拉 PR 分支、<code>pip download</code> 或 <code>npm pack</code> 新版本、从 GitHub API 取修复</td><td>在宿主机的 DOCKER-USER 链上设白名单：容器只能访问模型 API 的 443 端口。每次开跑前先确认 GitHub、PyPI、npm 都连不上</td></tr>
+        <tr><td>文件系统</td><td>在整个文件系统里 grep 题目原文，用 <code>git fsck</code> 找悬空的提交</td><td>前两条堵上之后，这里已经找不到东西</td></tr>
+      </tbody>
+    </table>
+    <p>五个 harness 全都这样做过，不是哪一家的问题。模型在推理里写得很明白：它知道后面会有隐藏测试，而上游的修复能过这些测试。这是 #231 第三条规则“不许偷看答案”在更开放的环境里的延伸：光靠事后翻 trace 不够，得在环境里把路堵上。在这之前跑出的 DeepSWE 结果和两轮 SWE-bench Pro 全部作废。</p>
+  </div>
+</section>
+
+<section class="dsec" data-sec="Coding">
+  <div class="wrap">
+    <div class="prose">
+      <h2><span class="n">09 · Round 3</span>SWE-bench Pro：隔离之后</h2>
+      <p>从 SWE-bench Pro 公开集里选了 22 题（Python 8、Go 8、JS/TS 6），五个 harness 各跑一次，一共 110 次，全部是有效结果。模型用 DeepSeek 官方 API 上的 deepseek-v4.1-flash，五家的思考强度都是 high，单次输出上限统一为 64K，每题限时 1 小时。harness 版本固定：Codex 0.157.1、Claude Code 2.1.283、pi 0.85.1、Pi Lab（PR #318 分支）、dsh 0.1.2rc1，Codex 和 pi 的模型配置照搬 HarnessRouter 里的设置。这一轮全部在闲时跑，110 次一共约 38 元。</p>
+    </div>
+    <figure class="fig">
+      <div class="frame"><canvas data-fig="cost" role="img" aria-label="SWE-bench Pro 22 题，横轴每次运行花费，纵轴通过率：Claude Code 0.24 元 13 题，Codex 0.32 元 14 题，pi 0.36 元 13 题，Pi Lab 0.37 元 12 题，dsh 0.45 元 15 题"></canvas></div>
+      <figcaption><span class="mono">Fig. 5</span><span>SWE-bench Pro 22 题，deepseek-v4.1-flash。横轴是平均每次运行的花费（DeepSeek 闲时价），纵轴是通过题数。五家做对的题数只差 3 道，花费差到 1.9 倍。点击图可以重放。</span></figcaption>
+    </figure>
+    <div class="prose">
+      <table>
+        <thead><tr><th>harness</th><th>通过</th><th>每次输入</th><th>缓存命中</th><th>每次输出</th><th>每次花费</th></tr></thead>
+        <tbody>
+          <tr><td>dsh</td><td>15 / 22</td><td>6.2M</td><td>99%</td><td>66k</td><td>0.45 元</td></tr>
+          <tr><td>Codex</td><td>14 / 22</td><td>4.6M</td><td>99%</td><td>48k</td><td>0.32 元</td></tr>
+          <tr><td>pi</td><td>13 / 22</td><td>4.6M</td><td>99%</td><td>54k</td><td>0.36 元</td></tr>
+          <tr><td>Claude Code</td><td>13 / 22</td><td>2.9M</td><td>98%</td><td>35k</td><td>0.24 元</td></tr>
+          <tr><td>Pi Lab</td><td>12 / 22</td><td>4.2M</td><td>98%</td><td>53k</td><td>0.37 元</td></tr>
+        </tbody>
+      </table>
+      <p><b>通过率拉不开。</b>22 题里有 15 题五家的对错完全一样（9 题全对，6 题全错），真正分出高下的只有 7 题。12 到 15 题的差距落在一次运行的噪声里。dsh 多出来的是两道只有它做出来的 Go 题，它也是最舍得花 token 的一家。</p>
+      <p><b>花费差得稳定。</b>模型相同，思考强度也相同（DeepSeek 会把 medium 当成 high 处理），每次运行的花费却从 0.24 元到 0.45 元不等。缓存命中率都在 98% 以上，而命中价只有未命中的 1/50，所以在 DeepSeek 上账单主要由输出决定。Claude Code 的输入和输出都是最少的。</p>
+      <p><b>Pi Lab 为什么没省钱。</b>它的输入比 pi 少约 9%，输出却差不多。SoL-Pi 省的主要是输入和缓存写入，放到输出主导的价格结构上就看不出来；换成缓存命中价约为 1/10 的模型，这部分才会值钱。</p>
+      <p><b>Pi Lab 输在哪。</b>别家大多做对、Pi Lab 没做对的两题，卡在同一件事上：模型在整个文件系统里 grep 题目原文找答案，扫到 <code>/proc</code>、<code>/sys</code> 就卡住了，而 pi 这一系的 bash 工具没有默认超时，一条命令耗掉了整整一个小时。Claude Code 和 Codex 的命令都有默认超时。“工具默认超时”会是 Pi Lab 的下一个开关，也正好是一次只改一个机制的例子。</p>
+      <p><b>边界。</b>每题只跑一次、只有 22 题，不足以排名。这一轮不经过 HarnessRouter 的 benchmark runner，而是在 Harbor 的任务容器里直接运行各个 harness。dsh 是预发布版本。所有结论只针对 deepseek-v4.1-flash 这一个模型。</p>
     </div>
   </div>
 </section>
 
 <section class="dsec" data-sec="Status">
   <div class="wrap prose">
-    <h2><span class="n">07 · Status</span>反馈与现状</h2>
+    <h2><span class="n">10 · Status</span>反馈与现状</h2>
     <blockquote class="bigquote">
       <p>Reviewed from first principles today; the design stands and the table re-renders from your records unchanged.</p>
       <footer class="mono">richard-epsilla · 维护者 · <a href="https://github.com/HarnessRouter/harnessrouter/pull/231#issuecomment-5769343082" target="_blank" rel="noopener">PR #231 评论</a></footer>
@@ -199,11 +265,14 @@
       <li class="done"><time>2026-09-18</time><div><b>#209 · #214 · #216 · 修复</b><span>跑评测的过程中发现并修复计量与超时问题，均已合并。</span></div></li>
       <li class="done"><time>2026-09-22</time><div><b>PR #231 → #235 · 合并</b><span>runner、任务包、规则测试、报告生成与首列结果进入主干，在 CI 中运行。</span></div></li>
       <li class="done"><time>2026-09-23</time><div><b>issue #205 · 关闭</b><span>维护者确认：“Delivered… Thank you for proposing it and then building it.”</span></div></li>
-      <li><time>2026-09-26</time><div><b>issue #280 · Pi Lab</b><span>一次只改变一个机制的后续实验，讨论中。</span></div></li>
+      <li class="done"><time>2026-09-26</time><div><b>issue #280 · Pi Lab</b><span>一次只改变一个机制的后续实验，写下设计与取舍。</span></div></li>
+      <li class="done"><time>2026-09-27</time><div><b>GDPval · 第二轮</b><span>20 道办公任务，五个 harness；同一天发现编码评测会漏答案，先前的编码结果作废。</span></div></li>
       <li class="done"><time>2026-09-28</time><div><b>PR #285 · 合并</b><span>pi 可重试的中途结束不再被当成一轮对话的结束。</span></div></li>
+      <li><time>2026-09-28</time><div><b>PR #318 · Pi Lab</b><span>独立的 pi-lab backend 与四个机制开关，等待评审。</span></div></li>
+      <li class="done"><time>2026-09-30</time><div><b>SWE-bench Pro · 第三轮</b><span>断网、清理 git 历史后重跑，22 题 × 5 个 harness 全部完成。</span></div></li>
     </ol>
 
-    <h2><span class="n">08 · Also merged</span>评测带出来的修复</h2>
+    <h2><span class="n">11 · Also merged</span>评测带出来的修复</h2>
     <ul>
       <li><a href="https://github.com/HarnessRouter/harnessrouter/pull/209" target="_blank" rel="noopener">#209</a>：cline 的 inputTokens 是整段 prompt，像 codex 一样扣除缓存部分，避免重复计量。</li>
       <li><a href="https://github.com/HarnessRouter/harnessrouter/pull/216" target="_blank" rel="noopener">#216</a>：opencode 的输出以可见文本为准，并补上被漏计的 reasoning tokens。</li>
@@ -211,13 +280,13 @@
       <li><a href="https://github.com/HarnessRouter/harnessrouter/pull/285" target="_blank" rel="noopener">#285</a>：pi 会重试的 agent_end 不算最终失败。</li>
     </ul>
 
-    <h2><span class="n">09 · Links</span>链接</h2>
+    <h2><span class="n">12 · Links</span>链接</h2>
     <ul>
-      <li><a href="https://github.com/HarnessRouter/harnessrouter/issues/205" target="_blank" rel="noopener">issue #205 · 提案</a> · <a href="https://github.com/HarnessRouter/harnessrouter/pull/231" target="_blank" rel="noopener">PR #231 · 实现</a> · <a href="https://github.com/HarnessRouter/harnessrouter/issues/280" target="_blank" rel="noopener">issue #280 · Pi Lab</a></li>
+      <li><a href="https://github.com/HarnessRouter/harnessrouter/issues/205" target="_blank" rel="noopener">issue #205 · 提案</a> · <a href="https://github.com/HarnessRouter/harnessrouter/pull/231" target="_blank" rel="noopener">PR #231 · 实现</a> · <a href="https://github.com/HarnessRouter/harnessrouter/issues/280" target="_blank" rel="noopener">issue #280 · Pi Lab</a> · <a href="https://github.com/HarnessRouter/harnessrouter/pull/318" target="_blank" rel="noopener">PR #318 · Pi Lab 实现</a></li>
       <li><a href="https://github.com/HarnessRouter/harnessrouter/tree/main/scripts/benchmark" target="_blank" rel="noopener">scripts/benchmark</a> · <a href="https://github.com/HarnessRouter/harnessrouter/blob/main/docs/benchmark.md" target="_blank" rel="noopener">docs/benchmark.md · 首列公开报告</a></li>
       <li><a href="https://github.com/HarnessRouter/harnessrouter" target="_blank" rel="noopener">上游仓库</a> · <a href="https://harnessrouter.ai/" target="_blank" rel="noopener">harnessrouter.ai</a></li>
     </ul>
-    <p class="mono" style="color:var(--mute)">数据统计日期 2026-09-28。</p>
+    <p class="mono" style="color:var(--mute)">数据统计日期 2026-09-30。</p>
   </div>
 
   <div class="wrap">
