@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
 <link rel="stylesheet" href="../../assets/css/core.css">
 <link rel="stylesheet" href="css/page.css">
+<link rel="stylesheet" href="css/figures.css">
 <script type="module" src="js/app.mjs"></script>
 </head>
 <body class="ah">
@@ -55,7 +56,13 @@
         <p class="lesson-kicker mono" id="lesson-kicker"></p>
         <h1 id="lesson-title"></h1>
       </header>
-      <div class="prose-lesson" id="lesson-body"></div>
+      <div class="lesson-cols">
+        <div class="lesson-main">
+          <nav class="lesson-chips" id="chips" aria-label="本讲提纲" hidden></nav>
+          <div class="prose-lesson" id="lesson-body"></div>
+        </div>
+        <nav class="lesson-rail" id="rail" aria-label="本讲提纲" hidden><p class="mono">本讲提纲</p><ol id="rail-list"></ol></nav>
+      </div>
       <nav class="pager" id="pager"></nav>
     </article>
   </main>

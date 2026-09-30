@@ -15,7 +15,7 @@ export function mount(root) {
   const {controls, stage, out} = setup(root, {
     title: '一步一步收窄的解码',
     dek: '目标格式只有一种：{"quantity": 1、2 或 3}。每一步，模型给所有候选打分；语法把不合法的候选直接屏蔽，再在剩下的里面挑。关掉约束对比一下。',
-    note: '候选和概率是为了演示编的，不是某个模型的实测；真实词表有几万个 token，递归语法还需要解析栈。'
+    note: '候选和概率是为了演示编的，不是某个模型的实测；真实词表通常有几万到几十万个 token，递归语法还需要解析栈。'
   });
   const toggle = el('label', null, controls);
   const box = el('input', null, toggle);

@@ -100,6 +100,8 @@
   ],
   "behaviors": [
     "30 lessons loaded inline; 15 experiment kinds exercised",
+    "section rail visible at 1600px and scrolls to the chosen section",
+    "figure stepper: steps change the caption and light arrows; a node's tip explains it",
     "outline jump unfolds; copy yields the plain source",
     "connect dialog + mocked live run; key kept in memory only, never shown; hostile HTML inert",
     "tab retention survives reload; clearing forgets the key",

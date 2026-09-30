@@ -12,9 +12,9 @@ for filename, href in [("index.html", "blog/agent-harness/"), ("blog/index.html"
         card = f'''
       <a class="post reveal" href="{href}">
         <div class="cover clay"><canvas data-cover="harness" aria-hidden="true"></canvas><span class="word">Harness</span></div>
-        <div class="body"><p class="kicker mono">2026-09-30 · 30 讲 · 约 70 分钟 · 每讲带实验</p>
+        <div class="body"><p class="kicker mono">2026-09-30 · 30 讲 · 约 6 小时 · 动画图解与实验</p>
           <h3>agent&amp;harness从入门到精通</h3>
-          <p>一个 agent 怎样真的把事做完：闭环与工具契约、窗口满了以后的交接、用证据验收、多 agent 的代价、权限与沙箱。每讲带实验，能用你自己的 API key 现场跑。</p>
+          <p>一个 agent 怎样真的把事做完：闭环与工具契约、窗口满了以后的交接、用证据验收、多 agent 的代价、权限与沙箱。每讲有一步步点亮的动画图解和嵌在正文里的实验，实验能用你自己的 API key 现场跑。</p>
           <span class="go mono">Read</span></div>
       </a>'''
         text = text[:position] + card + text[position:]

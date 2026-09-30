@@ -130,3 +130,30 @@ test('haystack: the fact sits at the requested depth among the decoys', () => {
   }
   assert.equal(haystack(90, 50).split('quote-clay-v').length - 1, 3);
 });
+
+// Figure geometry: arrows stop at node borders, and the linter names what an author got wrong.
+import {layoutFlow, layoutSequence, lint, route} from '../blog/agent-harness/js/diagram-layout.mjs';
+const two = {kind: 'flow', nodes: {a: {at: [0, 0], text: '甲'}, b: {at: [1.5, 0], text: '乙'}}, edges: [['a', 'b', '读']]};
+test('flow edges start and end on the node borders, pointing at the target', () => {
+  const g = layoutFlow(two), [a, b] = [g.nodes.a, g.nodes.b], e = g.edges[0];
+  assert.ok(Math.abs(e.points[0][0] - (a.x + a.w)) < 5 && Math.abs(e.end[0] - b.x) < 5);
+  assert.ok(Math.abs(e.angle) < 1e-6);
+  assert.equal(e.key, 'a>b');
+  const bent = route(a, b, 30);
+  assert.ok(bent.mid[1] > a.cy, 'positive bend bulges to the right of travel (down when going right)');
+});
+test('figure lint: clean figure passes; overlaps, arrows through nodes and long labels are reported', () => {
+  assert.deepEqual(lint(two), []);
+  const three = {kind: 'flow', nodes: {a: {at: [0, 0], text: 'A'}, m: {at: [1.2, 0], text: 'M'}, b: {at: [2.4, 0], text: 'B'}}, edges: [['a', 'b']]};
+  assert.ok(lint(three).some(x => x.includes('穿过节点 m')));
+  assert.ok(lint({...two, nodes: {...two.nodes, b: {at: [0.3, 0], text: '乙'}}}).some(x => x.includes('重叠')));
+  assert.ok(lint({...two, edges: [['a', 'b', '一个非常非常长的标签']]}).some(x => x.includes('标签')));
+  const seq = {kind: 'sequence', actors: ['甲', '乙'], msgs: [['甲', '乙', '这是一条特别特别特别长的消息标签']]};
+  assert.ok(lint(seq).some(x => x.includes('跨度')));
+});
+test('sequence layout puts every message on its own row between the right lifelines', () => {
+  const g = layoutSequence({actors: ['甲', '乙', '丙'], msgs: [['甲', '丙', 'x'], ['丙', '乙', 'y'], ['乙', '乙', 'z']]});
+  assert.equal(g.msgs.length, 3);
+  assert.ok(g.msgs[0].x2 > g.msgs[0].x1 && g.msgs[1].x2 < g.msgs[1].x1);
+  assert.ok(g.msgs[1].y > g.msgs[0].y && g.msgs[2].self);
+});

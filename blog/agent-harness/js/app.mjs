@@ -145,6 +145,32 @@ function wireCode(root) {
   }
 }
 
+/* ---------- section outline: chips on narrow screens, a sticky rail on wide ones ---------- */
+let spy = null;
+function outline(body, n) {
+  spy?.disconnect();
+  const heads = [...body.querySelectorAll('h2')];
+  const chips = $('#chips'), rail = $('#rail'), list = $('#rail-list');
+  chips.replaceChildren(); list.replaceChildren();
+  chips.hidden = rail.hidden = heads.length < 2;
+  const buttons = heads.map((h, i) => {
+    h.id = `sec-${n}-${i + 1}`;
+    const go = () => h.scrollIntoView({behavior: 'smooth', block: 'start'});
+    const chip = Object.assign(document.createElement('button'), {type: 'button', textContent: h.textContent});
+    chip.addEventListener('click', go);
+    chips.append(chip);
+    const li = document.createElement('li');
+    const b = Object.assign(document.createElement('button'), {type: 'button', textContent: h.textContent});
+    b.addEventListener('click', go);
+    li.append(b); list.append(li);
+    return b;
+  });
+  spy = new IntersectionObserver(es => {
+    for (const e of es) if (e.isIntersecting) buttons.forEach((b, i) => b.classList.toggle('on', heads[i] === e.target));
+  }, {rootMargin: '-72px 0px -70% 0px'});
+  heads.forEach(h => spy.observe(h));
+}
+
 /* ---------- experiments ---------- */
 async function mountLabs(root) {
   for (const slot of root.querySelectorAll('.lab-slot[data-lab]')) {
@@ -188,6 +214,8 @@ async function showLesson(n) {
   if (shown !== n) return;
   body.innerHTML = html;  // same-origin author HTML built by tools/build_agent_harness.py
   wireCode(body);
+  outline(body, n);
+  import('./diagram.mjs').then(m => { if (shown === n) m.mountFigures(body); });
   mountLabs(body);
   const pager = $('#pager');
   pager.replaceChildren();

@@ -1,22 +1,32 @@
-// The agent theater: a loop diagram with a packet travelling along it, the live transcript beside it,
-// and meters underneath. It draws events from agent.mjs, either a recorded real run (traces.json) or a
-// run against the reader's own model.
+// The agent theater: a lit-arrow loop diagram, the live transcript beside it, and meters underneath.
+// It draws events from agent.mjs, either a recorded real run (traces.json) or a run against the reader's own model.
 import {run, VARIANTS, SELECTIONS, LIMITS} from './agent.mjs';
+import {FlowGraph} from './diagram.mjs';
 
-const NS = 'http://www.w3.org/2000/svg';
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Node positions are grid units (see diagram-layout.mjs). The loop is a diamond with the verifier in its middle.
 const LOOP = {
-  nodes: {goal: [60, 200, 80, '目标'], ctx: [185, 200, 112, '上下文'], model: [330, 78, 124, '模型'],
-    check: [480, 200, 112, '调用校验'], tool: [330, 322, 124, '工具执行'], verify: [330, 200, 112, '验收器']},
-  edges: [['goal', 'ctx'], ['ctx', 'model', 200, 88], ['model', 'check', 462, 88], ['check', 'tool', 462, 312],
-    ['tool', 'ctx', 200, 312, '观察'], ['check', 'ctx', 330, 262, '拒绝', true], ['model', 'verify', null, null, '最终回答'],
-    ['verify', 'ctx', 250, 150, '证据反馈', true]]
+  nodes: {
+    goal: {at: [0, 0], text: '目标', sub: '用户请求', icon: 'flag', w: 120},
+    ctx: {at: [0, 1.5], text: '上下文', sub: '消息 · 历史', icon: 'doc'},
+    model: {at: [1.45, 0], text: '模型', sub: '决定下一步', icon: 'chip'},
+    check: {at: [2.9, 1.5], text: '调用校验', sub: '契约 · 参数', icon: 'shield'},
+    tool: {at: [1.45, 3], text: '工具执行', sub: '真实动作', icon: 'terminal'},
+    verify: {at: [1.45, 1.5], text: '验收器', sub: '确定性检查', icon: 'check'}
+  },
+  edges: [['goal', 'ctx'], ['ctx', 'model'], ['model', 'check'], ['check', 'tool'], ['tool', 'ctx', '观察'],
+    ['check', 'model', '拒绝', {dashed: true, bend: 34}], ['model', 'verify', '最终回答'], ['verify', 'ctx', '证据反馈', {dashed: true}]]
 };
 const TEAM = {
-  nodes: {goal: [60, 200, 80, '目标'], orch: [185, 200, 112, '调度者'], w1: [330, 92, 128, '价格工作者'],
-    w2: [330, 308, 128, '交期工作者'], merge: [470, 200, 112, '汇合作答'], verify: [470, 322, 112, '验收器']},
-  edges: [['goal', 'orch'], ['orch', 'w1', 200, 96], ['orch', 'w2', 200, 304], ['w1', 'merge', 460, 96, '报告'],
-    ['w2', 'merge', 400, 250, '报告'], ['merge', 'verify']]
+  nodes: {
+    goal: {at: [0, 1], text: '目标', sub: '用户请求', icon: 'flag', w: 120},
+    orch: {at: [1.05, 1], text: '调度者', sub: '拆分 · 分派', icon: 'branch'},
+    w1: {at: [2.2, 0], text: '价格工作者', sub: '只看价格', icon: 'search'},
+    w2: {at: [2.2, 2], text: '交期工作者', sub: '只看交期', icon: 'clock'},
+    merge: {at: [3.35, 1], text: '汇合作答', sub: '合并报告', icon: 'layers'},
+    verify: {at: [4.5, 1], text: '验收器', sub: '确定性检查', icon: 'check'}
+  },
+  edges: [['goal', 'orch'], ['orch', 'w1'], ['orch', 'w2'], ['w1', 'merge', '报告'], ['w2', 'merge', '报告'], ['merge', 'verify']]
 };
 const CHECKS = {parse: 'JSON 可解析', vendor: '供应商是 clay', price: '含税 7480 元', evidence: '证据 quote-clay-v2', deadline: '交期 10-03'};
 let traces = null;
@@ -26,12 +36,6 @@ const h = (tag, cls, text, parent) => {
   const x = document.createElement(tag);
   if (cls) x.className = cls;
   if (text != null) x.textContent = text;
-  parent?.append(x);
-  return x;
-};
-const s = (tag, attrs, parent) => {
-  const x = document.createElementNS(NS, tag);
-  for (const [k, v] of Object.entries(attrs)) x.setAttribute(k, v);
   parent?.append(x);
   return x;
 };
@@ -93,8 +97,7 @@ export class Theater {
     this.goal = h('div', 'th-goal', v.dek, el);
     const stage = h('div', 'th-stage', null, el);
     const graph = h('div', 'th-graph', null, stage);
-    this.svg = s('svg', {viewBox: '0 0 560 400', role: 'img', 'aria-label': 'agent 闭环示意图'}, graph);
-    this.drawGraph();
+    this.drawGraph(graph);
     this.log = h('div', 'th-log', null, stage);
     this.empty();
     const meters = h('div', 'th-meters', null, el);
@@ -108,41 +111,16 @@ export class Theater {
     this.foot = h('div', 'th-foot', '“播放录像”重放一次真实运行；“用我的模型运行”会用你在右上角连接的模型现场跑一遍。', el);
   }
 
-  drawGraph() {
-    const {nodes, edges} = this.layout;
-    this.edges = {}; this.nodes = {}; this.edgeLabels = [];
-    const g = s('g', {}, this.svg), labels = s('g', {}, this.svg), ng = s('g', {}, this.svg);
-    for (const [from, to, cx, cy, label, dash] of edges) {
-      const [x1, y1] = nodes[from], [x2, y2] = nodes[to];
-      const d = cx == null ? `M${x1} ${y1} L${x2} ${y2}` : `M${x1} ${y1} Q${cx} ${cy} ${x2} ${y2}`;
-      const path = s('path', {d, class: 'th-edge' + (dash ? ' dash' : '')}, g);
-      this.edges[`${from}>${to}`] = path;
-      if (label) {
-        const t = s('text', {class: 'th-edge-label', 'text-anchor': 'middle'}, labels);
-        t.textContent = label;
-        this.edgeLabels.push([path, t]);
-      }
-    }
-    for (const [id, [x, y, w, label]] of Object.entries(nodes)) {
-      const node = s('g', {class: 'th-node', transform: `translate(${x} ${y})`}, ng);
-      s('rect', {x: -w / 2 - 6, y: -30, width: w + 12, height: 60, rx: 15}, node);
-      const t = s('text', {'text-anchor': 'middle', y: -4}, node); t.textContent = label;
-      const sub = s('text', {'text-anchor': 'middle', y: 18, class: 'sub'}, node); sub.textContent = '';
-      this.nodes[id] = {g: node, sub};
-    }
+  drawGraph(host) {
+    this.graph = new FlowGraph(host, this.layout, 'agent 闭环示意图');
+    this.graph.svg.style.setProperty('--minw', '560px');
+    this.graphHost = host;
+    this.seen = new Set(); this.marks = {}; this.trail = [];
     // Experiments without tools never visit the check and tool nodes; keep them visible but quiet.
     if (this.variant === 'selection' || this.variant === 'repair') {
-      for (const id of ['check', 'tool']) this.nodes[id].g.style.opacity = '.28';
-      for (const [key, path] of Object.entries(this.edges)) if (/check|tool/.test(key)) path.style.opacity = '.28';
-      for (const [path, t] of this.edgeLabels) if (path.style.opacity) t.style.opacity = '.28';
+      this.graph.dim(['check', 'tool'], true);
+      for (const [key, g] of Object.entries(this.graph.edges)) if (/check|tool/.test(key)) g.classList.add('quiet');
     }
-    this.packet = s('circle', {r: 6, class: 'th-packet', opacity: 0}, this.svg);
-    requestAnimationFrame(() => {
-      for (const [path, t] of this.edgeLabels) {
-        const p = path.getPointAtLength(path.getTotalLength() / 2);
-        t.setAttribute('x', p.x); t.setAttribute('y', p.y - 7);
-      }
-    });
   }
 
   empty() {
@@ -158,9 +136,8 @@ export class Theater {
     this.queue.length = 0;
     this.paused = false; this.pauseBtn.textContent = '⏸ 暂停';
     this.pauseBtn.disabled = true; this.playBtn.disabled = false; this.liveBtn.disabled = false;
-    for (const n of Object.values(this.nodes)) { n.g.classList.remove('on', 'ok', 'bad'); n.sub.textContent = ''; }
-    for (const e of Object.values(this.edges)) e.classList.remove('hot');
-    this.packet.setAttribute('opacity', 0);
+    this.graph.clear();
+    this.seen.clear(); this.marks = {}; this.trail = [];
     for (const b of Object.values(this.m)) b.textContent = '—';
     this.ctxBar.style.width = '0';
     this.msgs = {};
@@ -238,34 +215,29 @@ export class Theater {
   }
 
   async travel(from, to) {
-    const path = this.edges[`${from}>${to}`];
-    if (!path) return;
-    path.classList.add('hot');
-    if (!reduced) {
-      const len = path.getTotalLength(), dur = (this.mode === 'live' ? 420 : 620) / this.speed;
-      this.packet.setAttribute('opacity', 1);
-      const t0 = performance.now();
-      await new Promise(resolve => {
-        const step = now => {
-          const k = Math.min(1, (now - t0) / dur), e = k < .5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
-          const p = path.getPointAtLength(len * e);
-          this.packet.setAttribute('cx', p.x); this.packet.setAttribute('cy', p.y);
-          k < 1 ? requestAnimationFrame(step) : resolve();
-        };
-        requestAnimationFrame(step);
-      });
-      this.packet.setAttribute('opacity', 0);
-    }
-    setTimeout(() => path.classList.remove('hot'), 500);
+    // A refused call goes back to the model as an error message; the loop diagram draws that as check → model.
+    const key = from === 'check' && to === 'ctx' && this.layout === LOOP ? 'check>model' : `${from}>${to}`;
+    if (!this.graph.edges[key]) return;
+    for (const k of this.trail) this.graph.edge(k, 'done');
+    this.trail = [key];
+    await this.graph.sweep(key, (this.mode === 'live' ? 460 : 640) / this.speed);
   }
 
   focus(id, note, state) {
-    for (const [k, n] of Object.entries(this.nodes)) n.g.classList.toggle('on', k === id);
-    const n = this.nodes[id];
-    if (!n) return;
-    if (note != null) n.sub.textContent = note;
-    n.g.classList.remove('ok', 'bad');
-    if (state) n.g.classList.add(state);
+    this.seen.add(id);
+    for (const k of Object.keys(this.graph.nodes)) {
+      const marks = this.marks[k] ||= new Set();
+      if (k === id) { marks.clear(); if (state) marks.add(state); }
+      const states = [...marks];
+      if (k === id) states.push('lit'); else if (this.seen.has(k)) states.push('done');
+      this.graph.node(k, states, k === id ? note : undefined);
+    }
+    // On a phone the diagram scrolls sideways; keep the active node in view.
+    const host = this.graphHost, g = this.graph.nodes[id]?.g;
+    if (g && host.scrollWidth > host.clientWidth + 2) {
+      const r = g.getBoundingClientRect(), h = host.getBoundingClientRect();
+      host.scrollTo({left: host.scrollLeft + r.left + r.width / 2 - (h.left + h.width / 2), behavior: reduced ? 'auto' : 'smooth'});
+    }
   }
 
   card(role, label) {
@@ -348,7 +320,8 @@ export class Theater {
       case 'idle':
         this.playBtn.disabled = this.liveBtn.disabled = false;
         this.pauseBtn.disabled = true;
-        for (const n of Object.values(this.nodes)) n.g.classList.remove('on');
+        for (const k of Object.keys(this.graph.nodes)) this.graph.node(k, [...(this.marks[k] || []), ...(this.seen.has(k) ? ['done'] : [])]);
+        for (const k of this.trail) this.graph.edge(k, 'done');
         break;
     }
   }

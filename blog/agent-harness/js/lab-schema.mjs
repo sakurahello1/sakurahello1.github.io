@@ -37,7 +37,7 @@ export function mount(root) {
   const {controls, stage, out} = setup(root, {
     title: '工具调用的五道关',
     dek: '模型给出的只是一个“提议”。选一个提议送进 harness，看它在哪一道关被拦下，还是一路通过、真的执行。',
-    note: '检查逻辑和页面里 agent 实际用的 dispatch() 是同一份；执行的只是本地的虚构报价表。'
+    note: '各关的规则与页面里 agent 实际用的 dispatch() 一致，这里把它们拆成一关一关，方便演示；执行的只是本地的虚构报价表。'
   });
   const pick = select(controls, '提议', Object.entries(SAMPLES).map(([k, [label]]) => [k, label]));
   const go = button('送进 harness', controls, () => runIt(), 'btn primary');

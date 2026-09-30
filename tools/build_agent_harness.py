@@ -11,6 +11,7 @@ Output, all under blog/agent-harness/:
 from __future__ import annotations
 
 import html
+import json
 import re
 from pathlib import Path
 
@@ -133,8 +134,92 @@ def inline(text: str) -> str:
     return re.sub(r"\[([^\]]+)\]\(([^)]+)\)", link, escaped)
 
 
-def render(md: str) -> str:
+CALLOUTS = {"goal": "本讲要点", "key": "关键", "pitfall": "常见误区", "example": "一个例子", "try": "动手试试",
+            "recap": "小结", "note": "旁注"}
+FIG_KINDS = {"flow", "sequence", "stack", "bars", "compare"}
+ICON_NAMES = set("""doc chip shield terminal eye check user db clock lock box flag bolt search chat warn globe branch
+loop key people cut scale layers""".split())
+
+
+def figure_block(raw: str, where: str) -> str:
+    """Validate a ```figure JSON spec and emit its placeholder. The reader draws it; without script the
+    step captions stand in as a numbered list."""
+    try:
+        spec = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise ValueError(f"{where}: figure JSON: {e}") from e
+    kind = spec.get("kind")
+    if kind not in FIG_KINDS or not spec.get("title"):
+        raise ValueError(f"{where}: figure needs a title and kind in {sorted(FIG_KINDS)}")
+
+    def need(cond, msg):
+        if not cond:
+            raise ValueError(f"{where}: figure '{spec['title']}': {msg}")
+
+    if kind == "flow":
+        nodes = spec.get("nodes", {})
+        need(nodes, "no nodes")
+        for nid, n in nodes.items():
+            need(isinstance(n.get("at"), list) and len(n["at"]) == 2, f"node {nid} needs at:[col,row]")
+            need(n.get("icon", "doc") in ICON_NAMES, f"node {nid}: unknown icon {n.get('icon')}")
+        keys = set()
+        for e in spec.get("edges", []):
+            need(e[0] in nodes and e[1] in nodes, f"edge {e[:2]} names a missing node")
+            keys.add(f"{e[0]}>{e[1]}")
+        for st in spec.get("steps", []):
+            need(st.get("say"), "every step needs say")
+            for nid in st.get("on", []) + st.get("ok", []) + st.get("bad", []):
+                need(nid in nodes, f"step names missing node {nid}")
+            for k in st.get("edges", []):
+                need(k in keys, f"step names missing edge {k}")
+    elif kind == "sequence":
+        names = {a if isinstance(a, str) else a[0] for a in spec.get("actors", [])}
+        need(len(names) >= 2 and spec.get("msgs"), "needs actors and msgs")
+        steps = []
+        for m in spec["msgs"]:
+            need(m[0] in names and m[1] in names, f"message {m[:3]} names a missing actor")
+            opt = m[3] if len(m) > 3 else {}
+            steps.append({"say": opt.get("say") or f"{m[0]} → {m[1]}：{m[2]}"})
+        spec["steps"] = steps
+    elif kind == "stack":
+        n = len(spec.get("layers", []))
+        need(n >= 2, "needs layers")
+        for st in spec.get("steps", []):
+            need(st.get("say"), "every step needs say")
+            for k in st.get("pass", []) + st.get("fail", []) + st.get("at", []):
+                need(0 <= k < n, f"layer index {k} out of range")
+    elif kind == "bars":
+        rows = spec.get("rows", [])
+        need(rows and all(r.get("segs") for r in rows), "needs rows with segs")
+        for st in spec.get("steps", []):
+            need(st.get("say"), "every step needs say")
+            for r in st.get("rows", []):
+                need(0 <= r < len(rows), f"row index {r} out of range")
+    elif kind == "compare":
+        cols = spec.get("cols", [])
+        need(len(cols) >= 2, "needs 2+ cols")
+        for st in spec.get("steps", []):
+            need(st.get("say"), "every step needs say")
+            for c, k in st.get("hl", []):
+                need(c < len(cols) and k < len(cols[c]["items"]), f"hl {c},{k} out of range")
+    alt = "".join(f"<li>{inline(st['say'])}</li>" for st in spec.get("steps", []))
+    dek = f'<p class="fig-alt">{inline(spec["dek"])}</p>' if spec.get("dek") and not alt else ""
+    blob = html.escape(json.dumps(spec, ensure_ascii=False, separators=(",", ":")), quote=True)
+    return (f'<figure class="fig" data-spec="{blob}"><header class="fig-head"><span class="fg-tag">FIG</span>'
+            f'<b>{html.escape(spec["title"])}</b></header>{dek}<ol class="fig-alt">{alt}</ol></figure>')
+
+
+def table_block(rows: list[str]) -> str:
+    cells = [[c.strip() for c in r.strip().strip("|").split("|")] for r in rows]
+    head, body = cells[0], cells[2:]
+    th = "".join(f"<th>{inline(c)}</th>" for c in head)
+    tr = "".join("<tr>" + "".join(f"<td>{inline(c)}</td>" for c in r) + "</tr>" for r in body)
+    return f'<div class="table-wrap"><table><thead><tr>{th}</tr></thead><tbody>{tr}</tbody></table></div>'
+
+
+def render(md: str, where: str = "") -> str:
     result, paragraph, code, lang, listing = [], [], None, "", None
+    box, box_kind, table = None, "", None
 
     def flush():
         if paragraph:
@@ -147,18 +232,49 @@ def render(md: str) -> str:
             result.append(f"</{listing}>")
             listing = None
 
+    def close_table():
+        nonlocal table
+        if table:
+            result.append(table_block(table))
+            table = None
+
     for line in md.splitlines():
-        if line.startswith("```"):
-            flush(); close_list()
-            if code is None:
-                code, lang = [], line[3:].strip()
+        if box is not None:
+            if line.strip() == ":::":
+                title = box[0]
+                result.append(f'<aside class="callout callout-{box_kind}"><p class="callout-title">{html.escape(title)}</p>'
+                              f'{render(chr(10).join(box[1:]), where)}</aside>')
+                box = None
             else:
-                result.append(code_block(code, lang))
-                code = None
+                box.append(line)
             continue
         if code is not None:
-            code.append(line)
+            if line.startswith("```"):
+                result.append(figure_block("\n".join(code), where) if lang == "figure" else code_block(code, lang))
+                code = None
+            else:
+                code.append(line)
             continue
+        if line.startswith("```"):
+            flush(); close_list(); close_table()
+            code, lang = [], line[3:].strip()
+            continue
+        m = re.match(r"^:::(\w+)\s*(.*)$", line)
+        if m:
+            flush(); close_list(); close_table()
+            if m.group(1) not in CALLOUTS:
+                raise ValueError(f"{where}: unknown callout ':::{m.group(1)}'")
+            box_kind, box = m.group(1), [m.group(2).strip() or CALLOUTS[m.group(1)]]
+            continue
+        if line.strip() == "::lab":
+            flush(); close_list(); close_table()
+            result.append("<!--LAB-->")
+            continue
+        if line.startswith("|"):
+            flush(); close_list()
+            table = (table or []) + [line]
+            continue
+        close_table()
         item = re.match(r"^([-*]|\d+[.)]) (.*)", line)
         if item:
             flush()
@@ -170,19 +286,48 @@ def render(md: str) -> str:
         close_list()
         if line.startswith("#"):
             flush()
-            result.append("<h3>" + inline(line.lstrip("# ")) + "</h3>")
+            tag = "h3" if len(line) - len(line.lstrip("#")) >= 3 else "h2"
+            result.append(f"<{tag}>" + inline(line.lstrip("# ")) + f"</{tag}>")
+        elif line.startswith("> "):
+            flush()
+            result.append("<blockquote><p>" + inline(line[2:]) + "</p></blockquote>")
         elif not line.strip():
             flush()
         else:
             paragraph.append(line)
-    flush(); close_list()
+    flush(); close_list(); close_table()
     if code is not None:
-        raise ValueError("unclosed code fence")
+        raise ValueError(f"{where}: unclosed code fence")
+    if box is not None:
+        raise ValueError(f"{where}: unclosed ::: block")
     return "\n".join(result)
 
 
 def part_of(i: int) -> tuple[int, int, str, str, str]:
     return next(p for p in PARTS if p[0] <= i < p[1])
+
+
+def write_lesson(i: int, name: str) -> tuple[int, int]:
+    """Write chapters/NN.html and NN-read.html; return (Chinese characters, minutes)."""
+    chapters = ARTICLE / "chapters"
+    md = (ARTICLE / "source" / f"{i:02}.md").read_text(encoding="utf-8")
+    chars = len(re.findall(r"[\u4e00-\u9fff]", md))
+    code_lines = sum(block.count("\n") - 1 for block in re.findall(r"```[\s\S]*?```", md))
+    minutes = max(2, round(chars / 400 + code_lines / 40))
+    body = render(md, f"{i:02}.md").replace('../agent-harness/examples/README.md', '/blog/agent-harness/examples/README.md')
+    slot = f'<div class="lab-slot" data-lab="{LABS[i]}"></div>'
+    (chapters / f"{i:02}.html").write_text(body.replace("<!--LAB-->", slot) if "<!--LAB-->" in body
+                                           else body + f"\n{slot}\n", encoding="utf-8")
+    body = re.sub(r'href="#lesson-(\d+)"', lambda m: f'href="{int(m.group(1)) - 1:02}-read.html"', body.replace("<!--LAB-->", ""))
+    prev_link = f'<a href="{i - 1:02}-read.html">← {html.escape(TITLES[i - 1])}</a>' if i else '<span></span>'
+    next_link = f'<a href="{i + 1:02}-read.html">{html.escape(TITLES[i + 1])} →</a>' if i < 29 else '<span></span>'
+    (chapters / f"{i:02}-read.html").write_text(f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>{i + 1:02} · {html.escape(TITLES[i])}</title>
+<link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"><link rel="stylesheet" href="../css/figures.css"></head>
+<body class="read-page"><main class="lesson-page"><p class="lesson-kicker mono"><a href="../#lesson-{i + 1}">agent&amp;harness · 完整课程与交互实验</a> / {name} / 第 {i + 1} 讲</p>
+<h1>{html.escape(TITLES[i])}</h1><article class="prose-lesson">{body.replace('href="examples/', 'href="../examples/')}</article>
+<nav class="pager">{prev_link}{next_link}</nav></main></body></html>''', encoding="utf-8")
+    return chars, minutes
 
 
 def build():
@@ -192,22 +337,8 @@ def build():
     for start, end, name, subtitle, _ in PARTS:
         items = []
         for i in range(start, end):
-            md = (ARTICLE / "source" / f"{i:02}.md").read_text(encoding="utf-8")
-            chars = len(re.findall(r"[\u4e00-\u9fff]", md))
+            chars, minutes = write_lesson(i, name)
             total += chars
-            code_lines = sum(block.count("\n") - 1 for block in re.findall(r"```[\s\S]*?```", md))
-            minutes = max(2, round(chars / 400 + code_lines / 40))
-            body = render(md).replace('../agent-harness/examples/README.md', '/blog/agent-harness/examples/README.md')
-            (chapters / f"{i:02}.html").write_text(body + f'\n<div class="lab-slot" data-lab="{LABS[i]}"></div>\n',
-                                                   encoding="utf-8")
-            prev_link = f'<a href="{i - 1:02}-read.html">← {html.escape(TITLES[i - 1])}</a>' if i else '<span></span>'
-            next_link = f'<a href="{i + 1:02}-read.html">{html.escape(TITLES[i + 1])} →</a>' if i < 29 else '<span></span>'
-            (chapters / f"{i:02}-read.html").write_text(f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>{i + 1:02} · {html.escape(TITLES[i])}</title>
-<link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"></head>
-<body class="read-page"><main class="lesson-page"><p class="lesson-kicker mono"><a href="../#lesson-{i + 1}">agent&amp;harness · 完整课程与交互实验</a> / {name} / 第 {i + 1} 讲</p>
-<h1>{html.escape(TITLES[i])}</h1><article class="prose-lesson">{body.replace('href="examples/', 'href="../examples/')}</article>
-<nav class="pager">{prev_link}{next_link}</nav></main></body></html>''', encoding="utf-8")
             items.append(f'<li><a href="chapters/{i:02}-read.html" data-lesson="{i + 1}" data-min="{minutes}">'
                          f'<span class="toc-n">{i + 1:02}</span><span class="toc-t">{html.escape(TITLES[i])}</span></a></li>')
         toc.append(f'<li class="toc-part" data-part="{name}"><p class="toc-part-name"><span class="mono">{name}</span>{subtitle}</p>'
@@ -229,7 +360,7 @@ def build():
             groups.append(f'<h3><a href="./#lesson-{i + 1}">第 {i + 1} 讲 · {html.escape(TITLES[i])}</a></h3><ul>{"".join(refs)}</ul>')
     (ARTICLE / "sources.html").write_text(f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>来源索引 · agent&amp;harness</title>
-<link rel="stylesheet" href="../../assets/css/core.css"><link rel="stylesheet" href="css/page.css"></head>
+<link rel="stylesheet" href="../../assets/css/core.css"><link rel="stylesheet" href="css/page.css"><link rel="stylesheet" href="css/figures.css"></head>
 <body class="read-page"><main class="lesson-page"><p class="lesson-kicker mono"><a href="./">agent&amp;harness · 返回课程</a></p>
 <h1>来源索引</h1><article class="prose-lesson"><p>每一讲引用的论文、官方文档和工程文章，按讲次排列。论文结论和它的版本、模型、任务与预算是一体的，引用时请回到原文核对。链接核查于 2026-09-30。</p>
 {"".join(groups)}</article></main></body></html>''', encoding="utf-8")
@@ -240,5 +371,25 @@ def build():
     print(f"Built 30 lessons: {total} Chinese characters; entry {(ARTICLE / 'index.html').stat().st_size} bytes")
 
 
+def check(numbers: list[int]):
+    """Render the given lessons in memory (all when none given) and report problems; writes nothing."""
+    for i in [n - 1 for n in numbers] or range(30):
+        md = (ARTICLE / "source" / f"{i:02}.md").read_text(encoding="utf-8")
+        body = render(md, f"{i:02}.md")
+        print(f"lesson {i + 1:>2}: {len(re.findall(r'[一-鿿]', md)):>5} 字, {body.count('class=\"fig\"')} 图, "
+              f"{body.count('<aside class=\"callout')} 提示框, {body.count('<h2>')} 节")
+
+
 if __name__ == "__main__":
-    build()
+    import sys
+    sys.stdout.reconfigure(encoding="utf-8")
+    if len(sys.argv) > 1 and sys.argv[1] == "--check":
+        check([int(x) for x in sys.argv[2:]])
+    elif len(sys.argv) > 1 and sys.argv[1] == "--only":
+        # Rewrite just these lessons' HTML (chapters/NN.html); the index and table of contents stay as they are.
+        (ARTICLE / "chapters").mkdir(exist_ok=True)
+        for n in map(int, sys.argv[2:]):
+            write_lesson(n - 1, part_of(n - 1)[2])
+            print(f"wrote lesson {n}")
+    else:
+        build()

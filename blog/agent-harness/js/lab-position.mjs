@@ -6,7 +6,7 @@ export function mount(root, kind, host) {
   const {controls, stage, out} = setup(root, {
     title: '把一句话藏在长文档的不同位置',
     dek: '一份备忘录里混着作废的旧报价和别家的报价，真正有效的那一句依次放在开头、1/4、中间、3/4 和结尾，每个位置问模型一次。',
-    note: '录像是 deepseek-flash 的一次真实结果。它在 3 万 token 以内的纯检索题上一个都没错；位置效应在更长的文档、需要综合多处信息的问题上才明显，这正是“标称窗口”和“有效上下文”的差别。'
+    note: '录像是 deepseek-flash 的一次真实结果：每个位置只问了一次，这道纯检索题在约 3 万 token 的长度下没有答错。它不能说明位置效应不存在，也不能说明它只出现在更长的文档里。'
   });
   const len = select(controls, '文档长度', LENGTHS.map(([k, label]) => [k, label]), () => reset());
   const replayBtn = button('▶ 播放录像', controls, () => replay(), 'btn');

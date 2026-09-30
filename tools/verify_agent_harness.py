@@ -60,7 +60,20 @@ def main():
             page.wait_for_function(f"location.hash === '#lesson-{n}'")
             body = page.locator("#lesson-body")
             body.locator(".lab, .th").first.wait_for(state="visible")
-            assert len(body.inner_text()) > 600, n
+            assert len(body.inner_text()) > 2500, n
+            assert body.locator(".callout-goal").count() == 1 and body.locator(".callout-recap").count() == 1, n
+            figs = body.locator("figure.fig")
+            assert 3 <= figs.count() <= 8, (n, figs.count())
+            page.wait_for_function("document.querySelectorAll('#lesson-body figure.fig:not(.live)').length === 0")
+            for k in range(figs.count()):
+                fig = figs.nth(k)
+                dots = fig.locator(".fg-dots button")
+                if dots.count():
+                    dots.last.click()
+                    assert fig.locator(".fg-say").inner_text().strip(), (n, k)
+                    assert "on" in dots.last.get_attribute("class"), (n, k)
+                    assert fig.locator(".fg-lit, .fg-edge.lit, .fg-node.lit, .fg-layer.lit, .fg-bar-row.lit, .fg-item.lit").count() > 0 or                         fig.locator(".fg-bar-row, .fg-layer, .fg-item").count() > 0, (n, k)
+            assert page.locator("#chips").is_hidden() or page.locator("#chips button").count() >= 2
             kind = body.locator(".lab-slot").get_attribute("data-lab")
             if kind in tried:
                 continue
@@ -79,6 +92,32 @@ def main():
                 report["lessons"].append({"lesson": n, "kind": kind, "out": lab.locator(".lab-out").inner_text()[:60]})
         assert not errors, errors
         report["behaviors"].append(f"30 lessons loaded inline; {len(tried)} experiment kinds exercised")
+
+        # Outline: a sticky rail on wide screens that scrolls to the section.
+        page.set_viewport_size({"width": 1600, "height": 900})
+        page.goto(URL + "#lesson-2", wait_until="networkidle")
+        rail = page.locator("#rail-list button")
+        assert rail.count() >= 4 and page.locator("#rail").is_visible()
+        rail.nth(2).click()
+        page.wait_for_timeout(900)
+        assert page.evaluate("document.getElementById('sec-2-3').getBoundingClientRect().top < 240")
+        report["behaviors"].append("section rail visible at 1600px and scrolls to the chosen section")
+        page.set_viewport_size({"width": 1280, "height": 900})
+
+        # Figures: stepping changes the caption, lights an arrow, and the tip of a node explains itself.
+        page.goto(URL + "#lesson-2", wait_until="networkidle")
+        fig = page.locator("#lesson-body figure.fig").first
+        fig.scroll_into_view_if_needed()
+        dots = fig.locator(".fg-dots button")
+        dots.nth(1).click()
+        first = fig.locator(".fg-say").inner_text()
+        page.wait_for_timeout(800)
+        assert fig.locator(".fg-edge.lit").count() == 1 and fig.locator(".fg-node.lit").count() >= 1
+        dots.nth(3).click()
+        assert fig.locator(".fg-say").inner_text() != first
+        fig.locator(".fg-node.has-tip").first.click()
+        assert "模型" in fig.locator(".fg-say").inner_text() or "上下文" in fig.locator(".fg-say").inner_text()
+        report["behaviors"].append("figure stepper: steps change the caption and light arrows; a node's tip explains it")
 
         # Code blocks: outline jumps unfold the code; copy puts plain source on the clipboard.
         page.context.grant_permissions(["clipboard-read", "clipboard-write"], origin="http://127.0.0.1:8001")
