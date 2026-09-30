@@ -4,4 +4,5 @@
 <p>举个有用的检查步骤。推荐采购方案之前，让系统生成一个简短证据清单：预算从哪里来，含税价格如何计算，交付日期对应哪个版本，仍有哪个字段未知。这个清单不必复述私有推理；它可以直接作为可审核的外部产物。随后由确定性验证器核对金额和日期。如果字段缺失，暂停推荐并补查。这样，思考被接到了证据和行动上。</p>
 <p>也不要把漂亮的推理文本当作可信解释。研究发现，模型的可见推理可能未忠实披露影响答案的提示线索。读起来完整，不代表我们已经掌握了内部因果过程。日志应该帮助复盘执行事实，而不是用大量“我认真想过”的文字代替测试。<a href="https://arxiv.org/abs/2305.04388" rel="noopener noreferrer">来源：Language Models Don&#x27;t Always Say What They Think</a>、<a href="https://arxiv.org/abs/2505.05410" rel="noopener noreferrer">Reasoning Models Don&#x27;t Always Say What They Think</a></p>
 <p>使用 API 时，还要区分展示需求与协议需求。依据当前 DeepSeek 文档，thinking 默认开启，教程应显式选择开启或关闭，避免预算行为不清楚。工具调用场景中，返回的 <code>reasoning_content</code> 需要按协议保留并回传，包括相应历史 assistant 消息；这类内容可在当前运行的内部历史中维护，不必默认展示或导出。thinking 模式下温度参数不产生通常预期的影响，过小输出上限也可能让模型耗尽预算而未给出最终答案。<a href="https://api-docs.deepseek.com/guides/thinking_mode/" rel="noopener noreferrer">来源：DeepSeek Thinking Mode</a></p>
-<p>下面的实践先显式关闭 thinking，让读者看清工具协议。之后再开启，并测量完成率、约束错误、token、延迟与费用。没有实际跑出的对照数据，就只提出假设，不填写“提升百分之多少”的装饰性数字。</p><div><button type="button" data-lab="budget">加载本讲交互实验</button></div>
+<p>下面的实践先显式关闭 thinking，让读者看清工具协议。之后再开启，并测量完成率、约束错误、token、延迟与费用。没有实际跑出的对照数据，就只提出假设，不填写“提升百分之多少”的装饰性数字。</p>
+<div class="lab-slot" data-lab="budget"></div>

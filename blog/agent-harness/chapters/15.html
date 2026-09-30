@@ -5,32 +5,7 @@
 <p>“独立”也不能靠新开一个聊天窗口获得。可以把独立性拆成五个问题。第一，证据是不是独立的：验证器是否真的重新读了文件，还是只转述执行者说文件已保存？第二，判断是不是独立的：它是否先看验收条件和作品，再看执行者的解释，以免被漂亮的理由锚定？第三，机制是不是互补的：编译器、类型检查、数据库约束与语言模型审阅能发现不同错误。第四，权限是不是隔离的：执行者能否删除测试、修改评分脚本或覆盖证据？第五，环境是否干净：测试依赖的是可复现的安装与启动过程，还是某次运行留下的缓存和后台服务？</p>
 <p>这五个问题比“验证器用了另一个模型”更重要。不同模型可能共享同一份错误资料；同一个模型如果获得新的数据库状态，也可能提供很有价值的独立检查。独立性的目的不是仪式性地多一票，而是让错误不那么容易沿着同一条链路同时污染生成与验收。</p>
 <p>实现上，可以让生成器只返回产物位置，让验证器自行收集证据，再把结果交给一个非模型控制的完成门。下面是架构伪代码，重点是数据流与职责，并非复制即可上线的完整应用：</p>
-<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>from dataclasses import dataclass
-from typing import Literal
-
-@dataclass
-class Check:
-    criterion: str
-    verdict: Literal[&quot;pass&quot;, &quot;fail&quot;, &quot;unknown&quot;]
-    evidence_refs: list[str]
-    reason: str
-
-async def finish_candidate(candidate, contract):
-    # 受信验证进程读取产物；执行 agent 不能写入这些检查器。
-    evidence = await collect_fresh_evidence(candidate, contract)
-    deterministic = run_executable_checks(evidence, contract)
-    qualitative = await review_qualitative_checks(evidence, contract)
-    checks = deterministic + qualitative
-    # “不知道”不等于“失败”，但也不能被计为“完成”。
-    required = contract.required_criterion_ids
-    ids = [c.criterion for c in checks]
-    complete = (
-        bool(required)
-        and len(set(required)) == len(required)
-        and len(set(ids)) == len(ids)
-        and set(ids) == set(required)
-        and all(c.verdict == &quot;pass&quot; and bool(c.evidence_refs) for c in checks)
-    )
-    return {&quot;complete&quot;: complete, &quot;checks&quot;: checks}</code></pre>
+<figure class="code" data-lang="python"><figcaption><span class="code-lang">python</span><span class="code-count">27 行</span><button type="button" class="code-copy">复制</button></figcaption><pre tabindex="0"><code><span class="ln"><span class="t-k">from</span> dataclasses <span class="t-k">import</span> dataclass</span><span class="ln"><span class="t-k">from</span> typing <span class="t-k">import</span> Literal</span><span class="ln"></span><span class="ln"><span class="t-d">@dataclass</span></span><span class="ln"><span class="t-k">class</span> <span class="t-f">Check</span>:</span><span class="ln">    criterion: <span class="t-b">str</span></span><span class="ln">    verdict: Literal[<span class="t-s">&quot;pass&quot;</span>, <span class="t-s">&quot;fail&quot;</span>, <span class="t-s">&quot;unknown&quot;</span>]</span><span class="ln">    evidence_refs: <span class="t-b">list</span>[<span class="t-b">str</span>]</span><span class="ln">    reason: <span class="t-b">str</span></span><span class="ln"></span><span class="ln"><span class="t-k">async</span> <span class="t-k">def</span> <span class="t-f">finish_candidate</span>(candidate, contract):</span><span class="ln">    <span class="t-c"># 受信验证进程读取产物；执行 agent 不能写入这些检查器。</span></span><span class="ln">    evidence = <span class="t-k">await</span> collect_fresh_evidence(candidate, contract)</span><span class="ln">    deterministic = run_executable_checks(evidence, contract)</span><span class="ln">    qualitative = <span class="t-k">await</span> review_qualitative_checks(evidence, contract)</span><span class="ln">    checks = deterministic + qualitative</span><span class="ln">    <span class="t-c"># “不知道”不等于“失败”，但也不能被计为“完成”。</span></span><span class="ln">    required = contract.required_criterion_ids</span><span class="ln">    ids = [c.criterion <span class="t-k">for</span> c <span class="t-k">in</span> checks]</span><span class="ln">    complete = (</span><span class="ln">        <span class="t-b">bool</span>(required)</span><span class="ln">        <span class="t-k">and</span> <span class="t-b">len</span>(<span class="t-b">set</span>(required)) == <span class="t-b">len</span>(required)</span><span class="ln">        <span class="t-k">and</span> <span class="t-b">len</span>(<span class="t-b">set</span>(ids)) == <span class="t-b">len</span>(ids)</span><span class="ln">        <span class="t-k">and</span> <span class="t-b">set</span>(ids) == <span class="t-b">set</span>(required)</span><span class="ln">        <span class="t-k">and</span> <span class="t-b">all</span>(c.verdict == <span class="t-s">&quot;pass&quot;</span> <span class="t-k">and</span> <span class="t-b">bool</span>(c.evidence_refs) <span class="t-k">for</span> c <span class="t-k">in</span> checks)</span><span class="ln">    )</span><span class="ln">    <span class="t-k">return</span> {<span class="t-s">&quot;complete&quot;</span>: complete, <span class="t-s">&quot;checks&quot;</span>: checks}</span></code></pre></figure>
 <p>最好再反过来测试验证器。故意把存储替换成内存、让按钮失效、把用户 ID 写错，观察验收能否发现。这是变异测试思想在 agent 系统中的应用：不要只数你写了多少检查，要看它们能辨认多少真实失败。执行者提交了一次合法测试修复，也不自动意味着作弊；需要检查用户授权、修改目的和是否降低了原本应满足的要求。</p>
-<p>完成门应fail closed：合同为空、必需项重复、报告项重复、遗漏、unknown、没有证据引用，都不完成。Python和浏览器固定题验证器在每条失败路径返回非空失败检查，不能借all([])真值退出。检验空结果是必要回归测试。</p><div><button type="button" data-lab="verify">加载本讲交互实验</button></div>
+<p>完成门应fail closed：合同为空、必需项重复、报告项重复、遗漏、unknown、没有证据引用，都不完成。Python和浏览器固定题验证器在每条失败路径返回非空失败检查，不能借all([])真值退出。检验空结果是必要回归测试。</p>
+<div class="lab-slot" data-lab="verify"></div>

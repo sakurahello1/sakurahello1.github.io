@@ -1,11 +1,12 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>标称窗口与有效上下文</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>11 · 标称窗口与有效上下文</title>
 <link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"></head>
-<body><main class="course"><p><a href="../#lesson-10">返回完整课程与交互实验</a></p>
-<h1>标称窗口与有效上下文</h1><article class="chapter"><p>模型支持很长的窗口，首先意味着接口允许输入一定数量的 token。你真正需要知道的却是：在这项任务里，放进这些材料之后，它还能否稳定找出事实、连接证据、遵守约束并得出正确结论。这两者之间的差距，可以用“有效上下文”来讨论。</p>
+<body class="read-page"><main class="lesson-page"><p class="lesson-kicker mono"><a href="../#lesson-11">agent&amp;harness · 完整课程与交互实验</a> / PERSIST / 第 11 讲</p>
+<h1>标称窗口与有效上下文</h1><article class="prose-lesson"><p>模型支持很长的窗口，首先意味着接口允许输入一定数量的 token。你真正需要知道的却是：在这项任务里，放进这些材料之后，它还能否稳定找出事实、连接证据、遵守约束并得出正确结论。这两者之间的差距，可以用“有效上下文”来讨论。</p>
 <p>有效上下文不是一个放之四海而皆准的新规格。它取决于任务及可接受的错误率。一个模型可能很擅长在长文里找到唯一密钥，却不擅长把十处条款合成一个合同判断；能准确复述末尾的结论，也未必能发现中间某页的数据与结论矛盾。RULER 通过不同长度和任务设计说明，长上下文评估不能只靠一个简单 needle-in-a-haystack 测试。<a href="https://arxiv.org/abs/2404.06654" rel="noopener noreferrer">来源：RULER</a></p>
 <p>因此，调试长上下文失败时，先判断错误发生在哪。事实压根没被检索到，是召回问题；事实已经进入 prompt，却未被正确使用，是使用问题；新旧报价同时出现而未标记有效期，是版本问题；摘要把“可能延迟”改成“已经延迟”，是压缩漂移；引用的文件已被覆盖，是证据稳定性问题。它们可能产生相似的最终错答，但需要不同修复手段。</p>
 <p>假设采购 agent 推荐了交付过晚的供应商。你查看完整事件记录，发现它曾读过一份旧报价，但新的交付更正只在外部存储中，检索没选中。此时扩大窗口未必有用，因为新证据根本没进入窗口。若新旧记录都在，却没有生效日期，增加 token 反而可能增加冲突。优先修正确认规则与选择逻辑，通常比盲目加大输入更直接。</p>
 <p>一个好的实验应把输入策略当变量：全量小文档、按项目与日期过滤的相关片段、有损摘要、摘要加源引用。答案用相同 fixture 的权威数据核验，输出预算和模型保持一致。指标至少分开记录约束遵守、事实正确、引用支持、调用量与时间。token 更少只是成本结果，如果丢掉了关键约束，不能算整体优化。</p>
 <p>实践中可以为上下文中的每个片段附上轻量元数据：<code>source_id</code>、<code>version</code>、<code>observed_at</code>、<code>valid_from</code>、<code>trust_level</code>。并非每个应用都需要全部字段，但至少要能区分用户的当前指令、权威系统数据和未经确认的网页内容。检索到的内容可以作为证据，不能因为位置靠前就升级为规则。</p>
-<p>还有一个经常被忽视的维度：过程状态。模型如果忘记某个方案已经失败，就会重复探索；忘记已发出的写操作，就可能重复副作用。长上下文评估不仅要问“能否答对知识题”，还要问“能否从当前状态正确继续”。这也是为什么上一课的检查点中需要失败尝试、pending job 和下一动作。</p></article></main></body></html>
+<p>还有一个经常被忽视的维度：过程状态。模型如果忘记某个方案已经失败，就会重复探索；忘记已发出的写操作，就可能重复副作用。长上下文评估不仅要问“能否答对知识题”，还要问“能否从当前状态正确继续”。这也是为什么上一课的检查点中需要失败尝试、pending job 和下一动作。</p></article>
+<nav class="pager"><a href="09-read.html">← 位置、干扰与注意力</a><a href="11-read.html">记忆分类的两条轴 →</a></nav></main></body></html>

@@ -6,7 +6,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <title>agent&amp;harness从入门到精通</title>
-<meta name="description" content="30讲中文工程课程：Execute、Persist、验证、多Agent与可靠性安全。原始论文、Python OpenAI SDK参考harness和按需加载的交互实验。">
+<meta name="description" content="30讲中文工程课程：一个 agent 怎样真的把事做完。闭环执行、上下文与记忆、验证、多 Agent、权限与可靠性；每讲带可在浏览器里用真实模型运行的实验。">
 <meta property="og:title" content="agent&amp;harness从入门到精通">
 <meta property="og:type" content="article">
 <meta name="theme-color" content="#EDE8DE">
@@ -15,39 +15,69 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
 <link rel="stylesheet" href="../../assets/css/core.css">
 <link rel="stylesheet" href="css/page.css">
-<script src="../../assets/js/site.js" defer></script>
 <script type="module" src="js/app.mjs"></script>
 </head>
-<body data-tc="7200">
-<header class="hud-top"><a class="badge" href="../../"><span class="dot" aria-hidden="true"></span><span class="idx" id="hud-idx">01</span>Hao Lyu</a><ul class="navlinks"><li><a href="../">Writing</a></li><li><a href="#course">30 Lessons</a></li><li><a href="#byok">BYOK</a></li><li><a href="#sources">Sources</a></li></ul></header>
-<main>
-<header class="hero" id="top"><p class="spec-label mono">FIELD GUIDE / 2026-09-30 / 30 LESSONS</p>
-<p class="bigtype" data-type data-guides>Agent</p><p class="bigtype" data-type>Harness</p>
-<div class="measure mono">EXECUTE → PERSIST → GOVERN</div>
-<h1>agent&amp;harness从入门到精通</h1>
-<p class="dek">模型提出动作，系统让动作真实发生；上下文会结束，工作状态不能归零；宣称完成之后，还需要证据。这是一门从原理走到可运行 Python harness 的中文课程，每讲连接机制、论文边界和动手实验。</p>
-<p class="meta mono">30讲 · {{CHINESE_COUNT}} 中文字 · 离线实验 + 自愿BYOK · 约120分钟起</p>
-<a class="action" href="#course">开始阅读</a><a class="action" href="examples/reference.zip" download>下载 Python 完整示例</a>
-<nav class="nav-mini" aria-label="课程分部"><a href="#part-0">Execute</a><a href="#part-7">Persist</a><a href="#part-15">Govern I</a><a href="#part-20">Multi Agent</a><a href="#part-25">Govern II</a></nav>
-<p class="caption">正文仅在展开该讲时加载，实验仅在点击加载时导入。无JavaScript也可独立阅读。模拟结果与论文测量严格分开。</p></header>
-<div class="course">
-<section class="settings" id="byok" aria-labelledby="byok-title"><p class="spec-label mono">OPTIONAL / YOUR KEY / YOUR DESTINATION</p><h2 id="byok-title">统一实验设置</h2>
-<p>默认离线，无需登录或密钥。真实模式只在明确点击“真实 API 流式运行”后调用；开发验证仅使用 mock 和离线数据，未进行真实付费推理。</p>
-<div class="settings-grid"><label>baseURL（改变即清空绑定凭据）<input id="base" type="url" value="https://api.deepseek.com" autocomplete="off" spellcheck="false"></label>
-<label>api_key（只在你自己的浏览器输入）<input id="key" type="password" autocomplete="off" spellcheck="false"></label>
-<label>模型<select id="model"><option>deepseek-flash</option><option>deepseek-v4-pro</option></select></label>
-<label>保留方式<select id="retention"><option value="memory">仅内存：刷新即失效（默认）</option><option value="tab">同标签页：刷新可保留</option><option value="device">主动选择设备TTL保留</option></select></label>
-<label>设备保留期限<select id="ttl"><option value="15">15分钟</option><option value="30">30分钟</option><option value="60">1小时</option></select></label></div>
-<label><input type="checkbox" id="consent"> 我确认将凭据交给上方精确 baseURL 的 /chat/completions；HTTPS本身不证明目的地可信。</label>
-<button type="button" id="save">绑定新凭据与目的地</button><button type="button" id="restore">确认使用保留凭据</button><button type="button" id="forget">忘记密钥并取消运行</button>
-<p id="credential-status" role="status" aria-live="polite">没有凭据；离线实验可直接运行。</p><p id="expiry"></p>
-<details><summary>保留边界、同源脚本风险与CORS</summary>
-<p>sessionStorage通常在标签页会话结束时清理，但浏览器恢复会话可能保留，不能保证关浏览器立即删除。设备TTL为到期后下次页面检查或使用时惰性清理；未打开的页面无法定时删除磁盘记录，系统时钟变化也会影响期限。清除按钮只清除此应用记录，不会吊销供应商密钥。</p>
-<p>同源JavaScript、XSS、被篡改部署脚本、扩展或开发者工具可能读取可用密钥；浏览器加密不能使执行中的密钥对同源脚本不可见。路径不是隔离边界。本实验无分析上报，模型/工具内容按纯文本渲染，无公共代理和生成代码执行。</p>
-<p>CSP仅限制部分加载；为了允许用户填写自定义HTTPS目的地，connect-src允许HTTPS，因此不是精确网络白名单。请求目的地由冻结的运行配置和凭据绑定控制，脚本被攻破仍可能绕过。GitHub Pages的meta CSP不能替代全部响应头安全策略。</p>
-<p>2026-09-30无密钥HTTP探测观察到本网站origin的正常/beta预检200及未认证POST401并带允许头；这不证明已认证推理、所有地区或永久CORS支持。若CORS失败不会静默换目的地，可下载本机Python示例自行运行，无需关闭浏览器安全设置。</p>
-<p><a href="https://api-docs.deepseek.com/">官方API</a> · <a href="https://api-docs.deepseek.com/quick_start/pricing/">动态价格与密钥入口</a> · <a href="examples/README.md">本机运行说明</a></p></details></section>
-<section id="course" aria-label="课程正文"><!-- CHAPTERS --></section>
-<section class="sources" id="sources"><h2>证据索引与阅读方法</h2><p>每讲在主张附近给原始论文或官方链接。论文版本、模型、任务和预算属于结论的一部分；滚动文档核查于2026-09-30。本教程的工程建议和确定性模拟不冒充论文复现。可检索来源见<a href="sources.html">完整来源索引</a>。</p><p>Python官方openai SDK是pip安装包，非内置标准库。下载示例含harness.py、requirements.txt、说明和离线测试；浏览器交互实现使用原生JS，两者实现相同的工具契约和有界闭环。</p></section>
-</div></main><footer class="foot night"><p class="bigtype">Hao Lyu</p><p><a href="../">Writing</a> · <a href="../../">Home</a> · <a href="#top">回到顶部</a></p><p>图形与预置场景用于解释机制；没有真实模型测量时不展示模型成功率。</p></footer>
+<body class="ah">
+<header class="ah-bar">
+  <button type="button" class="ah-toc-toggle" id="toc-toggle" aria-controls="toc" aria-expanded="false">目录</button>
+  <a class="ah-brand" href="../../"><span class="dot" aria-hidden="true"></span>Hao Lyu</a>
+  <span class="ah-crumb"><a href="../">Writing</a> / <a href="./" id="crumb-course">agent&amp;harness</a><span id="crumb-lesson"></span></span>
+  <button type="button" class="ah-connect" id="connect-open"><span class="ah-dot" id="conn-dot"></span><span id="conn-label">连接模型</span></button>
+</header>
+
+<div class="ah-layout">
+  <aside class="ah-side" id="toc" aria-label="课程目录">
+    <a class="ah-side-title" href="./"><span class="mono">FIELD GUIDE · 30 LESSONS</span>agent&amp;harness<br>从入门到精通</a>
+    <div class="ah-progress" aria-hidden="true"><span id="progress-bar"></span></div>
+    <p class="ah-progress-text mono" id="progress-text">已读 0 / 30</p>
+    <nav><ol class="toc"><!-- TOC --></ol></nav>
+    <p class="ah-side-foot"><a href="examples/reference.zip" download>下载 Python 参考实现</a><a href="sources.html">来源索引</a></p>
+  </aside>
+  <div class="ah-scrim" id="toc-scrim" hidden></div>
+
+  <main class="ah-main" id="main">
+    <section class="ah-overview" id="overview">
+      <p class="ah-kicker mono">FIELD GUIDE / 2026-09-30 / EXECUTE → PERSIST → GOVERN</p>
+      <h1>agent&amp;harness<br>从入门到精通</h1>
+      <p class="ah-dek">模型只会“说”要做什么。让动作真的发生、让工作在窗口满了以后还能接上、让“完成”有证据可查，这些都是 harness 的事。30 讲，从一个最小闭环走到权限、沙箱和可靠性验收。</p>
+      <p class="ah-meta mono">30 讲 · {{CHINESE_COUNT}} 字 · 约 {{MINUTES}} 分钟 · 每讲带实验</p>
+      <div class="ah-cta"><a class="btn primary" href="chapters/00-read.html" data-lesson="1">从第 1 讲开始</a><button type="button" class="btn" data-open-connect>用我的 API key 真实运行</button></div>
+
+      <div class="theater-slot" data-theater="react" data-hero="1"></div>
+      <p class="ah-note">上面是一个 agent 在虚构采购任务里的完整闭环：模型提议调用工具，harness 校验参数、执行、把结果作为新观察放回上下文，最后由确定性的验收器判断是否真的完成。默认播放一次真实运行的录像；连接你自己的模型后可以现场再跑一遍。</p>
+
+      <h2 class="ah-h2">五个部分</h2>
+      <div class="part-grid"><!-- PARTS --></div>
+    </section>
+
+    <article class="ah-lesson" id="lesson" hidden aria-live="polite">
+      <header class="lesson-head">
+        <p class="lesson-kicker mono" id="lesson-kicker"></p>
+        <h1 id="lesson-title"></h1>
+      </header>
+      <div class="prose-lesson" id="lesson-body"></div>
+      <nav class="pager" id="pager"></nav>
+    </article>
+  </main>
+</div>
+
+<dialog class="connect" id="connect" aria-labelledby="connect-title">
+  <form method="dialog" class="connect-card">
+    <header><h2 id="connect-title">连接模型</h2><button value="close" class="connect-x" aria-label="关闭">×</button></header>
+    <p class="connect-dek">填入你自己的 API key，页面里的 agent 就会用真实模型运行。不填也能看全部演示。</p>
+    <div class="seg" role="radiogroup" aria-label="服务商">
+      <label><input type="radio" name="provider" value="deepseek" checked><span>DeepSeek</span></label>
+      <label><input type="radio" name="provider" value="custom"><span>其他 OpenAI 兼容服务</span></label>
+    </div>
+    <label class="field" id="base-field" hidden><span>Base URL</span><input id="base" type="url" value="https://api.deepseek.com" autocomplete="off" spellcheck="false"></label>
+    <label class="field"><span>API key</span><span class="key-row"><input id="key" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…" autofocus><button type="button" class="key-eye" id="key-eye" aria-label="显示密钥">显示</button></span></label>
+    <label class="field"><span>模型</span><input id="model" list="model-list" value="deepseek-flash" autocomplete="off" spellcheck="false"><datalist id="model-list"><option value="deepseek-flash"><option value="deepseek-v4-pro"></datalist></label>
+    <label class="check"><input type="checkbox" id="remember"><span>在这个标签页里记住（刷新还在，关掉标签页就清除）</span></label>
+    <p class="connect-note">密钥只保存在你的浏览器里，只发往 <b id="dest">api.deepseek.com</b>。每次运行最多 5 次模型调用，费用计入你的账户。</p>
+    <p class="connect-status" id="connect-status" role="status"></p>
+    <footer><button type="button" class="btn ghost" id="forget">清除密钥</button><span class="grow"></span><button type="button" class="btn ghost" id="test">测试连接</button><button type="button" class="btn primary" id="save">保存</button></footer>
+  </form>
+</dialog>
+
+<noscript><p class="ah-noscript">这个页面需要 JavaScript。每一讲也有不依赖脚本的版本：<a href="chapters/00-read.html">从第 1 讲开始阅读</a>。</p></noscript>
 </body></html>

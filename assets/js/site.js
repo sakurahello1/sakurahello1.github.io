@@ -421,6 +421,27 @@
       ctx.fillStyle = CREAM; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
       ctx.fillText('D(p‖q) = ' + d.toFixed(3) + ' nats', x1, H * 0.12);
     },
+    harness: function (ctx, W, H, t) {     // agent 闭环：上下文 → 模型 → 校验 → 工具 → 回到上下文；每跑完一圈，中间的验收亮一次
+      ctx.clearRect(0, 0, W, H);
+      var cx = W * 0.72, cy = H * 0.42, R = Math.min(W * 0.17, H * 0.27), lap = 4, u = (t % lap) / lap;
+      var names = ['CTX', 'MODEL', 'CHECK', 'TOOL'], nw = Math.max(46, R * 0.62), nh = nw * 0.42;
+      ctx.lineWidth = Math.max(2, H * 0.012); ctx.strokeStyle = 'rgba(20,20,19,.35)';
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
+      ctx.strokeStyle = INK; ctx.beginPath(); ctx.arc(cx, cy, R, Math.PI, Math.PI + u * Math.PI * 2); ctx.stroke();
+      ctx.font = '600 ' + Math.max(8, nh * 0.36) + 'px "JetBrains Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      names.forEach(function (n, i) {
+        var a = Math.PI + i * Math.PI / 2, x = cx + R * Math.cos(a), y = cy + R * Math.sin(a), on = Math.floor(u * 4) === i;
+        ctx.fillStyle = on ? INK : CREAM; ctx.beginPath(); rr(ctx, x - nw / 2, y - nh / 2, nw, nh, nh * 0.3); ctx.fill();
+        ctx.strokeStyle = INK; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = on ? CREAM : INK; ctx.fillText(n, x, y + 1);
+      });
+      var a = Math.PI + u * Math.PI * 2;
+      ctx.fillStyle = WHITE; ctx.beginPath(); ctx.arc(cx + R * Math.cos(a), cy + R * Math.sin(a), Math.max(4, H * 0.024), 0, 7); ctx.fill();
+      var pass = u > 0.9 || u < 0.1, s = nh * 0.9;
+      ctx.fillStyle = pass ? INK : 'rgba(20,20,19,.12)'; ctx.beginPath(); ctx.arc(cx, cy, s, 0, 7); ctx.fill();
+      ctx.strokeStyle = pass ? CREAM : 'rgba(20,20,19,.3)'; ctx.lineWidth = Math.max(2, s * 0.16);
+      ctx.beginPath(); ctx.moveTo(cx - s * 0.4, cy); ctx.lineTo(cx - s * 0.08, cy + s * 0.32); ctx.lineTo(cx + s * 0.42, cy - s * 0.3); ctx.stroke();
+    },
     agent: function (ctx, W, H, t) {       // 中心节点与几种形状的卫星，信号沿连线往返
       ctx.clearRect(0, 0, W, H);
       var cx = W * 0.62, cy = H * 0.46, R = Math.min(W, H) * 0.34, n = 7;

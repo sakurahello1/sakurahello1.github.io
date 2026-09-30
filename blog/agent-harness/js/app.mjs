@@ -1,89 +1,228 @@
+// The course reader: routing between the overview and one lesson, the sidebar, reading progress,
+// the connect dialog, code-block controls and the experiments that mount inside each lesson.
 import {Credentials, normalizeBase} from './transport.mjs';
+
 const $ = s => document.querySelector(s);
-let session, local;
-try { session = sessionStorage; local = localStorage; } catch {}
-const vault = new Credentials(session, local);
-let approved = null, controller = null;
-const status = text => { $('#credential-status').textContent = text; };
-function forget() {
-  controller?.abort(); vault.clear(); approved = null; $('#key').value = '';
-  $('#consent').checked = false; status('凭据已清除；此操作不能撤销已发请求或吊销密钥。');
+const $$ = s => [...document.querySelectorAll(s)];
+const DEEPSEEK = 'https://api.deepseek.com';
+const PREFS = 'agent-harness:prefs:v1', READ = 'agent-harness:read:v1';
+const store = (() => { try { return {session: sessionStorage, local: localStorage}; } catch { return {}; } })();
+const vault = new Credentials(store.session, store.local);
+const prefs = (() => { try { return JSON.parse(store.local.getItem(PREFS)) || {}; } catch { return {}; } })();
+prefs.base ||= DEEPSEEK; prefs.model ||= 'deepseek-flash';
+const savePrefs = () => { try { store.local.setItem(PREFS, JSON.stringify(prefs)); } catch {} };
+const read = new Set((() => { try { return JSON.parse(store.local.getItem(READ)) || []; } catch { return []; } })());
+
+/* ---------- connection ---------- */
+let running = null, pendingLive = null;
+const host = {
+  credentials() {
+    const v = vault.read(prefs.base);
+    return v ? {base: prefs.base, key: v.key, model: prefs.model} : null;
+  },
+  requestConnect(theater) { pendingLive = theater || null; openConnect(); },
+  claim(c) { if (running) throw new Error('另一个实验正在运行，先等它结束或重置'); running = c; },
+  release(c) { if (running === c) running = null; }
+};
+function paintConnection() {
+  const on = !!host.credentials();
+  $('#conn-dot').classList.toggle('on', on);
+  $('#conn-label').textContent = on ? `${prefs.base === DEEPSEEK ? 'DeepSeek' : new URL(prefs.base).host} · ${prefs.model}` : '连接模型';
 }
-$('#forget').addEventListener('click', forget);
-$('#base').addEventListener('input', forget);
+const dialog = $('#connect');
+const status = (text, kind = '') => { const el = $('#connect-status'); el.textContent = text; el.className = `connect-status ${kind}`; };
+function provider() { return dialog.querySelector('input[name=provider]:checked').value; }
+function syncProvider() {
+  const custom = provider() === 'custom';
+  $('#base-field').hidden = !custom;
+  if (!custom) $('#base').value = DEEPSEEK;
+  try { $('#dest').textContent = new URL($('#base').value).host; } catch { $('#dest').textContent = '（地址无效）'; }
+}
+function openConnect() {
+  const custom = prefs.base !== DEEPSEEK;
+  dialog.querySelector(`input[name=provider][value=${custom ? 'custom' : 'deepseek'}]`).checked = true;
+  $('#base').value = prefs.base; $('#model').value = prefs.model;
+  const saved = vault.read(prefs.base);
+  $('#key').value = ''; $('#key').type = 'password'; $('#key-eye').textContent = '显示';
+  $('#key').placeholder = saved ? `已保存 …${saved.key.slice(-4)}（留空则沿用）` : 'sk-…';
+  $('#remember').checked = saved?.mode === 'tab';
+  syncProvider();
+  status(saved ? '已连接。可以直接关闭，或换一个密钥。' : '');
+  dialog.showModal();
+}
+function formValues() {
+  const base = normalizeBase($('#base').value.trim());
+  const key = $('#key').value.trim() || vault.read(base)?.key;
+  if (!key) throw new Error('请填入 API key');
+  const model = $('#model').value.trim();
+  if (!model) throw new Error('请填入模型名');
+  return {base, key, model};
+}
+dialog.querySelectorAll('input[name=provider]').forEach(r => r.addEventListener('change', syncProvider));
+$('#base').addEventListener('input', syncProvider);
+$('#key-eye').addEventListener('click', () => {
+  const show = $('#key').type === 'password';
+  $('#key').type = show ? 'text' : 'password';
+  $('#key-eye').textContent = show ? '隐藏' : '显示';
+});
+$('#test').addEventListener('click', async () => {
+  let v;
+  try { v = formValues(); } catch (e) { status(e.message, 'err'); return; }
+  status('正在测试…');
+  try {
+    const r = await fetch(v.base + '/models', {headers: {Authorization: `Bearer ${v.key}`}, credentials: 'omit',
+      redirect: 'error', cache: 'no-store', referrerPolicy: 'no-referrer'});
+    if (r.status === 401 || r.status === 403) { status(`密钥被拒绝（HTTP ${r.status}）。`, 'err'); return; }
+    if (!r.ok) { status(`接口返回 HTTP ${r.status}，模型列表拿不到，但运行时也许可以。`, 'err'); return; }
+    const ids = ((await r.json()).data || []).map(m => m.id).filter(x => typeof x === 'string').slice(0, 12);
+    $('#model-list').replaceChildren(...ids.map(id => Object.assign(document.createElement('option'), {value: id})));
+    status(`连接成功。可用模型：${ids.join('、') || '（未列出）'}`, 'ok');
+  } catch {
+    status('浏览器没能直接访问这个地址，常见原因是它不允许跨域调用。DeepSeek 官方接口可以。', 'err');
+  }
+});
 $('#save').addEventListener('click', () => {
-  try {
-    const base = normalizeBase($('#base').value);
-    if (!$('#consent').checked) throw new Error('请确认显示的目的地');
-    const ok = vault.save($('#key').value.trim(), base, $('#retention').value, Number($('#ttl').value));
-    approved = base; $('#key').value = '';
-    status(ok ? '凭据已绑定该目的地；仅点击真实运行时发送。' : '存储被浏览器阻止，已退回内存模式。');
-  } catch (e) { status(e.message); }
+  let v;
+  try { v = formValues(); } catch (e) { status(e.message, 'err'); return; }
+  vault.save(v.key, v.base, $('#remember').checked ? 'tab' : 'memory');
+  prefs.base = v.base; prefs.model = v.model; savePrefs();
+  paintConnection();
+  dialog.close();
+  if (pendingLive) { const t = pendingLive; pendingLive = null; t.live(); }
 });
-try {
-  const metadata = vault.metadata();
-  if (metadata) $('#base').value = metadata.base;
-  const restored = vault.read($('#base').value);
-  if (restored) status('发现该目的地的保留凭据；请重新勾选目的地确认，再点击确认使用。');
-} catch {}
-$('#restore').addEventListener('click', () => {
-  try {
-    const base = normalizeBase($('#base').value);
-    if (!$('#consent').checked || !vault.read(base)) throw new Error('无有效凭据或未确认目的地');
-    approved = base; status('已确认保留凭据的目的地。');
-  } catch(e) { status(e.message); }
+$('#forget').addEventListener('click', () => {
+  running?.abort(); vault.clear(); paintConnection();
+  $('#key').value = ''; $('#key').placeholder = 'sk-…';
+  status('密钥已从这个页面清除。它不会因此在服务商那边失效。');
 });
-setInterval(() => {
-  const v = vault.read($('#base').value);
-  $('#expiry').textContent = v?.mode === 'device' ? `剩余 ${Math.max(0, Math.ceil((v.expiresAt-Date.now())/60000))} 分钟（惰性清理）` : '';
-}, 15000);
-const pending = new Map();
-async function loadChapter(button) {
-  const id = button.dataset.chapter;
-  const article = document.getElementById(`body-${id}`);
-  if (article.dataset.loaded) { article.hidden = !article.hidden; button.setAttribute('aria-expanded', String(!article.hidden)); return; }
-  if (pending.has(id)) return;
-  button.disabled = true; button.textContent = '加载正文…';
-  const job = (async () => {
-    try {
-      const r = await fetch(`chapters/${id}.html`); if (!r.ok) throw new Error('加载失败');
-      // Only same-origin, versioned author HTML; never model/user/tool text.
-      article.innerHTML = await r.text(); article.dataset.loaded = 'true'; article.hidden = false;
-      button.setAttribute('aria-expanded', 'true');
-      for (const open of article.querySelectorAll('[data-lab]')) open.addEventListener('click', async () => {
-        if (open.dataset.ready) return;
-        open.disabled = true;
-        try {
-          const module = await import('./labs.mjs');
-          await module.mount(open.parentElement, open.dataset.lab, {
-            getCredentials() {
-              const base = normalizeBase($('#base').value);
-              const v = vault.read(base);
-              if (!v || approved !== base || !$('#consent').checked) throw new Error('先在设置中绑定凭据并确认目的地');
-              return {base, key: v.key, model: $('#model').value};
-            },
-            claim(c) { if (controller) throw new Error('另一个实验正在运行'); controller = c; },
-            release(c) { if (controller === c) controller = null; }
-          }); open.dataset.ready = 'true'; open.remove();
-        } catch(e) { open.disabled = false; open.textContent = e.message; }
-      });
-    } catch { article.hidden = false; article.textContent = '正文加载失败，请重试或打开独立章节链接。'; }
-    finally { button.disabled = false; button.textContent = '展开 / 收起正文'; pending.delete(id); }
-  })(); pending.set(id, job); await job;
+dialog.addEventListener('close', () => { pendingLive = null; });
+$('#connect-open').addEventListener('click', () => openConnect());
+document.addEventListener('click', e => { if (e.target.closest('[data-open-connect]')) openConnect(); });
+paintConnection();
+
+/* ---------- sidebar ---------- */
+const links = $$('.toc a[data-lesson]');
+const TITLES = links.map(a => a.querySelector('.toc-t').textContent);
+function paintProgress() {
+  for (const a of links) a.classList.toggle('read', read.has(Number(a.dataset.lesson)));
+  $('#progress-bar').style.width = `${read.size / 30 * 100}%`;
+  $('#progress-text').textContent = `已读 ${read.size} / 30`;
 }
-for (const b of document.querySelectorAll('[data-chapter]')) b.addEventListener('click', () => loadChapter(b));
-async function followHash() {
-  const match = location.hash.match(/^#lesson-(\d+)$/);
-  if (!match || Number(match[1]) > 29) return;
-  const button = document.querySelector(`[data-chapter="${match[1].padStart(2, '0')}"]`);
-  if (!button) return;
-  const article = document.getElementById(button.getAttribute('aria-controls'));
-  if (article.hidden) await loadChapter(button);
-  button.scrollIntoView({block: 'start'});
+function toggleToc(open) {
+  $('#toc').classList.toggle('open', open);
+  $('#toc-scrim').hidden = !open;
+  $('#toc-toggle').setAttribute('aria-expanded', String(open));
 }
-window.addEventListener('hashchange', followHash); followHash();
-document.addEventListener('visibilitychange', () => {
-  // Live calls continue only while visible; cancellation cannot guarantee no provider billing.
-  if (document.hidden) controller?.abort();
+$('#toc-toggle').addEventListener('click', () => toggleToc(!$('#toc').classList.contains('open')));
+$('#toc-scrim').addEventListener('click', () => toggleToc(false));
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[data-lesson]');
+  if (!a || e.metaKey || e.ctrlKey || e.shiftKey) return;
+  e.preventDefault();
+  location.hash = `#lesson-${a.dataset.lesson}`;
 });
-window.addEventListener('pagehide', () => controller?.abort());
+paintProgress();
+
+/* ---------- code blocks ---------- */
+function wireCode(root) {
+  for (const fig of root.querySelectorAll('figure.code')) {
+    const pre = fig.querySelector('pre');
+    fig.querySelector('.code-copy').addEventListener('click', async e => {
+      const text = [...pre.querySelectorAll('.ln')].map(l => l.textContent).join('\n');
+      try { await navigator.clipboard.writeText(text); e.target.textContent = '已复制'; }
+      catch { e.target.textContent = '复制失败'; }
+      setTimeout(() => { e.target.textContent = '复制'; }, 1600);
+    });
+    fig.querySelector('.code-more')?.addEventListener('click', () => fig.classList.remove('folded'));
+    for (const b of fig.querySelectorAll('.code-outline button')) b.addEventListener('click', () => {
+      fig.classList.remove('folded');
+      const line = pre.querySelectorAll('.ln')[Number(b.dataset.line) - 1];
+      fig.querySelectorAll('.code-outline button').forEach(x => x.classList.toggle('on', x === b));
+      pre.querySelectorAll('.flash').forEach(x => x.classList.remove('flash'));
+      line.classList.add('flash');
+      line.scrollIntoView({block: 'center', behavior: 'smooth'});
+    });
+  }
+}
+
+/* ---------- experiments ---------- */
+async function mountLabs(root) {
+  for (const slot of root.querySelectorAll('.lab-slot[data-lab]')) {
+    const {mount} = await import('./labs.mjs');
+    await mount(slot, slot.dataset.lab, host);
+  }
+}
+const hero = $('[data-theater]');
+if (hero) import('./theater.mjs').then(({Theater}) => new Theater(hero, {variant: hero.dataset.theater, host, hero: true}));
+
+/* ---------- routing ---------- */
+const cache = new Map();
+const fragment = n => {
+  if (!cache.has(n)) cache.set(n, fetch(`chapters/${String(n - 1).padStart(2, '0')}.html`).then(r => {
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.text();
+  }));
+  return cache.get(n);
+};
+let shown = 0, readTimer = 0;
+async function showLesson(n) {
+  running?.abort();
+  const a = links[n - 1];
+  const part = a.closest('.toc-part');
+  $('#overview').hidden = true;
+  const lesson = $('#lesson');
+  lesson.hidden = false;
+  $('#lesson-kicker').textContent = `${part.dataset.part} · 第 ${n} 讲 · 约 ${a.dataset.min} 分钟`;
+  $('#lesson-title').textContent = TITLES[n - 1];
+  document.title = `${n} · ${TITLES[n - 1]} · agent&harness`;
+  $('#crumb-lesson').textContent = ` / 第 ${n} 讲`;
+  for (const l of links) l.classList.toggle('active', l === a);
+  a.scrollIntoView({block: 'nearest'});
+  toggleToc(false);
+  const body = $('#lesson-body');
+  body.replaceChildren();
+  shown = n;
+  window.scrollTo({top: 0});
+  let html;
+  try { html = await fragment(n); } catch { body.textContent = '这一讲没加载出来，请刷新重试。'; return; }
+  if (shown !== n) return;
+  body.innerHTML = html;  // same-origin author HTML built by tools/build_agent_harness.py
+  wireCode(body);
+  mountLabs(body);
+  const pager = $('#pager');
+  pager.replaceChildren();
+  const make = (k, cls, label) => {
+    const link = Object.assign(document.createElement('a'), {className: cls, href: `#lesson-${k}`});
+    link.append(Object.assign(document.createElement('span'), {className: 'mono', textContent: label}), TITLES[k - 1]);
+    pager.append(link);
+  };
+  if (n > 1) make(n - 1, 'prev', `← 第 ${n - 1} 讲`);
+  if (n < 30) make(n + 1, 'next', `第 ${n + 1} 讲 →`);
+  if (n < 30) fragment(n + 1);
+  clearTimeout(readTimer);
+  const io = new IntersectionObserver(es => {
+    if (!es[0].isIntersecting || shown !== n) return;
+    io.disconnect();
+    read.add(n);
+    try { store.local.setItem(READ, JSON.stringify([...read])); } catch {}
+    paintProgress();
+  });
+  io.observe(pager);
+}
+function showOverview() {
+  running?.abort();
+  $('#lesson').hidden = true;
+  $('#overview').hidden = false;
+  $('#crumb-lesson').textContent = '';
+  document.title = 'agent&harness从入门到精通';
+  for (const l of links) l.classList.remove('active');
+  shown = 0;
+}
+function route() {
+  const m = location.hash.match(/^#lesson-(\d+)$/);
+  const n = m && Number(m[1]);
+  n >= 1 && n <= 30 ? showLesson(n) : showOverview();
+}
+window.addEventListener('hashchange', route);
+route();
+document.addEventListener('visibilitychange', () => { if (document.hidden) running?.abort(); });

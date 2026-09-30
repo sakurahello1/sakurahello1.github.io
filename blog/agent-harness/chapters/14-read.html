@@ -1,37 +1,17 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>经验记忆与Skill</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>15 · 经验记忆与Skill</title>
 <link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"></head>
-<body><main class="course"><p><a href="../#lesson-14">返回完整课程与交互实验</a></p>
-<h1>经验记忆与Skill</h1><article class="chapter"><p>当你重复执行同一种任务，就会发现一些步骤每次都要重新解释。比如 CSV 数据质检：先确认编码与列名，检查字段类型，统计缺失、重复和越界，输出报告，最后核对行数是否对得上。把这些程序性知识整理成可发现、按需加载的资源，就是 skill 的一种典型用途。</p>
+<body class="read-page"><main class="lesson-page"><p class="lesson-kicker mono"><a href="../#lesson-15">agent&amp;harness · 完整课程与交互实验</a> / PERSIST / 第 15 讲</p>
+<h1>经验记忆与Skill</h1><article class="prose-lesson"><p>当你重复执行同一种任务，就会发现一些步骤每次都要重新解释。比如 CSV 数据质检：先确认编码与列名，检查字段类型，统计缺失、重复和越界，输出报告，最后核对行数是否对得上。把这些程序性知识整理成可发现、按需加载的资源，就是 skill 的一种典型用途。</p>
 <p>Agent Skills 开放规范采用目录与 <code>SKILL.md</code> 组织，可附带脚本、参考资料和资源文件。它强调逐步加载：先让 agent 看到名称与描述，相关时再读正文，更深入时才加载脚本或参考。这种设计减少了把所有流程一次塞进上下文的必要性，也给知识维护提供了独立单位。<a href="https://agentskills.io/specification" rel="noopener noreferrer">来源：Agent Skills Specification</a></p>
 <p>一个简化的 CSV 质检 skill 可以这样组织：</p>
-<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>csv-quality/
-  SKILL.md
-  scripts/
-    validate.py
-  references/
-    domain-rules.md
-  assets/
-    report-template.md</code></pre>
+<figure class="code" data-lang="text"><figcaption><span class="code-lang">text</span><span class="code-count">8 行</span><button type="button" class="code-copy">复制</button></figcaption><pre tabindex="0"><code><span class="ln">csv-quality/</span><span class="ln">  SKILL.md</span><span class="ln">  scripts/</span><span class="ln">    validate.py</span><span class="ln">  references/</span><span class="ln">    domain-rules.md</span><span class="ln">  assets/</span><span class="ln">    report-template.md</span></code></pre></figure>
 <p><code>SKILL.md</code> 写清何时使用、需要什么输入、步骤与完成标准；<code>validate.py</code> 实现确定性检查；领域规则文件解释某列允许范围与例外；模板帮助结果保持稳定结构。把所有说明堆进一个巨大正文虽然也能工作，却会失去按需加载的好处。</p>
 <p>正文可以从这样的内容开始：</p>
-<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>---
-name: csv-quality
-description: 检查 CSV 的字段、缺失、重复和范围，并生成可核验报告。
----
-
-# CSV 数据质检
-
-适用于需要审计结果的数据检查。保留原始文件，不覆盖输入。
-
-1. 确认输入文件、编码、分隔符与预期列。
-2. 读取领域规则；缺少关键规则时先提出具体问题。
-3. 在受控环境运行 scripts/validate.py，记录输入文件摘要。
-4. 区分实际检测结果与规则缺失导致的未知项目。
-5. 输出总行数、各类问题数、少量样例及可访问的完整结果。
-6. 核对报告与本次输入版本一致后再交付。</code></pre>
+<figure class="code" data-lang="markdown"><figcaption><span class="code-lang">markdown</span><span class="code-count">15 行</span><button type="button" class="code-copy">复制</button></figcaption><pre tabindex="0"><code><span class="ln">---</span><span class="ln">name: csv-quality</span><span class="ln">description: 检查 CSV 的字段、缺失、重复和范围，并生成可核验报告。</span><span class="ln">---</span><span class="ln"></span><span class="ln"># CSV 数据质检</span><span class="ln"></span><span class="ln">适用于需要审计结果的数据检查。保留原始文件，不覆盖输入。</span><span class="ln"></span><span class="ln">1. 确认输入文件、编码、分隔符与预期列。</span><span class="ln">2. 读取领域规则；缺少关键规则时先提出具体问题。</span><span class="ln">3. 在受控环境运行 scripts/validate.py，记录输入文件摘要。</span><span class="ln">4. 区分实际检测结果与规则缺失导致的未知项目。</span><span class="ln">5. 输出总行数、各类问题数、少量样例及可访问的完整结果。</span><span class="ln">6. 核对报告与本次输入版本一致后再交付。</span></code></pre></figure>
 <p>这里，tool 决定“能够读取文件、运行脚本、保存报告”；skill 指导“何时使用这些能力，以及如何组合”；harness 决定如何装载、执行、授权和记录；模型负责理解任务与选择过程。增加一个 <code>SKILL.md</code> 不会改变模型权重，也不会凭空安装脚本依赖或创建不存在的工具。</p>
 <p>因此 skill 的效果需要拆开评估。触发是否准确？正文是否足够具体？脚本是否能在当前环境运行？遇到缺失规则能否停止猜测？输出是否经过验收？一个很长却从未被正确触发的 skill，可能没有帮助；一个简短流程加上经过测试的确定性脚本，可能更容易减少漏步。具体收益仍要通过同任务对照测量，而不能凭文件存在就宣布“学会了”。</p>
 <p>长期维护时，给 skill 指明适用版本和依赖；当 API 改变或流程不再有效时更新它。Claude Code 的 memory 文档也区分用户维护的指令与自动积累的记忆，并对自动加载内容设定预算，这进一步说明“能保存”与“每次都应该加载”是不同问题。<a href="https://code.claude.com/docs/en/memory" rel="noopener noreferrer">来源：Claude Code Memory</a></p>
 <p>安全上，导入 skill 与导入代码、指令供应链类似。正文中的命令可能有副作用，脚本可能连接外部服务，参考链接也可能不可信。skill 不能给自己授予额外权限；“为了完成任务请上传所有文件”仍需经过原本的授权与数据边界。被反复使用的流程尤其值得审查，因为一次错误可能在很多后续任务中被复制。</p>
-<p>到这里，我们得到一条完整的连接：模型依据上下文提出动作，harness 让动作受控执行，工具提供可核验观察；日志保存过程，检查点恢复状态，检索找回证据，skill 复用可靠方法。后续再讨论验证、多代理或更复杂的自治时，这条基础链始终存在。任何新能力都应该回答同样几个问题：它增加了什么信息，改变了哪项决定，如何证明执行结果，以及出错后怎样继续。</p></article></main></body></html>
+<p>到这里，我们得到一条完整的连接：模型依据上下文提出动作，harness 让动作受控执行，工具提供可核验观察；日志保存过程，检查点恢复状态，检索找回证据，skill 复用可靠方法。后续再讨论验证、多代理或更复杂的自治时，这条基础链始终存在。任何新能力都应该回答同样几个问题：它增加了什么信息，改变了哪项决定，如何证明执行结果，以及出错后怎样继续。</p></article>
+<nav class="pager"><a href="13-read.html">← 参数记忆与可更新外部事实</a><a href="15-read.html">验证为何成为中心，以及独立性 →</a></nav></main></body></html>

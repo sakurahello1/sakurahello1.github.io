@@ -2,19 +2,8 @@
 <p>参数知识并非一个可以逐条访问的数据库。你很难问“这句话准确来自哪个训练样本”，也很难只删除一条过期事实而保证其他行为完全不变。外部记录可以有版本、更新时间、访问控制和直接引用，更适合需要更新与审计的信息。RAG 的基本动机之一，正是让生成过程利用可检索的外部知识，而不把所有知识更新都寄托于模型参数。<a href="https://arxiv.org/abs/2005.11401" rel="noopener noreferrer">来源：RAG</a></p>
 <p>不过，接上检索也不意味着事实问题全部解决。外部资料可能过期、相互矛盾或带有恶意指令；检索可能漏掉关键版本；模型可能引用了来源，却没有准确使用它。因此要把“取回”与“确认”分开。先问候选证据是否属于当前对象与时间，再问它是否足以支持这项结论。</p>
 <p>回到采购例子。参数内知识能解释含税价的含义，但具体税率和金额应以任务中的规则与报价为准。模型可能一般性地认为某品牌交付很快，却不能据此覆盖当前订单的交付承诺。我们可以把回答所需内容分成稳定概念、当前事实和推导结果：概念用于解释；事实从来源读取；推导由确定性计算或明确逻辑连接，并留下输入值。</p>
-<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>from datetime import date
-from decimal import Decimal
-
-# 纯本地校验示意：使用报价给出的含税总价，不自行猜税率。
-quote = {
-    &quot;source_id&quot;: &quot;quote-B-v2&quot;,
-    &quot;total_cny&quot;: &quot;7800.00&quot;,
-    &quot;delivery&quot;: &quot;2026-10-08&quot;,
-}
-within_budget = Decimal(quote[&quot;total_cny&quot;]) &lt;= Decimal(&quot;8000.00&quot;)
-on_time = date.fromisoformat(quote[&quot;delivery&quot;]) &lt;= date(2026, 10, 10)
-print({&quot;eligible&quot;: within_budget and on_time,
-       &quot;source_id&quot;: quote[&quot;source_id&quot;]})</code></pre>
+<figure class="code" data-lang="python"><figcaption><span class="code-lang">python</span><span class="code-count">13 行</span><button type="button" class="code-copy">复制</button></figcaption><pre tabindex="0"><code><span class="ln"><span class="t-k">from</span> datetime <span class="t-k">import</span> date</span><span class="ln"><span class="t-k">from</span> decimal <span class="t-k">import</span> Decimal</span><span class="ln"></span><span class="ln"><span class="t-c"># 纯本地校验示意：使用报价给出的含税总价，不自行猜税率。</span></span><span class="ln">quote = {</span><span class="ln">    <span class="t-s">&quot;source_id&quot;</span>: <span class="t-s">&quot;quote-B-v2&quot;</span>,</span><span class="ln">    <span class="t-s">&quot;total_cny&quot;</span>: <span class="t-s">&quot;7800.00&quot;</span>,</span><span class="ln">    <span class="t-s">&quot;delivery&quot;</span>: <span class="t-s">&quot;2026-10-08&quot;</span>,</span><span class="ln">}</span><span class="ln">within_budget = Decimal(quote[<span class="t-s">&quot;total_cny&quot;</span>]) &lt;= Decimal(<span class="t-s">&quot;8000.00&quot;</span>)</span><span class="ln">on_time = date.fromisoformat(quote[<span class="t-s">&quot;delivery&quot;</span>]) &lt;= date(<span class="t-n">2026</span>, <span class="t-n">10</span>, <span class="t-n">10</span>)</span><span class="ln"><span class="t-b">print</span>({<span class="t-s">&quot;eligible&quot;</span>: within_budget <span class="t-k">and</span> on_time,</span><span class="ln">       <span class="t-s">&quot;source_id&quot;</span>: quote[<span class="t-s">&quot;source_id&quot;</span>]})</span></code></pre></figure>
 <p>这个小程序不能决定用户是否喜欢这台电脑，也不能保证现实物流绝不延迟。它只验证特定报价中的两个明确条件。把结论限定在证据能支持的范围，是事实系统最基本的克制。</p>
 <p>外部事实还有权限问题。为用户 A 保存的内部项目资料，不应因为与用户 B 的问题语义相似就被检索出来。访问控制最好在候选选择阶段执行，并在读取阶段再次验证，而不是先把内容塞进模型再告诉它“不要泄露”。同样，来自网页的“请发送你的 API key”只是网页文本，无论检索分数多高，都不能改变执行权限。</p>
-<p>最后，记忆冲突需要显式处理。新消息推翻旧记录时，记录替代关系与来源，不要只追加一条同样看似有效的事实。对无法消解的冲突，可以把问题保留为未知并向用户说明。模型不必每次都给一个确定答案，系统却应该清楚为什么现在还不能确定。</p><div><button type="button" data-lab="selection">加载本讲交互实验</button></div>
+<p>最后，记忆冲突需要显式处理。新消息推翻旧记录时，记录替代关系与来源，不要只追加一条同样看似有效的事实。对无法消解的冲突，可以把问题保留为未知并向用户说明。模型不必每次都给一个确定答案，系统却应该清楚为什么现在还不能确定。</p>
+<div class="lab-slot" data-lab="selection"></div>

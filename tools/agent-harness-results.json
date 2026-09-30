@@ -1,111 +1,108 @@
 {
-  "font_policy": "explicit system Chinese fallback; local display fonts retained",
   "responsive": [
     {
       "width": 1440,
-      "overflow": false,
-      "page_errors": [],
-      "cold_chapters": 0,
-      "cold_labs": 0
+      "overflow": false
     },
     {
       "width": 1100,
-      "overflow": false,
-      "page_errors": [],
-      "cold_chapters": 0,
-      "cold_labs": 0
+      "overflow": false
     },
     {
       "width": 768,
-      "overflow": false,
-      "page_errors": [],
-      "cold_chapters": 0,
-      "cold_labs": 0
+      "overflow": false
     },
     {
       "width": 390,
-      "overflow": false,
-      "page_errors": [],
-      "cold_chapters": 0,
-      "cold_labs": 0
+      "overflow": false
     },
     {
       "width": 360,
-      "overflow": false,
-      "page_errors": [],
-      "cold_chapters": 0,
-      "cold_labs": 0
+      "overflow": false
     }
   ],
-  "experiments": [
+  "lessons": [
     {
+      "lesson": 1,
       "kind": "react",
-      "offline": "passed"
+      "verdict": "PASS · 五项证据都对得上"
     },
     {
+      "lesson": 3,
       "kind": "schema",
-      "offline": "passed"
+      "out": "通过并执行。 结果 {\"total\":7480,\"source\":\"quote-clay-v2\"} 作为新观察回到上下文"
     },
     {
+      "lesson": 5,
       "kind": "grammar",
-      "offline": "passed"
+      "out": ""
     },
     {
+      "lesson": 6,
       "kind": "budget",
-      "offline": "passed"
+      "out": "每个 agent 只分到 24.7 格解题预算，协调吃掉 16 格。任务能并行，墙钟约 30.0 格。比较多 agent"
     },
     {
+      "lesson": 8,
       "kind": "compact",
-      "offline": "passed"
+      "out": "窗口满了。 再往下做，就得决定丢掉什么。"
     },
     {
+      "lesson": 10,
       "kind": "position",
-      "offline": "passed"
+      "out": ""
     },
     {
+      "lesson": 12,
       "kind": "memory",
-      "offline": "passed"
+      "out": "适合这个问题的：字段过滤。 带时间和版本的事实，靠字段过滤最稳；关键词和关系都得再核验一次。"
     },
     {
+      "lesson": 14,
       "kind": "selection",
-      "offline": "passed"
+      "verdict": "FAIL · 有字段和证据对不上"
     },
     {
+      "lesson": 15,
       "kind": "skill",
-      "offline": "passed"
+      "out": "启动。 上下文里只有技能目录：每个技能一行名字和用途，大约 150 token。"
     },
     {
+      "lesson": 16,
       "kind": "verify",
-      "offline": "passed"
+      "out": "证据不足。 这次确实没有缺陷，但光凭声明或截图，无法和有缺陷的情况区分开。"
     },
     {
+      "lesson": 17,
       "kind": "repair",
-      "offline": "passed"
+      "verdict": "FAIL · 有字段和证据对不上"
     },
     {
+      "lesson": 19,
       "kind": "hitl",
-      "offline": "passed"
+      "out": "ALLOW，已执行。 只读、在白名单里、没有副作用，直接执行。"
     },
     {
+      "lesson": 21,
       "kind": "workers",
-      "offline": "passed"
+      "verdict": "PASS · 五项证据都对得上"
     },
     {
+      "lesson": 26,
       "kind": "security",
-      "offline": "passed"
+      "out": "ALLOW，已执行。 只读、在白名单里、没有副作用，直接执行。"
     },
     {
+      "lesson": 29,
       "kind": "trace",
-      "offline": "passed"
+      "out": "100 ms：请求已发出，界面在转圈，数据库还没变，这是正常的中间状态。"
     }
   ],
   "behaviors": [
-    "30 chapters loaded; 15 experiment types mounted and exercised",
-    "mock native-fetch live stream passed; sentinel absent from visible text/URL",
-    "mixed usage keeps total unknown; hostile HTML inert; synthetic key redacted",
-    "destination change clears retained key and consent",
-    "custom destination survives tab/device refresh without consent auto-approval",
-    "no-JS standalone chapter readable",
-    "desktop/mobile body/code/lab screenshots; deep-link single-chapter load; keyboard activation"
+    "30 lessons loaded inline; 15 experiment kinds exercised",
+    "outline jump unfolds; copy yields the plain source",
+    "connect dialog + mocked live run; key kept in memory only, never shown; hostile HTML inert",
+    "tab retention survives reload; clearing forgets the key",
+    "no-JS standalone lessons readable with code unfolded"
   ]
 }

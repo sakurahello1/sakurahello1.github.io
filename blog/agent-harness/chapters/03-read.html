@@ -1,15 +1,13 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>JSON与函数调用的五层正确性</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>04 · JSON与函数调用的五层正确性</title>
 <link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"></head>
-<body><main class="course"><p><a href="../#lesson-3">返回完整课程与交互实验</a></p>
-<h1>JSON与函数调用的五层正确性</h1><article class="chapter"><p>软件通常需要确定的字段，模型默认擅长生成自然语言。让两者协作，第一步往往是要求“只输出 JSON”。但这里有几道独立的门，跨过前一道并不等于跨过后一道。</p>
+<body class="read-page"><main class="lesson-page"><p class="lesson-kicker mono"><a href="../#lesson-4">agent&amp;harness · 完整课程与交互实验</a> / EXECUTE / 第 4 讲</p>
+<h1>JSON与函数调用的五层正确性</h1><article class="prose-lesson"><p>软件通常需要确定的字段，模型默认擅长生成自然语言。让两者协作，第一步往往是要求“只输出 JSON”。但这里有几道独立的门，跨过前一道并不等于跨过后一道。</p>
 <p><code>{&quot;date&quot;:&quot;2026-02-30&quot;}</code> 是合法 JSON。如果 schema 只要求 <code>date</code> 是字符串，它也符合 schema；日期仍然不存在。<code>{&quot;recipient_id&quot;:&quot;u_18&quot;}</code> 可以通过严格结构检查，却指向同名的另一位用户。即使对象和权限都正确，发送服务也可能拒绝请求。我们至少要区分可解析、符合结构、事实与业务正确、经过授权、真实执行成功这几层。</p>
 <p>JSON mode 通常改善语法层面的可解析性；结构化输出在支持的 schema 范围内进一步约束字段、类型与枚举；function calling 则给应用一个动作请求。模型生成 <code>get_quote</code> 调用之后，真正读取报价的仍是你的 Python 程序。应用执行，再把带对应调用 ID 的结果送回模型，下一轮才有机会利用该事实。<a href="https://developers.openai.com/api/docs/guides/structured-outputs" rel="noopener noreferrer">来源：Structured Outputs</a>、<a href="https://developers.openai.com/api/docs/guides/function-calling" rel="noopener noreferrer">Function calling</a></p>
 <p>用函数调用的好处，是把面向用户的语言与机器可执行请求分开。你不必从“我认为可以查一下 A 的报价”里正则提取供应商。模型可以明确请求：</p>
-<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>{
-  &quot;name&quot;: &quot;get_quote&quot;,
-  &quot;arguments&quot;: &quot;{\&quot;vendor_id\&quot;:\&quot;A\&quot;}&quot;
-}</code></pre>
+<figure class="code" data-lang="json"><figcaption><span class="code-lang">json</span><span class="code-count">4 行</span><button type="button" class="code-copy">复制</button></figcaption><pre tabindex="0"><code><span class="ln">{</span><span class="ln">  <span class="t-k">&quot;name&quot;</span>: <span class="t-s">&quot;get_quote&quot;</span>,</span><span class="ln">  <span class="t-k">&quot;arguments&quot;</span>: <span class="t-s">&quot;{\&quot;vendor_id\&quot;:\&quot;A\&quot;}&quot;</span></span><span class="ln">}</span></code></pre></figure>
 <p>注意 <code>arguments</code> 在常见 Chat Completions 协议中本身是一个 JSON 字符串。需要先取得完整字符串，再解析一次。流式响应里的参数常被拆成多个片段，收到前半截 <code>{&quot;vendor</code> 时不能执行任何操作。还要按每个调用的 index 分别拼接，不能把并行调用的片段混在一起。</p>
 <p>接口兼容也有范围。本文的 DeepSeek 示例使用官方 <code>openai</code> Python SDK 作为客户端。依据当前文档，普通 Chat Completions 的 JSON 模式使用 <code>response_format={&quot;type&quot;:&quot;json_object&quot;}</code>，这不等于任意 JSON Schema 保证；strict 函数模式位于 beta 接口，并有受支持的 schema 子集。当前规则要求对象的属性列入 required，并设置 <code>additionalProperties: false</code>；长度等部分约束仍需本地检查。Responses 接口又有自己的结构化输出字段，不能把一个端点的限制复制到另一个端点。<a href="https://api-docs.deepseek.com/guides/json_mode/" rel="noopener noreferrer">来源：DeepSeek JSON Output</a>、<a href="https://api-docs.deepseek.com/guides/tool_calls/" rel="noopener noreferrer">Tool Calls</a>、<a href="https://api-docs.deepseek.com/api/create-response/" rel="noopener noreferrer">Responses</a></p>
-<p>实际工程里建议把本地 validator 看作恒定存在的一道边界。你可以逐步改善模型输出，让它更少撞上校验错误，但不要因此删除校验。对于缺失信息，允许模型明确返回“未知”或请求澄清，比强迫它填一个看似完整的值更可靠。对于拒绝、截断、网络错误和空输出，则应走独立状态分支，不能假设每次响应都包含一个完整业务对象。</p></article></main></body></html>
+<p>实际工程里建议把本地 validator 看作恒定存在的一道边界。你可以逐步改善模型输出，让它更少撞上校验错误，但不要因此删除校验。对于缺失信息，允许模型明确返回“未知”或请求澄清，比强迫它填一个看似完整的值更可靠。对于拒绝、截断、网络错误和空输出，则应走独立状态分支，不能假设每次响应都包含一个完整业务对象。</p></article>
+<nav class="pager"><a href="02-read.html">← 工具注册与完整契约</a><a href="04-read.html">约束解码：动态收窄下一步 →</a></nav></main></body></html>

@@ -4,30 +4,8 @@
 <p>题目之间应采用配对比较：每一种方案都尝试同一批任务，才能减少题目难度差异的干扰。模型存在随机性时，需要重复 trial，并报告波动或区间。工具请求可能受到真实网络变化影响，应记录运行时间与服务状态；若使用冻结工具响应，则明确它测量的是受控环境中的推理与协调，不是完整线上行为。超时、调用失败和预算耗尽必须计入结果，不能在统计时悄悄删除。</p>
 <p>预算控制最好放在协调器中，而不是仅在每个 prompt 里写“请节约”。并发 worker 会同时消耗资源，简单地让各分支自行检查剩余额度，可能造成超额。可以先为分支预留额度，执行后结算，再把未用额度归还共享池。模型调用费用、搜索或数据库费用、容器运行时间与验证成本分别记录。应用层的 token 上限是预算代理；服务端实际使用量应在响应后核对。</p>
 <p>使用官方 SDK 可以明确地组织并发调用，但 async 本身不会建立协作，也不会自动执行预算治理。下面展示独立分支的最小形态，省略了实际生产中必要的限流、持久状态、取消、审计与预算预留实现：</p>
-<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>import asyncio
-import os
-from openai import AsyncOpenAI
-
-# 独立API示意；仅在读者自己调用时产生费用，不在导入时运行。
-async def independent_candidates(task, approved_base):
-    if approved_base != &quot;https://api.deepseek.com&quot;:
-        raise ValueError(&quot;示例只授权当前DeepSeek目的地&quot;)
-    async with AsyncOpenAI(api_key=os.environ[&quot;DEEPSEEK_API_KEY&quot;],
-                           base_url=approved_base, max_retries=0, timeout=60) as client:
-        async def propose(strategy):
-            r = await client.chat.completions.create(
-                model=&quot;deepseek-flash&quot;, max_tokens=600,
-                messages=[{&quot;role&quot;:&quot;user&quot;, &quot;content&quot;:f&quot;{task}\n方向：{strategy}&quot;}],
-                extra_body={&quot;thinking&quot;:{&quot;type&quot;:&quot;disabled&quot;}})
-            c = r.choices[0] if r.choices else None
-            usable = bool(c and c.finish_reason == &quot;stop&quot; and c.message.content)
-            return {&quot;status&quot;:&quot;candidate&quot; if usable else &quot;incomplete&quot;,
-                    &quot;answer&quot;:c.message.content if usable else None,
-                    &quot;finish_reason&quot;:c.finish_reason if c else None,
-                    &quot;usage&quot;:r.usage.model_dump() if r.usage else None}
-        # 预留总输出上限1200，两分支各600；仍需整体deadline与最终验收。
-        return await asyncio.wait_for(asyncio.gather(
-            propose(&quot;需求与约束&quot;), propose(&quot;失败与反例&quot;)), timeout=120)</code></pre>
+<figure class="code" data-lang="python"><figcaption><span class="code-lang">python</span><span class="code-count">24 行</span><button type="button" class="code-copy">复制</button></figcaption><pre tabindex="0"><code><span class="ln"><span class="t-k">import</span> asyncio</span><span class="ln"><span class="t-k">import</span> os</span><span class="ln"><span class="t-k">from</span> openai <span class="t-k">import</span> AsyncOpenAI</span><span class="ln"></span><span class="ln"><span class="t-c"># 独立API示意；仅在读者自己调用时产生费用，不在导入时运行。</span></span><span class="ln"><span class="t-k">async</span> <span class="t-k">def</span> <span class="t-f">independent_candidates</span>(task, approved_base):</span><span class="ln">    <span class="t-k">if</span> approved_base != <span class="t-s">&quot;https://api.deepseek.com&quot;</span>:</span><span class="ln">        <span class="t-k">raise</span> <span class="t-b">ValueError</span>(<span class="t-s">&quot;示例只授权当前DeepSeek目的地&quot;</span>)</span><span class="ln">    <span class="t-k">async</span> <span class="t-k">with</span> AsyncOpenAI(api_key=os.environ[<span class="t-s">&quot;DEEPSEEK_API_KEY&quot;</span>],</span><span class="ln">                           base_url=approved_base, max_retries=<span class="t-n">0</span>, timeout=<span class="t-n">60</span>) <span class="t-k">as</span> client:</span><span class="ln">        <span class="t-k">async</span> <span class="t-k">def</span> <span class="t-f">propose</span>(strategy):</span><span class="ln">            r = <span class="t-k">await</span> client.chat.completions.create(</span><span class="ln">                model=<span class="t-s">&quot;deepseek-flash&quot;</span>, max_tokens=<span class="t-n">600</span>,</span><span class="ln">                messages=[{<span class="t-s">&quot;role&quot;</span>:<span class="t-s">&quot;user&quot;</span>, <span class="t-s">&quot;content&quot;</span>:<span class="t-s">f&quot;{task}\n方向：{strategy}&quot;</span>}],</span><span class="ln">                extra_body={<span class="t-s">&quot;thinking&quot;</span>:{<span class="t-s">&quot;type&quot;</span>:<span class="t-s">&quot;disabled&quot;</span>}})</span><span class="ln">            c = r.choices[<span class="t-n">0</span>] <span class="t-k">if</span> r.choices <span class="t-k">else</span> <span class="t-k">None</span></span><span class="ln">            usable = <span class="t-b">bool</span>(c <span class="t-k">and</span> c.finish_reason == <span class="t-s">&quot;stop&quot;</span> <span class="t-k">and</span> c.message.content)</span><span class="ln">            <span class="t-k">return</span> {<span class="t-s">&quot;status&quot;</span>:<span class="t-s">&quot;candidate&quot;</span> <span class="t-k">if</span> usable <span class="t-k">else</span> <span class="t-s">&quot;incomplete&quot;</span>,</span><span class="ln">                    <span class="t-s">&quot;answer&quot;</span>:c.message.content <span class="t-k">if</span> usable <span class="t-k">else</span> <span class="t-k">None</span>,</span><span class="ln">                    <span class="t-s">&quot;finish_reason&quot;</span>:c.finish_reason <span class="t-k">if</span> c <span class="t-k">else</span> <span class="t-k">None</span>,</span><span class="ln">                    <span class="t-s">&quot;usage&quot;</span>:r.usage.model_dump() <span class="t-k">if</span> r.usage <span class="t-k">else</span> <span class="t-k">None</span>}</span><span class="ln">        <span class="t-c"># 预留总输出上限1200，两分支各600；仍需整体deadline与最终验收。</span></span><span class="ln">        <span class="t-k">return</span> <span class="t-k">await</span> asyncio.wait_for(asyncio.gather(</span><span class="ln">            propose(<span class="t-s">&quot;需求与约束&quot;</span>), propose(<span class="t-s">&quot;失败与反例&quot;</span>)), timeout=<span class="t-n">120</span>)</span></code></pre></figure>
 <p>不要在不同架构中偷偷改变其他条件。例如给集中式更详细的任务说明、给单体更少工具，或者只允许多 agent 使用独立验证器，都会让“架构效果”混入别的增益。消融实验可以逐步移除通信、验证或角色分工，观察哪些组件真正有贡献；但消融后的提示和运行条件也要合理，否则可能只是把系统人为拆坏。</p>
 <p>最终应展示准确率、成本与延迟的取舍，而不仅是一名冠军。如果一个方案在同等成功率下更便宜，或同等费用下更准确，它可能位于更优的 Pareto 前沿；若同时更贵、更慢、成功率更低，则没有必要因其多 agent 标签而保留。关于 agent 评估忽视成本的问题，《AI Agents That Matter》提供了系统性讨论。<a href="https://arxiv.org/abs/2407.01502" rel="noopener noreferrer">来源：AI Agents That Matter</a></p>
-<p>本部分的核心经验可以压缩成一句话：多 agent 改变的是计算分配、信息流和责任边界，收益必须通过任务相关、预算透明的实验来证明。下一部分会进一步讨论，当这些系统真正拥有文件、网络和外部账户权限时，怎样让错误停留在可控范围内。</p><div><button type="button" data-lab="workers">加载本讲交互实验</button></div>
+<p>本部分的核心经验可以压缩成一句话：多 agent 改变的是计算分配、信息流和责任边界，收益必须通过任务相关、预算透明的实验来证明。下一部分会进一步讨论，当这些系统真正拥有文件、网络和外部账户权限时，怎样让错误停留在可控范围内。</p>
+<div class="lab-slot" data-lab="workers"></div>

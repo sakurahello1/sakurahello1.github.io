@@ -2,17 +2,8 @@
 <p>好的工具契约至少回答五个问题：做什么，接收什么输入，需要什么前置条件，会产生什么副作用，失败意味着什么。例如 <code>lookup_quote(vendor_id, version)</code> 是只读查询；<code>submit_order(quote_id, quantity, operation_id)</code> 会产生订单，要求报价有效且用户已授权。它们即使参数外形相似，执行策略也应完全不同。</p>
 <p>输入 schema 描述形状，业务验证描述现实约束。<code>quantity</code> 是整数，不意味着 999 台采购量合理；供应商 ID 是字符串，不意味着当前用户能访问该供应商；<code>operation_id</code> 格式正确，不意味着请求可以重复执行。把这些检查放在 host 程序或服务端，才不会让安全性依赖模型刚好遵守提示。<a href="https://developers.openai.com/api/docs/guides/function-calling" rel="noopener noreferrer">来源：OpenAI Function calling</a></p>
 <p>返回值也需要设计。直接把一万行日志塞回上下文，会挤掉当前任务的重要信息；只返回 <code>logs.txt</code>，模型又可能不知道里面有什么、是否值得打开、该从哪一行开始。比较实用的模式是“小结论直接返回，大证据稳定引用”：</p>
-<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>{
-  &quot;status&quot;: &quot;partial&quot;,
-  &quot;operation_id&quot;: &quot;test-run-083&quot;,
-  &quot;summary&quot;: &quot;23 个测试中有 1 个失败&quot;,
-  &quot;failures&quot;: [
-    {&quot;name&quot;: &quot;test_expired_login&quot;, &quot;expected&quot;: 401, &quot;actual&quot;: 200}
-  ],
-  &quot;artifact_ref&quot;: &quot;artifact://test-runs/083&quot;,
-  &quot;truncated&quot;: true,
-  &quot;next_cursor&quot;: null
-}</code></pre>
+<figure class="code" data-lang="json"><figcaption><span class="code-lang">json</span><span class="code-count">11 行</span><button type="button" class="code-copy">复制</button></figcaption><pre tabindex="0"><code><span class="ln">{</span><span class="ln">  <span class="t-k">&quot;status&quot;</span>: <span class="t-s">&quot;partial&quot;</span>,</span><span class="ln">  <span class="t-k">&quot;operation_id&quot;</span>: <span class="t-s">&quot;test-run-083&quot;</span>,</span><span class="ln">  <span class="t-k">&quot;summary&quot;</span>: <span class="t-s">&quot;23 个测试中有 1 个失败&quot;</span>,</span><span class="ln">  <span class="t-k">&quot;failures&quot;</span>: [</span><span class="ln">    {<span class="t-k">&quot;name&quot;</span>: <span class="t-s">&quot;test_expired_login&quot;</span>, <span class="t-k">&quot;expected&quot;</span>: <span class="t-n">401</span>, <span class="t-k">&quot;actual&quot;</span>: <span class="t-n">200</span>}</span><span class="ln">  ],</span><span class="ln">  <span class="t-k">&quot;artifact_ref&quot;</span>: <span class="t-s">&quot;artifact://test-runs/083&quot;</span>,</span><span class="ln">  <span class="t-k">&quot;truncated&quot;</span>: <span class="t-b">true</span>,</span><span class="ln">  <span class="t-k">&quot;next_cursor&quot;</span>: <span class="t-b">null</span></span><span class="ln">}</span></code></pre></figure>
 <p>模型可以立刻知道下一步要检查过期登录逻辑；需要完整栈信息时，再通过读取工具访问归档。引用必须具有明确的可访问范围与生命周期。一个即将被清理的临时文件路径，不能承担跨会话证据索引的责任。Anthropic 的工具设计建议强调有意义的上下文、结果过滤与分页，而不是一律把内容变成指针。<a href="https://www.anthropic.com/engineering/writing-tools-for-agents" rel="noopener noreferrer">来源：Writing effective tools for agents</a></p>
 <p>错误同样应该机器可读。<code>not_found</code> 可以提示核对 ID；<code>permission_denied</code> 应停止或请求授权；<code>rate_limited</code> 可以根据明确策略延迟；<code>timeout</code> 则需要先判断操作是否可能已经发生。网络连接断开时，远端可能已经完成了订单创建。此时直接重试会产生第二张订单。稳妥方案是用稳定操作 ID 查询结果，或者依赖后端幂等契约；没有这样的能力，就应保留“不确定”，而不是猜测失败。</p>
-<p>MCP 为工具发现、输入 schema 和结果结构提供协议层约定，但接入 MCP 服务器不会自动建立信任。来自服务的描述与 annotations 可以帮助调度，不能替代宿主对权限和风险的判断。工具返回的网页、日志或文档也仍是外部数据，其中出现“忽略原指令”的文字，不应获得控制 harness 的权限。<a href="https://modelcontextprotocol.io/specification/2025-11-25/server/tools" rel="noopener noreferrer">来源：MCP Tools 2025-11-25</a></p><div><button type="button" data-lab="schema">加载本讲交互实验</button></div>
+<p>MCP 为工具发现、输入 schema 和结果结构提供协议层约定，但接入 MCP 服务器不会自动建立信任。来自服务的描述与 annotations 可以帮助调度，不能替代宿主对权限和风险的判断。工具返回的网页、日志或文档也仍是外部数据，其中出现“忽略原指令”的文字，不应获得控制 harness 的权限。<a href="https://modelcontextprotocol.io/specification/2025-11-25/server/tools" rel="noopener noreferrer">来源：MCP Tools 2025-11-25</a></p>
+<div class="lab-slot" data-lab="schema"></div>

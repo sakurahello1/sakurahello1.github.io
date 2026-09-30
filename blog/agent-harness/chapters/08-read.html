@@ -1,22 +1,13 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>Claude Code compact与恢复</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>09 · Claude Code compact与恢复</title>
 <link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"></head>
-<body><main class="course"><p><a href="../#lesson-8">返回完整课程与交互实验</a></p>
-<h1>Claude Code compact与恢复</h1><article class="chapter"><p>一次压缩最容易丢失的，往往是后来才显得重要的细节。早期用户说“只能建议，不能下单”，中间讨论了几十轮价格，压缩后只剩“为用户选择电脑”。新上下文可能继续优化推荐，却失去了动作边界。另一个常见问题是把进行中的后台任务忘掉，重新启动第二个测试或导出作业。</p>
+<body class="read-page"><main class="lesson-page"><p class="lesson-kicker mono"><a href="../#lesson-9">agent&amp;harness · 完整课程与交互实验</a> / PERSIST / 第 9 讲</p>
+<h1>Claude Code compact与恢复</h1><article class="prose-lesson"><p>一次压缩最容易丢失的，往往是后来才显得重要的细节。早期用户说“只能建议，不能下单”，中间讨论了几十轮价格，压缩后只剩“为用户选择电脑”。新上下文可能继续优化推荐，却失去了动作边界。另一个常见问题是把进行中的后台任务忘掉，重新启动第二个测试或导出作业。</p>
 <p>可以把 compaction 理解成一次有损状态迁移：旧上下文退出，新的上下文要继承完成任务所需的最小状态。自然语言摘要可以是其中一部分，但稳定规则、文件、运行中操作与可恢复证据也应有明确路径。</p>
 <p>Claude Code 的公开文档提供了一个具体案例。依据 2026 年 9 月 30 日读取的页面，文档提到 v2.1.198 的摘要请求继承会话 thinking 配置；压缩后会重新注入根级 <code>CLAUDE.md</code>、无路径限定规则、auto memory 与计划等内容，路径相关规则随后续文件读取再加载。它还描述了重读部分近期文件、技能内容重注入及后台任务提醒等机制。这些细节说明，产品并不只依赖“一段万能摘要”恢复现场。<a href="https://code.claude.com/docs/en/context-window" rel="noopener noreferrer">来源：Claude Code Context Window</a></p>
 <p>实现细节有明确版本性。例如当前页面写到最多重读五个已读或编辑文件，较大文件可能只保留路径；技能正文重注入也有单项和总量预算。学习这些设计时，更值得带走的是“分类恢复、保留索引、避免重复运行”的思想。不要把某个版本的数值写成所有 agent 都必须遵守的规则，也不要把这些产品行为推断为某种通用压缩算法的最优解。</p>
 <p>如果自己写 harness，可以从结构化检查点开始：</p>
-<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>{
-  &quot;goal&quot;: &quot;比较供应商并给出建议，不下单&quot;,
-  &quot;completion&quot;: &quot;推荐满足预算和日期，且引用当前报价&quot;,
-  &quot;constraints&quot;: {&quot;budget_cny&quot;: 8000, &quot;deadline&quot;: &quot;2026-10-10&quot;},
-  &quot;source_versions&quot;: {&quot;B&quot;: &quot;quote-B-v2&quot;},
-  &quot;verified&quot;: [&quot;已按 v2 报价确认 B 总价为 7800 元&quot;],
-  &quot;pending&quot;: [{&quot;job_id&quot;: &quot;delivery-check-17&quot;, &quot;state&quot;: &quot;running&quot;}],
-  &quot;next_action&quot;: &quot;查询 delivery-check-17，不重新提交任务&quot;,
-  &quot;unknown&quot;: [&quot;最终交付承诺仍待核实&quot;],
-  &quot;evidence&quot;: [&quot;artifact://quotes/quote-B-v2&quot;]
-}</code></pre>
+<figure class="code" data-lang="json"><figcaption><span class="code-lang">json</span><span class="code-count">11 行</span><button type="button" class="code-copy">复制</button></figcaption><pre tabindex="0"><code><span class="ln">{</span><span class="ln">  <span class="t-k">&quot;goal&quot;</span>: <span class="t-s">&quot;比较供应商并给出建议，不下单&quot;</span>,</span><span class="ln">  <span class="t-k">&quot;completion&quot;</span>: <span class="t-s">&quot;推荐满足预算和日期，且引用当前报价&quot;</span>,</span><span class="ln">  <span class="t-k">&quot;constraints&quot;</span>: {<span class="t-k">&quot;budget_cny&quot;</span>: <span class="t-n">8000</span>, <span class="t-k">&quot;deadline&quot;</span>: <span class="t-s">&quot;2026-10-10&quot;</span>},</span><span class="ln">  <span class="t-k">&quot;source_versions&quot;</span>: {<span class="t-k">&quot;B&quot;</span>: <span class="t-s">&quot;quote-B-v2&quot;</span>},</span><span class="ln">  <span class="t-k">&quot;verified&quot;</span>: [<span class="t-s">&quot;已按 v2 报价确认 B 总价为 7800 元&quot;</span>],</span><span class="ln">  <span class="t-k">&quot;pending&quot;</span>: [{<span class="t-k">&quot;job_id&quot;</span>: <span class="t-s">&quot;delivery-check-17&quot;</span>, <span class="t-k">&quot;state&quot;</span>: <span class="t-s">&quot;running&quot;</span>}],</span><span class="ln">  <span class="t-k">&quot;next_action&quot;</span>: <span class="t-s">&quot;查询 delivery-check-17，不重新提交任务&quot;</span>,</span><span class="ln">  <span class="t-k">&quot;unknown&quot;</span>: [<span class="t-s">&quot;最终交付承诺仍待核实&quot;</span>],</span><span class="ln">  <span class="t-k">&quot;evidence&quot;</span>: [<span class="t-s">&quot;artifact://quotes/quote-B-v2&quot;</span>]</span><span class="ln">}</span></code></pre></figure>
 <p>这个模板是工程建议，并非 Claude Code 的内部摘要格式。重要之处在于区分“已验证”与“尚未知晓”，以及明确记录进行中的操作。新一轮启动后，也不能无条件相信检查点里的状态：报价版本可能又更新，后台任务可能已经结束，仓库 HEAD 可能变化。恢复应先核对最关键的外部状态，再执行下一项动作。</p>
-<p>压缩质量可以直接测试。构造一个长任务，早期给三条硬约束，中途修改一条，再加入大量无关日志。压缩后要求继续完成任务，观察旧约束是否被错误复活、已完成工作是否重复、精确证据能否找回。保留完整历史作为对照，同时比较自由摘要、结构化检查点、检查点加原文检索。我们关心的是恢复成功，而不只是摘要看起来简洁。<a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents" rel="noopener noreferrer">来源：Effective harnesses for long-running agents</a></p></article></main></body></html>
+<p>压缩质量可以直接测试。构造一个长任务，早期给三条硬约束，中途修改一条，再加入大量无关日志。压缩后要求继续完成任务，观察旧约束是否被错误复活、已完成工作是否重复、精确证据能否找回。保留完整历史作为对照，同时比较自由摘要、结构化检查点、检查点加原文检索。我们关心的是恢复成功，而不只是摘要看起来简洁。<a href="https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents" rel="noopener noreferrer">来源：Effective harnesses for long-running agents</a></p></article>
+<nav class="pager"><a href="07-read.html">← 窗口会满，任务不能归零</a><a href="09-read.html">位置、干扰与注意力 →</a></nav></main></body></html>

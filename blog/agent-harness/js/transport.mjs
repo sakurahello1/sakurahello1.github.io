@@ -104,11 +104,11 @@ export async function readChatStream(response, signal, onText = () => {}) {
     return {message, usage, finish};
   } finally { await reader.cancel().catch(() => {}); reader.releaseLock(); }
 }
-export async function chat({base, key, model, messages, tools, signal, onText, fetcher = fetch}) {
+export async function chat({base, key, model, messages, tools, signal, onText, fetcher = fetch, maxBytes = 32768}) {
   const body = JSON.stringify({model, messages, stream: true, max_tokens: 1200,
     stream_options: {include_usage: true},
     thinking: {type: 'disabled'}, ...(tools ? {tools, tool_choice: 'auto'} : {})});
-  if (new TextEncoder().encode(body).length > 32768) throw new Error('请求超过 32 KiB');
+  if (new TextEncoder().encode(body).length > maxBytes) throw new Error(`请求超过 ${maxBytes / 1024} KiB`);
   const controller = new AbortController();
   const abort = () => controller.abort();
   signal.throwIfAborted(); signal.addEventListener('abort', abort, {once: true});

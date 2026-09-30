@@ -49,4 +49,4 @@ GitHub Pages 配置为从 `main` 分支根目录发布。推送到 `main` 后由
 
 ## Agent & harness course
 
-新增课程维护、Windows模块预览、离线/SDK mock与浏览器验收命令见 [tools/AGENT-HARNESS.md](tools/AGENT-HARNESS.md)。正文源在 `blog/agent-harness/source/`，修改后运行 `python tools/build_agent_harness.py`；完整Python下载包运行 `python tools/integrate_agent_harness.py` 更新。禁止使用真实密钥或付费推理做开发验收。
+课程是一个文档式阅读器：左侧目录，右侧一次一讲，每讲的实验嵌在正文里；四个“agent 剧场”实验既能回放真实运行的录像，也能用读者自己的 API key 现场跑。正文源在 `blog/agent-harness/source/`，修改后运行 `python tools/build_agent_harness.py`；完整 Python 下载包运行 `python tools/integrate_agent_harness.py` 更新。页面结构、录像重录（`tools/record_agent_trace.mjs`，需要自己的密钥）和验收命令见 [tools/AGENT-HARNESS.md](tools/AGENT-HARNESS.md)。开发验收只用 mock，不花真实推理费用。

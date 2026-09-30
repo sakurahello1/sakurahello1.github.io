@@ -1,8 +1,8 @@
 <!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1"><title>多模态验证：截图、状态与因果</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>18 · 多模态验证：截图、状态与因果</title>
 <link rel="stylesheet" href="../../../assets/css/core.css"><link rel="stylesheet" href="../css/page.css"></head>
-<body><main class="course"><p><a href="../#lesson-17">返回完整课程与交互实验</a></p>
-<h1>多模态验证：截图、状态与因果</h1><article class="chapter"><p>许多 agent 演示有一个视觉错觉：当系统能看截图、移动鼠标、点击按钮时，我们容易觉得它已经像人一样看到了全部情况。实际上，截图只是某一时刻、某个视口中的像素。它能揭示标题被遮挡，却不能证明保存已经持久化；能看到按钮，却不能证明按钮绑定了正确事件；能显示报表数值，却不能说明这些数值来自最新的数据源。</p>
+<body class="read-page"><main class="lesson-page"><p class="lesson-kicker mono"><a href="../#lesson-18">agent&amp;harness · 完整课程与交互实验</a> / GOVERN I / 第 18 讲</p>
+<h1>多模态验证：截图、状态与因果</h1><article class="prose-lesson"><p>许多 agent 演示有一个视觉错觉：当系统能看截图、移动鼠标、点击按钮时，我们容易觉得它已经像人一样看到了全部情况。实际上，截图只是某一时刻、某个视口中的像素。它能揭示标题被遮挡，却不能证明保存已经持久化；能看到按钮，却不能证明按钮绑定了正确事件；能显示报表数值，却不能说明这些数值来自最新的数据源。</p>
 <p>因此，多模态验证的出发点不应该是“多加几种输入”，而应该是列出失败模式，再选择有辨别力的观测。界面排版问题要看实际渲染；可访问性问题需要检查语义结构和键盘操作；交互问题需要执行状态转换；权限和持久化问题需要跨会话、跨身份验证；性能问题需要耗时、网络请求与服务指标。不同模态可以互相补充，也可能互相矛盾，而矛盾正是值得继续调查的信号。</p>
 <p>以“用户能编辑个人资料并保存”为例。DOM 可以告诉我们输入框有正确的 label，自动化脚本能够定位并填写；截图可以检查小屏幕下保存按钮是否被固定底栏盖住；网络记录可以确认请求确实发出以及响应是否异常；重新打开页面可以检查用户实际能否找回修改；数据库或可信 API 可以进一步确认写入的是正确用户、正确字段。这里不要求每个产品都拥有数据库直连权限。无法访问持久层时，跨会话重开仍然比仅看一次 toast 更强，只是证据边界不同。</p>
 <p>OSWorld 将真实计算机环境中的多模态操作与执行式评估结合起来，提供了一个具体范例：agent 使用什么观察来行动，和评估器检查什么环境状态来判断成功，是两个可以分离的问题。它并不意味着所有桌面任务都能被现成脚本完美验收。<a href="https://arxiv.org/abs/2404.07972" rel="noopener noreferrer">来源：OSWorld</a></p>
@@ -10,24 +10,6 @@
 <p>实际系统可以给每条证据加上采集时间、环境标识和对象版本。例如截图属于 build-17，而数据库检查来自 build-16，就不能把两者拼成同一版本已经通过的证明。异步系统还要明确等待条件：点击保存之后，等待的是按钮恢复可点、请求返回，还是新值已经能通过独立读取看到？固定睡眠三秒只说明等了三秒，不说明系统达到了目标状态。</p>
 <p>以下是可选的其他供应商示例，需另配OPENAI_API_KEY与支持视觉的模型，不沿用本页DeepSeek凭据或baseURL。APPROVED_SCREENSHOT_URL必须指向已明确授权发送的截图；仅为接口示意，开发未在线调用。</p>
 <p>在 OpenAI 官方 Python SDK 中，可以通过 Responses API 向支持图像输入的模型传入文本与截图 URL。下面演示的是视觉审阅这一小环节，模型名与图像权限须由部署环境配置；它没有代替浏览器执行、持久层检查或最终完成门。<a href="https://github.com/openai/openai-python" rel="noopener noreferrer">接口依据：OpenAI Python SDK</a></p>
-<pre tabindex="0" aria-label="代码，可用方向键横向滚动"><code>import os
-from openai import OpenAI
-
-client = OpenAI()
-response = client.responses.create(
-    model=os.environ[&quot;OPENAI_VISION_MODEL&quot;],
-    input=[{
-        &quot;role&quot;: &quot;user&quot;,
-        &quot;content&quot;: [
-            {&quot;type&quot;: &quot;input_text&quot;, &quot;text&quot;: (
-                &quot;按提供的视觉验收条件审阅截图。&quot;
-                &quot;仅判断画面能支持的主张；&quot;
-                &quot;不可推断保存、权限或点击是否有效。&quot;
-                &quot;条件：主要按钮无遮挡，正文无明显裁切。&quot;
-            )},
-            {&quot;type&quot;: &quot;input_image&quot;, &quot;image_url&quot;: os.environ[&quot;APPROVED_SCREENSHOT_URL&quot;]},
-        ],
-    }],
-)
-visual_review = response.output_text</code></pre>
-<p>截图上传本身也属于数据传输。包含客户记录、私人消息或令牌的画面，不能因为目的是“验证”就自动获得外发许可。先裁减不必要区域、脱敏、确认数据处理边界，再采集所需证据。多模态带来的是更丰富的观察能力，同时也增加了隐私与成本负担；采集策略应该由验收需要决定。</p></article></main></body></html>
+<figure class="code" data-lang="python"><figcaption><span class="code-lang">python</span><span class="code-count">20 行</span><button type="button" class="code-copy">复制</button></figcaption><pre tabindex="0"><code><span class="ln"><span class="t-k">import</span> os</span><span class="ln"><span class="t-k">from</span> openai <span class="t-k">import</span> OpenAI</span><span class="ln"></span><span class="ln">client = OpenAI()</span><span class="ln">response = client.responses.create(</span><span class="ln">    model=os.environ[<span class="t-s">&quot;OPENAI_VISION_MODEL&quot;</span>],</span><span class="ln">    input=[{</span><span class="ln">        <span class="t-s">&quot;role&quot;</span>: <span class="t-s">&quot;user&quot;</span>,</span><span class="ln">        <span class="t-s">&quot;content&quot;</span>: [</span><span class="ln">            {<span class="t-s">&quot;type&quot;</span>: <span class="t-s">&quot;input_text&quot;</span>, <span class="t-s">&quot;text&quot;</span>: (</span><span class="ln">                <span class="t-s">&quot;按提供的视觉验收条件审阅截图。&quot;</span></span><span class="ln">                <span class="t-s">&quot;仅判断画面能支持的主张；&quot;</span></span><span class="ln">                <span class="t-s">&quot;不可推断保存、权限或点击是否有效。&quot;</span></span><span class="ln">                <span class="t-s">&quot;条件：主要按钮无遮挡，正文无明显裁切。&quot;</span></span><span class="ln">            )},</span><span class="ln">            {<span class="t-s">&quot;type&quot;</span>: <span class="t-s">&quot;input_image&quot;</span>, <span class="t-s">&quot;image_url&quot;</span>: os.environ[<span class="t-s">&quot;APPROVED_SCREENSHOT_URL&quot;</span>]},</span><span class="ln">        ],</span><span class="ln">    }],</span><span class="ln">)</span><span class="ln">visual_review = response.output_text</span></code></pre></figure>
+<p>截图上传本身也属于数据传输。包含客户记录、私人消息或令牌的画面，不能因为目的是“验证”就自动获得外发许可。先裁减不必要区域、脱敏、确认数据处理边界，再采集所需证据。多模态带来的是更丰富的观察能力，同时也增加了隐私与成本负担；采集策略应该由验收需要决定。</p></article>
+<nav class="pager"><a href="16-read.html">← 外部证据与自我纠错</a><a href="18-read.html">Human-in-the-loop：把人放在正确位置 →</a></nav></main></body></html>

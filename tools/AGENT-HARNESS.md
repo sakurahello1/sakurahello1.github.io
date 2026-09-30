@@ -1,41 +1,55 @@
 # Agent & harness course maintenance
 
-The 30 authoritative Markdown chapters are in `blog/agent-harness/source/`.
-`shell.html.template` is the light entry template; the builder emits independent
-chapter fragments and readable no-JavaScript pages. The importer is a one-time
-author-manuscript tool; routine edits do not need the private source ZIP.
+The 30 lessons are Markdown in `blog/agent-harness/source/00.md`–`29.md`; the page shell is
+`source/shell.html.template`. `python tools/build_agent_harness.py` generates everything else:
+`index.html` (sidebar table of contents + overview), `chapters/NN.html` (one lesson and the slot its
+experiment mounts into), `chapters/NN-read.html` (the same lesson without JavaScript) and `sources.html`
+(every lesson's links). Do not edit generated files.
 
 ```sh
 python tools/build_agent_harness.py
-python tools/integrate_agent_harness.py
-python tools/serve_site.py
+python tools/serve_site.py          # http://127.0.0.1:8001/blog/agent-harness/ (module MIME types on Windows)
 ```
 
-Open `http://127.0.0.1:8001/blog/agent-harness/`. The preview sets module MIME
-types explicitly because Windows may map `.mjs` to `text/plain`.
+## How the page works
+
+- `js/app.mjs`: hash routing (`#lesson-N`), sidebar state and reading progress (localStorage), the connect
+  dialog, code-block copy / unfold / outline jumps, and mounting each lesson's experiment.
+- `js/agent.mjs`: the bounded agent loop (5 model calls, 8 tool calls) behind the four theater experiments
+  (`react`, `repair`, `selection`, `workers`) and the needle-in-a-haystack probe. It has no DOM, so the same
+  code runs in the browser and in Node.
+- `js/theater.mjs`: draws the loop diagram, transcript and meters from the loop's events, either a recorded
+  run (`js/traces.json`) or a live run against the reader's own model.
+- `js/lab-*.mjs`: the other experiments, built on `js/lab-ui.mjs`. `js/fixture.mjs` is the tool contract and
+  verifier; `js/transport.mjs` the streaming client and in-browser credential store.
+- Code blocks are highlighted at build time; Python files over 60 lines get an outline of their top-level
+  definitions, blocks over 28 lines start folded.
+
+## Replays
+
+`js/traces.json` holds one real run of each theater and of the position probe. Re-record after changing a
+prompt, the loop or the fixture:
+
+```sh
+DEEPSEEK_KEY=... node tools/record_agent_trace.mjs            # everything
+DEEPSEEK_KEY=... node tools/record_agent_trace.mjs agent      # theaters only
+DEEPSEEK_KEY=... node tools/record_agent_trace.mjs position   # position probe only
+```
+
+The recorder reads the key from the environment, refuses to write a file that contains it, and costs well
+under a yuan on deepseek-flash. Replays show the recording date and model; a failed run is kept as it is.
+
+## Checks
 
 ```sh
 node --test tests/agent_harness.test.mjs
 python -m unittest discover -s tests -p test_agent_harness.py -v
 python tools/check_agent_snippets.py
 python tools/check_links.py
-python tools/verify_agent_harness.py
-python tools/verify_site.py --offline-fonts
+python tools/verify_agent_harness.py   # CHROME_PATH=... to use an installed Chromium
 ```
 
-The SDK transport test uses the installed official OpenAI SDK and an entirely
-local `httpx.MockTransport`. It requires the reference requirements; the
-downloaded `test_reference.py` runs without the SDK. No real credentials,
-provider inference, analytics or public proxy is used by these checks.
-
-Browser screenshots are generated into `output/playwright/` (ignored), and
-the compact behavioral report is `tools/agent-harness-results.json`.
-Google Fonts is explicitly mocked as empty CSS during offline checks, exercising
-the system Chinese font fallback. Local Barlow and JetBrains font files remain
-real resources. This does not verify external font delivery.
-The browser dispatcher loads only the requested experiment implementation.
-Chapter deep links load one chapter, never the entire course.
-
-Do not replace simulated outcomes with invented live scores. Authenticated
-DeepSeek inference remains a user-run verification step. Secret-free HTTP CORS
-observations are narrower evidence and do not prove streamed inference works.
+The browser check exercises every lesson and experiment kind at five widths, answers the live run from a
+mocked endpoint with a synthetic key, and checks that the key never reaches the page text, the URL or
+storage beyond what the reader chose. Screenshots go to `output/playwright/` (ignored); the summary is
+`tools/agent-harness-results.json`.
