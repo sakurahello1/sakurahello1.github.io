@@ -6,7 +6,7 @@
 
 | 路径 | 用途 |
 | --- | --- |
-| `index.html` | 首页：About、Work、Paper、Patent、Honors、Open Source、Writing |
+| `index.html` | 首页：About、Work、Paper、Patent、Honors、Open Source、Writing、Concepts（重要概念与数学理论） |
 | `projects/<slug>/index.html` | PPT Studio、HarnessRouter、Inkreel、LoopX 四个项目详情页 |
 | `blog/index.html` | 博客目录 |
 | `blog/rl-post-training/`、`blog/agent-theory/` | 两篇长文。RL 长文直接在这里编辑（`css/`、`js/art.js` 是代码绘制的图版）；Agent 手册由源码 `G:\homepage-blog-src\agent-theory` 的 `python build.py --site <本目录>` 生成，不要手改输出 |
