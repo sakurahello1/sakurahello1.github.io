@@ -657,13 +657,24 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   <p>要保证“每一步都在变好”，就得先能量化新策略 \(\pi'\) 比旧策略 \(\pi\) 好多少。Kakade 和 Langford（2002）给出了一个精确的等式，叫<strong>性能差异引理</strong>：</p>
   \[J(\pi')-J(\pi)=\mathbb{E}_{\tau\sim\pi'}\Big[\sum_{t}\gamma^{t}A^{\pi}(s_t,a_t)\Big]\]
   <p>意思是：新策略的回报，等于旧策略的回报，加上“让新策略去玩，用旧策略的优势函数给它的每一步打分”的累计得分。如果新策略在每个状态下都偏向旧策略眼里优势为正的动作，它就一定更好。</p>
-  <p>问题在于期望是在<strong>新策略</strong>的轨迹上取的，而新策略的样本我们还没有。TRPO 做了两步近似：</p>
+  <p><strong>为什么成立。</strong>优势的定义是 \(A^{\pi}(s,a)=Q^{\pi}(s,a)-V^{\pi}(s)\)，而 \(Q^{\pi}(s,a)\) 是“先做动作 \(a\)，之后按 \(\pi\) 走”的期望回报，也就是即时奖励加上折扣后的下一状态价值。所以沿着一条轨迹，在期望意义下 \(A^{\pi}(s_t,a_t)=r_t+\gamma V^{\pi}(s_{t+1})-V^{\pi}(s_t)\)。把它代进等式右边，拆成两项：</p>
+  \[\begin{aligned}\mathbb{E}_{\tau\sim\pi'}\Big[\sum_{t}\gamma^{t}A^{\pi}(s_t,a_t)\Big]&=\mathbb{E}_{\tau\sim\pi'}\Big[\sum_{t}\gamma^{t}r_t\Big]\\&\quad+\mathbb{E}_{\tau\sim\pi'}\Big[\sum_{t}\big(\gamma^{t+1}V^{\pi}(s_{t+1})-\gamma^{t}V^{\pi}(s_t)\big)\Big]\end{aligned}\]
+  <p>第一项就是 \(J(\pi')\)。第二项里相邻两项互相抵消（\(t\) 步的 \(\gamma^{t+1}V^{\pi}(s_{t+1})\) 与 \(t+1\) 步的 \(-\gamma^{t+1}V^{\pi}(s_{t+1})\)），只剩第一步的 \(-V^{\pi}(s_0)\)（\(\gamma<1\) 且价值有界时，最后一项趋于 0）。新旧策略的起点分布相同，所以 \(\mathbb{E}[V^{\pi}(s_0)]=J(\pi)\)：</p>
+  \[\mathbb{E}_{\tau\sim\pi'}\Big[\sum_{t}\gamma^{t}A^{\pi}(s_t,a_t)\Big]=J(\pi')-\mathbb{E}_{s_0}\big[V^{\pi}(s_0)\big]=J(\pi')-J(\pi)\]
+  <p>把“按时间求和”改成“按状态求和”，等式也可以写成下面的样子。\(\rho_{\pi'}(s)=\sum_t\gamma^{t}\,P(s_t=s\mid\pi')\) 是新策略折扣后的状态访问量：</p>
+  \[J(\pi')-J(\pi)=\sum_{s}\rho_{\pi'}(s)\sum_{a}\pi'(a\mid s)\,A^{\pi}(s,a)\]
+  <p>这样，“新策略会去哪些状态”（\(\rho_{\pi'}\)）和“在每个状态里怎样选动作”（\(\pi'\)）分开了。问题在于这两样都来自<strong>新策略</strong>，而新策略的样本我们还没有。TRPO 做了两步近似：</p>
   <ol>
     <li><strong>状态分布</strong>：用旧策略访问到的状态代替新策略会访问到的状态。只要新旧策略足够接近，这个误差就小。</li>
     <li><strong>动作分布</strong>：用<strong>重要性采样</strong>修正。在旧策略采到的动作上乘以新旧概率之比，就能估计新策略下的期望：\(\mathbb{E}_{a\sim\pi'}[A]=\mathbb{E}_{a\sim\pi}\big[\tfrac{\pi'(a\mid s)}{\pi(a\mid s)}A\big]\)。</li>
   </ol>
+  <p>重要性采样的等式只有一行：把对 \(\pi'\) 的求和乘除同一个 \(\pi(a\mid s)\)，就变成对 \(\pi\) 的期望（前提是 \(\pi'\) 会选的动作 \(\pi\) 也有可能选，否则要除以 0）：</p>
+  \[\begin{aligned}\mathbb{E}_{a\sim\pi'}\big[A^{\pi}(s,a)\big]&=\sum_a\pi'(a\mid s)\,A^{\pi}(s,a)\\&=\sum_a\pi(a\mid s)\,\frac{\pi'(a\mid s)}{\pi(a\mid s)}\,A^{\pi}(s,a)\\&=\mathbb{E}_{a\sim\pi}\Big[\frac{\pi'(a\mid s)}{\pi(a\mid s)}\,A^{\pi}(s,a)\Big]\end{aligned}\]
   <p>这样得到<strong>替代优势</strong>（surrogate advantage），它只需要旧策略的样本就能计算：</p>
   \[L_{\pi}(\pi')=\mathbb{E}_{s\sim d^{\pi},\,a\sim\pi}\Big[\frac{\pi'(a\mid s)}{\pi(a\mid s)}\,A^{\pi}(s,a)\Big]\]
+  <p>它和真实改进 \(J(\pi')-J(\pi)\) 只差一处：状态访问量用的是 \(\rho_{\pi}\)，不是 \(\rho_{\pi'}\)（\(d^{\pi}\) 是 \(\rho_{\pi}\) 归一化后的分布，差一个常数因子 \(1-\gamma\)，不影响下面的讨论）。这个近似在 \(\pi'\) 靠近 \(\pi\) 时有多可靠？记 \(h_{\pi'}(s)=\sum_a\pi'(a\mid s)A^{\pi}(s,a)\)，真实改进是 \(\sum_s\rho_{\pi'}(s)\,h_{\pi'}(s)\)，替代优势是 \(\sum_s\rho_{\pi}(s)\,h_{\pi'}(s)\)。当 \(\pi'=\pi\) 时 \(h_{\pi}(s)=\mathbb{E}_{a\sim\pi}[A^{\pi}(s,a)]=0\)（\(V^{\pi}(s)\) 本来就是 \(Q^{\pi}(s,a)\) 对 \(\pi\) 的平均）。于是两者在 \(\pi'=\pi\) 处都等于 0；对 \(\pi'\) 的参数求梯度，真实改进多出来的那一项带着 \(h_{\pi}=0\)，消失了：</p>
+  \[\nabla\big[\rho_{\pi'}h_{\pi'}\big]_{\pi'=\pi}=\underbrace{(\nabla\rho_{\pi'})\,h_{\pi}}_{=\,0}+\rho_{\pi}\,\nabla h_{\pi'}=\nabla\big[\rho_{\pi}h_{\pi'}\big]_{\pi'=\pi}\]
+  <p>所以在 \(\pi'=\pi\) 处，替代优势和真实改进不但值相同，一阶导数也相同；差别要到二阶才出现。\(\pi'\) 离 \(\pi\) 不远时，可以放心用替代优势代替真实改进，离得远就不行了，这正是后面要限制 KL 的原因。</p>
   <div class="call key"><span class="ct">要点：概率比登场</span>
     <p>\(\dfrac{\pi'(a\mid s)}{\pi(a\mid s)}\) 这个新旧概率之比会一直陪我们到最后：PPO 裁剪的是它，GRPO、DAPO、GSPO 争论的也是它该按 token 算还是按整段回答算。</p>
   </div>
@@ -672,15 +683,35 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   <p>近似总有误差。TRPO 论文证明，这个误差可以用新旧策略之间最坏情况的 KL 散度来界定，于是得到一个下界：</p>
   \[J(\pi')\;\ge\;J(\pi)+L_{\pi}(\pi')-C\cdot\max_{s}D_{\mathrm{KL}}\big(\pi(\cdot\mid s)\,\Vert\,\pi'(\cdot\mid s)\big),\qquad C=\frac{4\varepsilon\gamma}{(1-\gamma)^{2}}\]
   <p class="eq-note">其中 \(\varepsilon=\max_{s,a}\lvert A^{\pi}(s,a)\rvert\)；这里略去了与策略无关的常数系数。</p>
-  <p>右边在 \(\pi'=\pi\) 时恰好等于 \(J(\pi)\)，而且处处不高于左边。所以只要把右边这个下界提高，左边的真实回报就至少提高同样多。换句话说，<strong>只要替代优势的收益超过最坏情况下的近似误差，策略就一定变好</strong>。这种“抬高下界来抬高目标”的做法叫作 MM（Minorize-Maximize）算法。</p>
+  <p>误差项是怎么来的？上一节说过，近似只错在状态访问量：把新策略的 \(\rho_{\pi'}\) 换成了旧策略的 \(\rho_{\pi}\)。两个策略在每个状态上越接近，访问的状态就越接近。论文的证明思路是把新旧策略“耦合”起来：设两者在每个状态上选不同动作的概率不超过 \(\alpha\)，那么前 \(t\) 步一直做同样选择的概率至少是 \((1-\alpha)^{t}\)，两条轨迹的差距就能用 \(\alpha\) 控制，误差最终与 \(\alpha^{2}\) 成正比。再用 \(D_{\mathrm{TV}}^{2}\le D_{\mathrm{KL}}\)（总变差距离的平方不超过 KL 散度，这是 Pinsker 不等式的宽松形式），\(\alpha^{2}\) 就换成了最坏情况的 KL，得到上面的下界。完整的证明和常数 \(C\) 的推导在论文里，这里只讲思路。</p>
+  <p>下界为什么够用？把右边记作 \(M(\pi')=J(\pi)+L_{\pi}(\pi')-C\max_{s}D_{\mathrm{KL}}\big(\pi\Vert\pi'\big)\)，它有两个性质：</p>
+  <ul>
+    <li>处处不高于真实回报：\(J(\pi')\ge M(\pi')\)，这是上面的不等式；</li>
+    <li>在当前点相等：\(\pi'=\pi\) 时 \(L_{\pi}(\pi)=0\)，KL 也是 0，所以 \(M(\pi)=J(\pi)\)。</li>
+  </ul>
+  <p>于是只要找到新策略 \(\pi_{\text{new}}\) 使得 \(M(\pi_{\text{new}})>M(\pi)\)，就有</p>
+  \[J(\pi_{\text{new}})\;\ge\;M(\pi_{\text{new}})\;>\;M(\pi)\;=\;J(\pi)\]
+  <p>换句话说，<strong>只要替代优势的收益超过最坏情况下的近似误差，策略就一定变好</strong>。这种“抬高下界来抬高目标”的做法叫作 MM（Minorize-Maximize）算法。</p>
   <p>下界在当前点与真实目标相切。每次走到下界的最高处，再从新位置构造下一个下界，看看保证的提升如何累积。</p>
   <div class="lab" data-lab="classic" id="lab-mm"></div>
   <p>理论上的系数 \(C\) 太大，按它惩罚只能迈出极小的步子。所以实际的 TRPO 把惩罚改成约束，并把最坏情况的 KL 换成平均 KL：</p>
   \[\max_{\theta}\;L_{\theta_{\text{old}}}(\theta)\quad\text{s.t.}\quad\mathbb{E}_{s}\Big[D_{\mathrm{KL}}\big(\pi_{\theta_{\text{old}}}(\cdot\mid s)\,\Vert\,\pi_\theta(\cdot\mid s)\big)\Big]\le\delta\]
-  <p>形式上和自然梯度一样，所以求解思路也一样。区别在于下面三个工程改进。</p>
+  <p>为什么把最坏情况的 KL 换成平均 KL？最坏情况要在所有状态上取最大值，而我们只见过有限个状态，没法保证最大值被看到；平均 KL 可以直接对采样到的状态求平均。代价是原来那条“一定变好”的保证不再严格成立，所以 TRPO 后面要用线搜索和改进检查补上。形式上它和自然梯度一样，所以求解思路也一样。区别在于下面三个工程改进。</p>
 
   <h3><span class="sn">5.3</span>改进一：共轭梯度，不求逆</h3>
-  <p>我们其实不关心 \(F^{-1}\) 本身，只需要乘积 \(x=F^{-1}g\)，也就是线性方程 \(Fx=g\) 的解。<strong>共轭梯度法</strong>解这个方程时只需要反复计算“矩阵乘向量” \(Fv\)，而 \(Fv\) 可以通过对 KL 求两次梯度（Hessian-向量积）直接得到，完全不必把 \(F\) 这个 \(N\times N\) 的大矩阵存下来。通常迭代 10 步左右就足够准确。</p>
+  <p>我们其实不关心 \(F^{-1}\) 本身，只需要乘积 \(x=F^{-1}g\)，也就是线性方程 \(Fx=g\) 的解。神经网络动辄有上百万个参数，\(F\) 是 \(N\times N\) 的矩阵，连存都存不下，更不用说求逆。<strong>共轭梯度法</strong>可以绕开它。</p>
+  <p><strong>共轭梯度在做什么。</strong>解 \(Fx=g\) 等价于最小化二次函数 \(q(x)=\tfrac12x^{\top}Fx-g^{\top}x\)：它的梯度是 \(Fx-g\)，令它为 0 就是这个方程。共轭梯度法沿着一组“共轭”方向 \(p_0,p_1,\dots\)（满足 \(p_i^{\top}Fp_j=0\)，\(i\ne j\)）一个一个走，每个方向上走到最低点，而且不会破坏前面已经走好的方向。所以在精确计算下，\(N\) 维问题最多 \(N\) 步就解完；实际中迭代 10 步左右就足够准确。每一步只用到 \(F\) 乘一个向量：</p>
+  <div class="algo">
+    <div class="algo-title"><span class="k">子程序</span>共轭梯度法（解 \(Fx=g\)）</div>
+    <ol>
+      <li>初始化：\(x\leftarrow 0,\; r\leftarrow g,\; p\leftarrow g\)（\(r\) 是残差，\(p\) 是当前方向）</li>
+      <li>重复若干次：</li>
+      <li class="in">\(\alpha=\dfrac{r^{\top}r}{p^{\top}Fp}\)，\(x\leftarrow x+\alpha p\)</li>
+      <li class="in">\(r'\leftarrow r-\alpha\,Fp\)</li>
+      <li class="in">\(\beta=\dfrac{r'^{\top}r'}{r^{\top}r}\)，\(p\leftarrow r'+\beta p\)，\(r\leftarrow r'\)</li>
+    </ol>
+  </div>
+  <p>整个过程里 \(F\) 只以 \(Fp\) 的形式出现。\(Fp\) 的算法是：\(F\) 是 KL 在 \(\theta_{\text{old}}\) 处的 Hessian，所以 \(Fp=\nabla_\theta\big(\nabla_\theta D_{\mathrm{KL}}^{\top}\,p\big)\)：先对 KL 求一次梯度，与向量 \(p\) 做内积得到一个标量，再对这个标量求一次梯度。这是自动微分里的 Hessian-向量积，代价和普通反向传播是同一个量级，完全不必写出或存储 \(F\)。迭代一次多做一次这样的运算，十几次下来也远比求逆便宜。</p>
 
   <h3><span class="sn">5.4</span>改进二：线搜索</h3>
   <p>按公式算出的步长 \(\Delta=\sqrt{2\delta/(x^{\top}Fx)}\,x\) 建立在近似上，实际可能让 KL 超标。TRPO 依次尝试 \(\theta_{\text{old}}+\alpha^{j}\Delta\)（\(j=0,1,2,\dots\)，\(\alpha\in(0,1)\)，常取 0.5），接受第一个满足条件的步长。这相当于不断缩小信赖域，直到落在我们相信更新确实有效的范围内。</p>
