@@ -552,6 +552,7 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   <p>这样一来，参数可以在“策略不敏感”的方向上大步走，在“策略敏感”的方向上小心走，但策略本身每一步的变化都不超过阈值 \(\epsilon\)。</p>
 
   <h3><span class="sn">4.4</span>近似求解：在当前点附近做泰勒展开</h3>
+  <p class="bridge"><span class="lab">记号</span><span>从这一节起会连续用到梯度、Hessian、\(g^{\top}\Delta\theta\)、\(F^{-1}g\) 这类向量和矩阵的微分记号。不熟悉的话，先看《<a href="../matrix-calculus/">矩阵微分：给学过数学分析的人</a>》：那里讲了形状约定、用微分求导的办法和常用公式，最后一章把本章的式子一条条对了出来。</span></p>
   <p>上面这个约束问题没法直接解。目标 \(J(\theta+\Delta\theta)\) 要让新参数的策略去采样、算回报才知道；约束里的 KL 散度要对所有状态取平均、对所有动作求和。每试一个候选的 \(\Delta\theta\) 都这样算一遍，做不到。</p>
   <p>办法是只看当前参数 \(\theta\) 附近，把这两个函数各换成一个便宜的近似，而且近似里的系数都能在当前策略的样本上估计出来。数学工具是泰勒展开：一个光滑函数 \(f(\Delta\theta)\) 在 0 附近可以写成</p>
   \[f(\Delta\theta)\approx f(0)+\nabla f(0)^{\top}\Delta\theta+\tfrac12\,\Delta\theta^{\top}\nabla^{2}f(0)\,\Delta\theta\]

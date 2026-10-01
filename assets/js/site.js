@@ -421,6 +421,26 @@
       ctx.fillStyle = CREAM; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
       ctx.fillText('D(p‖q) = ' + d.toFixed(3) + ' nats', x1, H * 0.12);
     },
+    mc: function (ctx, W, H, t) {          // 椭圆等高线：负梯度走出折线，牛顿方向一步到最小点（虚线）；右上角是此刻的条件数 κ
+      ctx.clearRect(0, 0, W, H);
+      var cx = W * 0.64, cy = H * 0.52, R = Math.min(H * 0.5, W * 0.34), kap = 5.5 + 2.5 * Math.sin(t * 0.45), a = 0.55 + 0.3 * Math.sin(t * 0.3);
+      var c = Math.cos(a), s = Math.sin(a), sq = Math.sqrt(kap), i;
+      ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(237,232,222,.25)';
+      for (i = 1; i <= 4; i++) { ctx.beginPath(); ctx.ellipse(cx, cy, R * i / 4 / sq, R * i / 4, a, 0, 7); ctx.stroke(); }
+      var rho = R * 0.95, y1 = 0.7 * rho / sq, y2 = 0.714 * rho, eta = 1.6 / kap, steps = 12, u = (t % 7) / 7 * (steps + 2), pts = [], k;
+      for (k = 0; k <= steps; k++) { pts.push([cx + y1 * c - y2 * s, cy + y1 * s + y2 * c]); y1 *= 1 - eta * kap; y2 *= 1 - eta; }
+      ctx.setLineDash([4, 4]); ctx.strokeStyle = CLAY; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]); ctx.lineTo(cx, cy); ctx.stroke(); ctx.setLineDash([]);
+      var m = Math.min(steps, Math.floor(u)), f = Math.min(1, u - m), last = pts[m], nx = pts[Math.min(steps, m + 1)];
+      var hx = last[0] + (nx[0] - last[0]) * f, hy = last[1] + (nx[1] - last[1]) * f;
+      ctx.strokeStyle = 'rgba(237,232,222,.75)'; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+      for (k = 1; k <= m; k++) ctx.lineTo(pts[k][0], pts[k][1]);
+      ctx.lineTo(hx, hy); ctx.stroke();
+      ctx.strokeStyle = CREAM; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(cx - 5, cy); ctx.lineTo(cx + 5, cy); ctx.moveTo(cx, cy - 5); ctx.lineTo(cx, cy + 5); ctx.stroke();
+      ctx.fillStyle = WHITE; ctx.beginPath(); ctx.arc(hx, hy, Math.max(3.5, H * 0.022), 0, 7); ctx.fill();
+      ctx.font = '500 ' + Math.max(9, Math.min(H * 0.05, W * 0.03)) + 'px "JetBrains Mono", monospace';
+      ctx.fillStyle = CREAM; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText('κ = ' + kap.toFixed(1), W * 0.94, H * 0.12);
+    },
     harness: function (ctx, W, H, t) {     // agent 闭环：上下文 → 模型 → 校验 → 工具 → 回到上下文；每跑完一圈，中间的验收亮一次
       ctx.clearRect(0, 0, W, H);
       var cx = W * 0.72, cy = H * 0.42, R = Math.min(W * 0.17, H * 0.27), lap = 4, u = (t % lap) / lap;

@@ -1,0 +1,86 @@
+/* 矩阵微分 · 本文自己的组件：公式、三个实例的图与读数。
+   配色约定：梯度（−∇f 与下降路径）陶土橙，牛顿方向与等高线墨色，白色只给被拖动、正在走的点。 */
+
+/* 公式：KaTeX 预渲染 */
+.katex { font-size: 1.08em; text-transform: none; letter-spacing: normal; }
+.eq { position: relative; overflow-x: auto; overflow-y: hidden; margin: 1.15em 0; padding: .2rem 0; scrollbar-width: thin; }
+.eq .katex-display { margin: 0; }
+.tbl { position: relative; }        /* KaTeX 隐藏的 MathML 是绝对定位的，让滚动容器裁住它 */
+.nobr { white-space: nowrap; }
+.mi { font-family: KaTeX_Math, serif; font-style: italic; text-transform: none; letter-spacing: normal; }
+.mn { font-family: KaTeX_Main, serif; text-transform: none; letter-spacing: normal; }
+.stage .cap .katex, .art .tag .katex { font-size: 1.15em; }
+.widget .seg button .katex { font-size: 1.02em; }
+.w-ctrl label .katex { font-size: 1.1em; }
+th .katex { font-size: 1.25em; }
+.stats .katex { font-size: 1.05em; }
+sup.mn, sub { font-size: .72em; line-height: 0; }
+
+/* 图例：色块只给图例项本身，别套进公式内部 */
+.legend > span span::before { content: none; }
+.legend .lg::before { background: var(--amber-fill); }
+.legend .ln::before { background: var(--ink); }
+.legend .lm::before { background: linear-gradient(var(--ink), var(--ink)) center / 100% 1.6px no-repeat, linear-gradient(var(--ink), var(--ink)) center / 1.6px 100% no-repeat; border-radius: 0; }
+.legend { margin-bottom: .2rem; }
+
+/* 读数：标签在上，数字在下 */
+.widget .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.2rem, 1fr)); gap: .6rem 1.2rem; margin-top: .9rem; align-items: end; }
+.widget .stats > span { display: block; min-width: 0; line-height: 1.55; }
+.widget .stats b { display: block; margin-top: .1rem; font-size: 1.02rem; color: var(--ink); font-weight: 700; }
+.widget .stats .d b { color: var(--clay-deep); }
+#w-grad .stats > span:first-child b { white-space: nowrap; }
+#w-quad .stats { grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr)); }
+@media (max-width: 520px) {
+  #w-grad .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem .8rem; }
+  #w-grad .stats > span:first-child { grid-column: 1 / -1; }
+  #w-grad .stats b { font-size: .95rem; }
+}
+.w-ctrl .seg button { white-space: normal; text-align: left; }
+.w-read .katex { font-size: 1.05em; }
+
+/* 实例 3：检验表 */
+#chk-table { margin: 0; }
+#chk-table td.num { font-family: var(--mono); font-size: .8rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+#chk-table th:nth-child(n+2) { text-align: right; }
+#chk-table td.bad { color: var(--red); font-weight: 700; }
+#chk-table td:first-child { white-space: nowrap; }
+#chk-table sub { font-size: .75em; }
+.widget .tbl { margin: .9rem 0 0; }
+.w-read.no { background: var(--red-soft); color: var(--ink); }
+.w-read.no b { color: var(--red); }
+#chk-new { background: transparent; cursor: pointer; padding: .42rem 1rem; }
+#chk-new:hover { background: var(--ink); color: var(--paper-hi); }
+@media (max-width: 520px) {
+  #chk-table th, #chk-table td { padding-inline: .4rem; }
+  #chk-table td.num { font-size: .72rem; }
+}
+
+/* 图：颜色全走变量 */
+.kc { display: block; width: 100%; overflow: visible; }
+.kc text { font-family: var(--sans); font-size: 12px; fill: var(--ink-2); }
+.kc .tick { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; fill: var(--muted); }
+.kc .plate { fill: var(--paper); stroke: var(--line-2); stroke-width: 1; }
+.kc .grid { stroke: var(--rule); stroke-width: 1; fill: none; }
+.kc .axis { stroke: rgba(20, 20, 19, .42); stroke-width: 1.2; }
+.kc .ct { fill: none; stroke: rgba(20, 20, 19, .28); stroke-width: 1; }
+.kc .ct.on { stroke: var(--ink); stroke-width: 1.6; }
+.kc .xmark { stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; fill: none; }
+.kc .ag, .kc .agd { fill: var(--amber-fill); stroke: var(--amber-fill); stroke-width: 1; stroke-linejoin: round; }
+.kc .au { fill: #FAF8F3; stroke: var(--ink); stroke-width: 1.5; stroke-linejoin: round; }
+.kc .an { fill: var(--ink); stroke: var(--ink); stroke-width: .6; stroke-linejoin: round; }
+.kc .wedge { fill: rgba(217, 119, 87, .24); stroke: var(--amber); stroke-width: 1.2; stroke-linejoin: round; }
+.kc .nline { stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 4 4; opacity: .5; }
+.kc .gdp { fill: none; stroke: var(--amber-fill); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.kc .gdd { fill: var(--amber-fill); }
+.kc .gdn { fill: #FAF8F3; stroke: var(--ink); stroke-width: 1.6; }
+.kc .pt-h { fill: #FAF8F3; stroke: var(--ink); stroke-width: 2; pointer-events: none; }
+.kc .pt-h.foc { stroke: var(--amber); stroke-width: 3.2; }
+.kc .hit { fill: transparent; cursor: grab; touch-action: none; }
+.kc .hit.drag { cursor: grabbing; }
+.kc .hit:focus-visible { outline: none; }
+.kc .lab { paint-order: stroke; stroke: var(--paper); stroke-width: 3.5px; stroke-linejoin: round; fill: var(--ink); }
+.kc .lab.g { fill: var(--amber); }
+.kc .lab.a { font-family: var(--mono); font-size: 11px; fill: var(--amber); }
+.kc .mi-t { font-family: KaTeX_Math, serif; font-style: italic; font-size: 14px; }
+.kc .mn-t { font-family: KaTeX_Main, serif; font-size: 14px; }
+.kc .tick .mi-t, .kc .tick .mn-t { font-size: 12.5px; }
