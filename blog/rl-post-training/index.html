@@ -551,30 +551,65 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   \[\max_{\Delta\theta}\;J(\theta+\Delta\theta)\quad\text{s.t.}\quad \mathbb{E}_{s}\Big[D_{\mathrm{KL}}\big(\pi_\theta(\cdot\mid s)\,\Vert\,\pi_{\theta+\Delta\theta}(\cdot\mid s)\big)\Big]\le\epsilon\]
   <p>这样一来，参数可以在“策略不敏感”的方向上大步走，在“策略敏感”的方向上小心走，但策略本身每一步的变化都不超过阈值 \(\epsilon\)。</p>
 
-  <h3><span class="sn">4.4</span>近似求解</h3>
-  <p>直接求解这个约束问题需要遍历所有状态和动作，做不到。做法是在当前参数附近做泰勒展开：目标函数取一阶，KL 散度取二阶（它在 \(\Delta\theta=0\) 处的零阶项和一阶项都为 0）：</p>
-  \[J(\theta+\Delta\theta)\approx J(\theta)+g^{\top}\Delta\theta,\qquad D_{\mathrm{KL}}\approx\tfrac12\,\Delta\theta^{\top}F\,\Delta\theta\]
-  <p>其中 \(g=\nabla_\theta J\) 是普通策略梯度，\(F\) 是<strong>费舍尔信息矩阵</strong>（Fisher information matrix）：</p>
-  \[F=\mathbb{E}_{s,\,a\sim\pi_\theta}\Big[\nabla_\theta\log\pi_\theta(a\mid s)\;\nabla_\theta\log\pi_\theta(a\mid s)^{\top}\Big]\]
-  <p>\(F\) 恰好是 KL 散度在当前点的二阶导（Hessian）。用它代替 Hessian 有两个好处：一是它只需要 \(\nabla\log\pi\) 的外积，而这些梯度算策略梯度时本来就要算；二是它写成了期望，可以直接用样本估计，不必真去算二阶导数。</p>
-  <details class="derive"><summary>展开推导：从拉格朗日函数到自然梯度</summary>
-    <div class="db">
-      <p>用拉格朗日乘子 \(\lambda\) 把约束变成惩罚项，代入两个近似：</p>
-      \[\Delta\theta^{*}=\arg\max_{\Delta\theta}\;g^{\top}\Delta\theta-\frac{\lambda}{2}\,\Delta\theta^{\top}F\,\Delta\theta\]
-      <p>对 \(\Delta\theta\) 求导并令其为 0：\(g-\lambda F\Delta\theta=0\)，得到 \(\Delta\theta^{*}=\frac{1}{\lambda}F^{-1}g\)。方向是 \(F^{-1}g\)，长度由 \(\lambda\) 决定。</p>
-      <p>要让这一步的 KL 恰好等于 \(\epsilon\)，设 \(\Delta\theta=\alpha F^{-1}g\)，代入 \(\tfrac12\Delta\theta^{\top}F\Delta\theta=\epsilon\)：</p>
-      \[\tfrac12\,\alpha^{2}\,g^{\top}F^{-1}g=\epsilon\quad\Longrightarrow\quad \alpha=\sqrt{\frac{2\epsilon}{g^{\top}F^{-1}g}}\]
-    </div>
-  </details>
+  <h3><span class="sn">4.4</span>近似求解：在当前点附近做泰勒展开</h3>
+  <p>上面这个约束问题没法直接解。目标 \(J(\theta+\Delta\theta)\) 要让新参数的策略去采样、算回报才知道；约束里的 KL 散度要对所有状态取平均、对所有动作求和。每试一个候选的 \(\Delta\theta\) 都这样算一遍，做不到。</p>
+  <p>办法是只看当前参数 \(\theta\) 附近，把这两个函数各换成一个便宜的近似，而且近似里的系数都能在当前策略的样本上估计出来。数学工具是泰勒展开：一个光滑函数 \(f(\Delta\theta)\) 在 0 附近可以写成</p>
+  \[f(\Delta\theta)\approx f(0)+\nabla f(0)^{\top}\Delta\theta+\tfrac12\,\Delta\theta^{\top}\nabla^{2}f(0)\,\Delta\theta\]
+  <p>三项依次是函数值（零阶）、梯度即斜率（一阶）、Hessian 即曲率（二阶）。展开到哪一阶，要看那一阶里有没有信息。</p>
+  <p><strong>目标函数取一阶。</strong>零阶项 \(J(\theta)\) 是常数，不影响往哪走；一阶项的系数就是普通策略梯度 \(g=\nabla_\theta J\)：</p>
+  \[J(\theta+\Delta\theta)\approx J(\theta)+g^{\top}\Delta\theta\]
+  <p>这是 \(\Delta\theta\) 的线性函数，步子越大涨得越多，自己管不住步长，所以才需要约束。</p>
+  <p><strong>KL 散度取二阶。</strong>把约束左边记作</p>
+  \[D(\Delta\theta)=\mathbb{E}_{s}\Big[D_{\mathrm{KL}}\big(\pi_\theta(\cdot\mid s)\,\Vert\,\pi_{\theta+\Delta\theta}(\cdot\mid s)\big)\Big]\]
+  <p>它在 \(\Delta\theta=0\) 处的零阶项和一阶项都是 0：</p>
+  <ul>
+    <li><strong>零阶</strong>：\(\Delta\theta=0\) 时新旧策略完全相同，KL 为 0，所以 \(D(0)=0\)。</li>
+    <li><strong>一阶</strong>：KL 永远不小于 0（<a href="../kl-divergence/#ch5">KL 散度那一篇的第 5 章</a>证明过），而 \(\Delta\theta=0\) 处恰好取到 0，所以那里是最小点，斜率必须是 0。也可以直接算：对新参数 \(\theta'\) 求梯度并代入 \(\theta'=\theta\)，
+      \[\nabla_{\theta'}D_{\mathrm{KL}}\big(\pi_\theta\Vert\pi_{\theta'}\big)\Big|_{\theta'=\theta}=-\sum_a\pi_\theta(a)\,\nabla\log\pi_\theta(a)=-\sum_a\nabla\pi_\theta(a)=-\nabla\sum_a\pi_\theta(a)=-\nabla 1=0\]
+    </li>
+  </ul>
+  <p>零阶、一阶都没有了，KL 在 0 附近剩下的第一项就是二阶项：</p>
+  \[D(\Delta\theta)\approx\tfrac12\,\Delta\theta^{\top}H\,\Delta\theta,\qquad H=\nabla^{2}D(0)\]
+  <p>反过来想，如果 KL 也只展开到一阶，约束就变成 \(0\le\epsilon\)，什么也限制不住，所以非得展开到二阶不可。剩下的问题是：这个曲率矩阵 \(H\) 是什么？答案就是下一节的费舍尔信息矩阵。</p>
+
+  <h3><span class="sn">4.5</span>费舍尔信息矩阵：策略对参数有多敏感</h3>
+  <p>先看一个量。对一个动作 \(a\)，把它的对数概率对参数求梯度，得到 <strong>得分函数</strong>（score）：</p>
+  \[s_\theta(a\mid s)=\nabla_\theta\log\pi_\theta(a\mid s)\]
+  <p>它是一个和参数同维度的向量，意思是“参数往哪个方向挪一点，动作 \(a\) 的对数概率涨得最快”。前面策略梯度公式里的 \(\nabla\log\pi\) 就是它。得分函数有一个好用的性质：按策略本身取平均，均值是 0。</p>
+  \[\mathbb{E}_{a\sim\pi_\theta}\big[s_\theta(a\mid s)\big]=\sum_a\pi_\theta(a\mid s)\,\frac{\nabla\pi_\theta(a\mid s)}{\pi_\theta(a\mid s)}=\nabla\sum_a\pi_\theta(a\mid s)=0\]
+  <p>这和上面算 KL 一阶项用的是同一个恒等式。均值为 0 的随机向量，它的协方差矩阵就是外积的期望，这个矩阵叫 <strong>费舍尔信息矩阵</strong>（Fisher information matrix）：</p>
+  \[F=\mathbb{E}_{s,\,a\sim\pi_\theta}\big[s_\theta\,s_\theta^{\top}\big]=\mathbb{E}_{s,\,a\sim\pi_\theta}\Big[\nabla_\theta\log\pi_\theta(a\mid s)\;\nabla_\theta\log\pi_\theta(a\mid s)^{\top}\Big]\]
+  <p>外积 \(vv^{\top}\) 是一个 \(N\times N\) 的矩阵，第 \(i\) 行第 \(j\) 列是 \(v_iv_j\)（\(N\) 是参数个数）。所以：</p>
+  <ul>
+    <li><strong>对角线 \(F_{ii}\)</strong> 是第 \(i\) 个参数的得分的平方的平均。越大，说明动一点这个参数，动作概率的变化越明显，策略对它越敏感。</li>
+    <li><strong>非对角线 \(F_{ij}\)</strong> 衡量参数 \(i\) 和参数 \(j\) 引起的变化是不是常常一起出现，也就是两个参数的效果有多重叠。</li>
+    <li><strong>整体</strong>：\(F\) 对称，而且对任何方向 \(v\) 都有 \(v^{\top}Fv=\mathbb{E}\big[(v^{\top}s_\theta)^{2}\big]\ge 0\)。\(v^{\top}Fv\) 的大小，就是参数沿 \(v\) 方向移动时策略变化得多快：下面会看到，KL 约等于 \(\tfrac12t^{2}\,v^{\top}Fv\)（\(t\) 是沿 \(v\) 走的距离）。</li>
+  </ul>
+  <p><strong>一个能算出数的例子。</strong>高斯策略 \(a\sim\mathcal{N}(\mu,\sigma^{2})\)，只看参数 \(\mu\)（\(\sigma\) 固定）。得分是 \(s=\partial_\mu\log\pi=(a-\mu)/\sigma^{2}\)，于是</p>
+  \[F=\mathbb{E}\Big[\frac{(a-\mu)^{2}}{\sigma^{4}}\Big]=\frac{\sigma^{2}}{\sigma^{4}}=\frac{1}{\sigma^{2}}\]
+  <p>回到 4.2 的实验：均值移动 \(\Delta\mu=1\)，二阶近似给出 \(\tfrac12F\,\Delta\mu^{2}=1/(2\sigma^{2})\)：\(\sigma=0.3\) 时 \(F\approx 11.1\)，KL 约 5.56；\(\sigma=3\) 时 \(F\approx 0.11\)，KL 约 0.056，差 100 倍，和实验里显示的 KL 散度一致（对均值平移，高斯的 KL 恰好就是这个式子）。\(\sigma\) 越小，\(F\) 越大，策略对 \(\mu\) 越敏感。\(F\) 把“参数动一点，策略变多少”变成了一个数。</p>
+  <p><strong>为什么 \(F\) 就是 KL 的二阶项。</strong>先看一个状态 \(s\)。\(D_{\mathrm{KL}}(\pi_\theta\Vert\pi_{\theta'})=\sum_a\pi_\theta\log\pi_\theta-\sum_a\pi_\theta\log\pi_{\theta'}\)，第一项与 \(\theta'\) 无关，所以对 \(\theta'\) 求二阶导、再代入 \(\theta'=\theta\)，得到 \(-\mathbb{E}_{a\sim\pi_\theta}\big[\nabla^{2}\log\pi_\theta(a)\big]\)。再用 \(\nabla^{2}\log\pi=\dfrac{\nabla^{2}\pi}{\pi}-\nabla\log\pi\,\nabla\log\pi^{\top}\)（对 \(\log\pi\) 连求两次导）：</p>
+  \[-\mathbb{E}_{a\sim\pi_\theta}\big[\nabla^{2}\log\pi\big]=-\sum_a\nabla^{2}\pi_\theta(a)+\mathbb{E}\big[s_\theta s_\theta^{\top}\big]=-\nabla^{2}\sum_a\pi_\theta(a)+\mathbb{E}\big[s_\theta s_\theta^{\top}\big]=F\]
+  <p>第一项里 \(\pi/\pi\) 约掉，剩下对动作求和的 \(\nabla^{2}\pi\)，而 \(\sum_a\pi=1\) 是常数，所以它的二阶导为 0。对所有状态取平均，得到 \(H=F\)，于是</p>
+  \[D_{\mathrm{KL}}\approx\tfrac12\,\Delta\theta^{\top}F\,\Delta\theta\]
+  <p>\(F\) 是这个 Hessian，但写成外积的期望之后，用起来很方便：一是它只需要 \(\nabla\log\pi\)，而这些梯度算策略梯度时本来就要算；二是它写成了期望，可以直接用样本估计 \(\hat F=\frac1n\sum s_\theta s_\theta^{\top}\)，不必真去算二阶导数。用它去量参数的位移，量的是<strong>策略</strong>变了多少，而不是参数变了多少：这把“尺子”会随着当前策略的位置而变化。</p>
+
+  <h3><span class="sn">4.6</span>求解：自然梯度</h3>
+  <p>把两个近似代回原问题，得到一个形式简单的问题：线性的目标，二次的约束。</p>
+  \[\max_{\Delta\theta}\;g^{\top}\Delta\theta\quad\text{s.t.}\quad\tfrac12\,\Delta\theta^{\top}F\,\Delta\theta\le\epsilon\]
+  <p>用拉格朗日乘子 \(\lambda\ge 0\) 把约束并进目标，对 \(\Delta\theta\) 求导并令其为 0（\(F\) 是协方差矩阵，对称半正定，这里假设它可逆）：</p>
+  \[\mathcal{L}(\Delta\theta,\lambda)=g^{\top}\Delta\theta-\lambda\Big(\tfrac12\,\Delta\theta^{\top}F\,\Delta\theta-\epsilon\Big),\qquad g-\lambda F\,\Delta\theta=0\ \Longrightarrow\ \Delta\theta=\frac1\lambda F^{-1}g\]
+  <p>方向已经定了：\(F^{-1}g\)。长度由 \(\lambda\) 决定。约束必须取等号：目标是线性的，只要 \(g\neq 0\)，沿这个方向走得越远目标越大，没有约束就没有最大值，所以最优点一定贴在约束边界上。设 \(\Delta\theta=\alpha F^{-1}g\)（\(\alpha=1/\lambda\)），代入 \(\tfrac12\Delta\theta^{\top}F\Delta\theta=\epsilon\)，\(F\) 与 \(F^{-1}\) 抵消：</p>
+  \[\tfrac12\,\alpha^{2}\,g^{\top}F^{-1}g=\epsilon\quad\Longrightarrow\quad \alpha=\sqrt{\frac{2\epsilon}{g^{\top}F^{-1}g}}\]
   <p>结果非常简洁。定义<strong>自然梯度</strong> \(\tilde g=F^{-1}g\)，更新规则为：</p>
   \[\boxed{\;\theta\leftarrow\theta+\sqrt{\frac{2\epsilon}{g^{\top}F^{-1}g}}\;F^{-1}g\;}\]
 
-  <h3><span class="sn">4.5</span>自然梯度的几何意义</h3>
+  <h3><span class="sn">4.7</span>自然梯度的几何意义</h3>
   <figure>
     <div class="fig-svg"><svg id="npg-svg" viewBox="0 0 640 300" role="img" aria-label="参数空间中欧氏圆与KL椭圆，以及普通梯度与自然梯度方向"></svg></div>
     <figcaption><span class="fn">图 2</span>在参数空间里，“KL 距离相同”的点构成一个椭圆，而不是圆。沿策略敏感的方向（椭圆短轴），参数只能动一点；沿不敏感的方向（长轴），可以动很多。普通梯度在圆里找最陡方向，自然梯度在椭圆里找，两者方向不同。</figcaption>
   </figure>
-  <p>和普通策略梯度相比，唯一的区别就是乘上了 \(F^{-1}\)。它给出的是在“分布空间”（黎曼流形）里最陡的上升方向，而不是在假设平坦的欧氏参数空间里。由此带来一个很好的性质：<strong>不论策略怎样参数化，每一步改变策略的幅度都是 \(\epsilon\)</strong>。</p>
+  <p>这个椭圆就是 \(\{\Delta\theta:\ \tfrac12\Delta\theta^{\top}F\Delta\theta=\epsilon\}\)：它的轴沿着 \(F\) 的特征向量，特征值大的方向（策略敏感），椭圆在那个方向上就短。和普通策略梯度相比，唯一的区别就是乘上了 \(F^{-1}\)。它给出的是在“分布空间”（黎曼流形）里最陡的上升方向，而不是在假设平坦的欧氏参数空间里。由此带来一个很好的性质：<strong>不论策略怎样参数化，每一步改变策略的幅度都是 \(\epsilon\)</strong>。</p>
   <p>下面的三个动作只有两个可调参数，但两个参数的尺度相差很大。沿着同一个目标分别走几步，比较普通梯度与自然梯度怎样使用步长预算。</p>
   <div class="lab" data-lab="classic" id="lab-npg"></div>
 
