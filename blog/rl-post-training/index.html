@@ -902,13 +902,34 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   <div class="algo">
     <div class="algo-title"><span class="k">算法 5</span>PPO-Clip（Actor-Critic 形式）</div>
     <ol>
+      <li>输入：初始参数 \(\theta\)（策略和价值头可以共享参数），折扣 \(\gamma\)，GAE 的 \(\lambda\)，裁剪范围 \(\epsilon\)，系数 \(c_1,c_2\)，并行环境数 \(N\)，每轮步数 \(T\)，epoch 数 \(K\)，小批量大小 \(M\)</li>
       <li>重复：</li>
-      <li class="in">用 \(\pi_{\theta_{\text{old}}}\) 在 \(N\) 个并行环境里各运行 \(T\) 步，收集数据</li>
-      <li class="in">用 Critic 和 GAE 计算优势 \(\hat A_1,\dots,\hat A_T\) 和回报目标 \(V^{\text{targ}}_t\)</li>
-      <li class="in">对 epoch \(=1,\dots,K\)：把数据打乱分成小批量，对每个小批量用 Adam 最大化 \(L(\theta)\)</li>
-      <li class="in">\(\theta_{\text{old}}\leftarrow\theta\)</li>
+      <li class="in"><strong>采样。</strong>令 \(\theta_{\text{old}}\leftarrow\theta\)。用 \(\pi_{\theta_{\text{old}}}\) 在 \(N\) 个并行环境里各运行 \(T\) 步，每一步记下 \(s_t,\ a_t,\ r_t,\ \text{done}_t\)，以及此刻算出的 \(\log\pi_{\text{old}}(a_t\mid s_t)\) 和 \(V_{\text{old}}(s_t)\)；再记下最后一个状态的 \(V_{\text{old}}(s_T)\)，用来自举</li>
+      <li class="in"><strong>算优势。</strong>对每个环境，从 \(t=T-1\) 倒着扫到 \(t=0\)（令 \(\hat A_T=0\)）：</li>
+      <li class="in2">\(\delta_t=r_t+\gamma\,\bar V_{t+1}-V_{\text{old}}(s_t)\)，其中 \(\bar V_{t+1}=(1-\text{done}_t)\,V_{\text{old}}(s_{t+1})\)（局末取 0）</li>
+      <li class="in2">\(\hat A_t=\delta_t+\gamma\lambda\,(1-\text{done}_t)\,\hat A_{t+1}\)</li>
+      <li class="in2">\(V^{\text{targ}}_t=\hat A_t+V_{\text{old}}(s_t)\)</li>
+      <li class="in">把 \(N\,T\) 个样本 \(\big(s_t,\ a_t,\ \log\pi_{\text{old}},\ \hat A_t,\ V^{\text{targ}}_t\big)\) 摊平成一个数据集；这些量在下面的更新里都不再改变</li>
+      <li class="in"><strong>更新。</strong>对 epoch \(=1,\dots,K\)：</li>
+      <li class="in2">把数据集随机打乱，分成大小为 \(M\) 的小批量；对每个小批量：</li>
+      <li class="in3">用当前的 \(\theta\) 前向，得到 \(\log\pi_\theta(a_t\mid s_t)\)、\(V_\theta(s_t)\) 和策略的熵 \(\mathcal{H}_t\)</li>
+      <li class="in3">概率比 \(r_t=\exp\big(\log\pi_\theta-\log\pi_{\text{old}}\big)\)（用对数相减再取 \(\exp\)，数值更稳）</li>
+      <li class="in3">（常见）小批量内归一化优势：\(\hat A_t\leftarrow(\hat A_t-\text{mean})/(\text{std}+10^{-8})\)</li>
+      <li class="in3">裁剪后的概率比 \(\tilde r_t=\operatorname{clip}(r_t,\,1-\epsilon,\,1+\epsilon)\)</li>
+      <li class="in3">策略项 \(L^{\mathrm{CLIP}}=\operatorname{mean}_t\,\min\big(r_t\hat A_t,\ \tilde r_t\hat A_t\big)\)</li>
+      <li class="in3">价值项 \(L^{\mathrm{VF}}=\operatorname{mean}_t\,\big(V_\theta(s_t)-V^{\text{targ}}_t\big)^{2}\)</li>
+      <li class="in3">总目标 \(L=L^{\mathrm{CLIP}}-c_1L^{\mathrm{VF}}+c_2\operatorname{mean}_t\mathcal{H}_t\)</li>
+      <li class="in3">对 \(-L(\theta)\) 反向传播，（常见）裁剪梯度范数，用 Adam 更新一步 \(\theta\)</li>
     </ol>
   </div>
+  <p>几处细节：</p>
+  <ul>
+    <li><strong>\(\theta_{\text{old}}\leftarrow\theta\) 的位置。</strong>论文把它写在每轮的末尾，这里放在开头，两者等价。</li>
+    <li><strong>为什么采样时就存 \(\log\pi_{\text{old}}\) 和 \(V_{\text{old}}\)。</strong>更新期间 \(\theta\) 在变，但概率比 \(r_t\) 的分母和 GAE 都要用<strong>采样那一刻</strong>的值，所以采样时一次算好存下，后面的 \(K\) 个 epoch 里不再重算。\(r_t\) 在第一次更新时恰好等于 1，之后逐渐偏离。</li>
+    <li><strong>\(\text{done}_t\)。</strong>\(\text{done}_t=1\) 表示这一局在第 \(t\) 步之后结束（环境随即重置）。\((1-\text{done}_t)\) 让两条递推在局末断开，不把下一局的价值接到这一局上。这一轮的最后一步，如果局还没结束，就用 \(V_{\text{old}}(s_T)\) 自举，所以每轮只跑 \(T\) 步（\(T\) 比一局短得多）也能用。</li>
+    <li><strong>三个项一次反传。</strong>策略和价值头共享参数时，\(L(\theta)\) 的一次反向传播同时更新 Actor 和 Critic；不共享就是两个网络，各配一个优化器。</li>
+    <li><strong>样本数和更新次数。</strong>一轮有 \(N\,T\) 个样本，每个 epoch 有 \(N\,T/M\) 个小批量，一轮共做 \(K\,N\,T/M\) 次 Adam 更新。论文里 MuJoCo 基准的超参数是 \(T=2048\)、\(K=10\)、\(M=64\)（\(\gamma=0.99\)，\(\lambda=0.95\)，Adam 步长 \(3\times10^{-4}\)）：每轮 2048 个样本时，每个 epoch 有 32 个小批量，一轮共 320 次更新。Atari 是 \(N=8\)、\(T=128\)、\(K=3\)、\(c_1=1\)、\(c_2=0.01\)、\(\epsilon=0.1\)（随训练线性退火到 0）。</li>
+  </ul>
   <p><strong>Critic 不是先训练好再用的。</strong>它和策略在同一个循环里一起学。第 1 轮时 Critic 是随机初始化的（大模型里常从奖励模型初始化，再接一个新的价值头），算出的优势几乎是噪声。之后每一轮：用当前的 Critic 和 GAE 算出优势与回报目标 \(V^{\text{targ}}_t=\hat A_t+V_{\text{old}}(s_t)\)；\(L(\theta)\) 里的 \(c_1\big(V_\theta-V^{\text{targ}}\big)^{2}\) 项，在更新策略的同时把 Critic 往这些目标上回归；下一轮就用更新后的 Critic。不能先单独训好再冻结，因为 Critic 估计的是<strong>当前策略</strong>的价值，策略一变，它就过时了。这是一个交替改进的结构：Critic 评估策略，策略按评估去改进。</p>
   <p>早期 Critic 不准，不会让训练崩掉：回归目标里有真实奖励，每一轮都有真实数据在纠正它；\(\lambda\) 接近 1 时，GAE 的优势主要来自真实奖励，Critic 更多是在当基线；而只依赖状态的基线不改变梯度的期望，只影响方差。有的实现会在开始更新策略之前，先单独训练 Critic 几轮（verl 里有 <code>trainer.critic_warmup</code> 这个选项），免得新初始化的价值头把策略推向错误的方向。这是工程技巧，不是算法必需。后面的 GRPO 则干脆去掉 Critic，用同一问题的一组回答互相做基线。</p>
   <p>OpenAI 后来发布的 PPO2 是面向 GPU 和向量化环境的实现，数学基础不变，但加了不少工程细节：优势在每个小批量内做归一化、价值函数也做裁剪、梯度范数裁剪、学习率退火等。这些细节对最终效果影响很大，Huang 等人的博客《The 37 Implementation Details of PPO》专门做了整理。</p>

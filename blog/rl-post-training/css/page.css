@@ -184,6 +184,13 @@ details.derive .db { padding: .3rem 1.15rem 1.1rem; border-top: 1px solid var(--
 .algo li::before { content: counter(ln, decimal-leading-zero); position: absolute; left: 0; top: .22rem; font-family: var(--mono); font-size: .66rem; color: var(--mute); }
 .algo li.in { padding-left: 3.3rem; }
 .algo li.in2 { padding-left: 4.7rem; }
+.algo li.in3 { padding-left: 6.1rem; }
+@media (max-width: 520px) {
+  .algo li.in { padding-left: 2.6rem; }
+  .algo li.in2 { padding-left: 3.3rem; }
+  .algo li.in3 { padding-left: 4rem; }
+  .algo li mjx-container { font-size: 92%; }
+}
 
 /* 代码 */
 pre { background: var(--code-bg); box-shadow: var(--shadow); border-radius: 14px; padding: 1rem 1.15rem; overflow-x: auto; font-family: var(--mono); font-size: .8rem; line-height: 1.7; margin: 1.5rem 0; color: var(--ink); }
