@@ -589,11 +589,19 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   <p><strong>一个能算出数的例子。</strong>高斯策略 \(a\sim\mathcal{N}(\mu,\sigma^{2})\)，只看参数 \(\mu\)（\(\sigma\) 固定）。得分是 \(s=\partial_\mu\log\pi=(a-\mu)/\sigma^{2}\)，于是</p>
   \[F=\mathbb{E}\Big[\frac{(a-\mu)^{2}}{\sigma^{4}}\Big]=\frac{\sigma^{2}}{\sigma^{4}}=\frac{1}{\sigma^{2}}\]
   <p>回到 4.2 的实验：均值移动 \(\Delta\mu=1\)，二阶近似给出 \(\tfrac12F\,\Delta\mu^{2}=1/(2\sigma^{2})\)：\(\sigma=0.3\) 时 \(F\approx 11.1\)，KL 约 5.56；\(\sigma=3\) 时 \(F\approx 0.11\)，KL 约 0.056，差 100 倍，和实验里显示的 KL 散度一致（对均值平移，高斯的 KL 恰好就是这个式子）。\(\sigma\) 越小，\(F\) 越大，策略对 \(\mu\) 越敏感。\(F\) 把“参数动一点，策略变多少”变成了一个数。</p>
-  <p><strong>为什么 \(F\) 就是 KL 的二阶项。</strong>先看一个状态 \(s\)。\(D_{\mathrm{KL}}(\pi_\theta\Vert\pi_{\theta'})=\sum_a\pi_\theta\log\pi_\theta-\sum_a\pi_\theta\log\pi_{\theta'}\)，第一项与 \(\theta'\) 无关，所以对 \(\theta'\) 求二阶导、再代入 \(\theta'=\theta\)，得到 \(-\mathbb{E}_{a\sim\pi_\theta}\big[\nabla^{2}\log\pi_\theta(a)\big]\)。再用 \(\nabla^{2}\log\pi=\dfrac{\nabla^{2}\pi}{\pi}-\nabla\log\pi\,\nabla\log\pi^{\top}\)（对 \(\log\pi\) 连求两次导）：</p>
+  <p><strong>为什么 \(F\) 就是 KL 的二阶项。</strong>先看一个状态 \(s\)。\(D_{\mathrm{KL}}(\pi_\theta\Vert\pi_{\theta'})=\sum_a\pi_\theta\log\pi_\theta-\sum_a\pi_\theta\log\pi_{\theta'}\)，第一项与 \(\theta'\) 无关，所以对 \(\theta'\) 求二阶导、再代入 \(\theta'=\theta\)，得到 \(-\mathbb{E}_{a\sim\pi_\theta}\big[\nabla^{2}\log\pi_\theta(a)\big]\)。再用 \(\nabla^{2}\log\pi=\dfrac{\nabla^{2}\pi}{\pi}-\nabla\log\pi\,\nabla\log\pi^{\top}\)（对 \(\log\pi\) 连求两次导，推导见本节末尾的方框）：</p>
   \[-\mathbb{E}_{a\sim\pi_\theta}\big[\nabla^{2}\log\pi\big]=-\sum_a\nabla^{2}\pi_\theta(a)+\mathbb{E}\big[s_\theta s_\theta^{\top}\big]=-\nabla^{2}\sum_a\pi_\theta(a)+\mathbb{E}\big[s_\theta s_\theta^{\top}\big]=F\]
   <p>第一项里 \(\pi/\pi\) 约掉，剩下对动作求和的 \(\nabla^{2}\pi\)，而 \(\sum_a\pi=1\) 是常数，所以它的二阶导为 0。对所有状态取平均，得到 \(H=F\)，于是</p>
   \[D_{\mathrm{KL}}\approx\tfrac12\,\Delta\theta^{\top}F\,\Delta\theta\]
   <p>\(F\) 是这个 Hessian，但写成外积的期望之后，用起来很方便：一是它只需要 \(\nabla\log\pi\)，而这些梯度算策略梯度时本来就要算；二是它写成了期望，可以直接用样本估计 \(\hat F=\frac1n\sum s_\theta s_\theta^{\top}\)，不必真去算二阶导数。用它去量参数的位移，量的是<strong>策略</strong>变了多少，而不是参数变了多少：这把“尺子”会随着当前策略的位置而变化。</p>
+
+  <div class="call intu"><span class="ct">\(\nabla^{2}\log\pi\) 是怎么来的</span>
+    <p>固定一个动作 \(a\)，\(\pi=\pi_\theta(a)\) 是 \(\theta\in\mathbb{R}^{n}\) 的标量函数。一元时就是 \((\log f)''=\dfrac{f''}{f}-\Big(\dfrac{f'}{f}\Big)^{2}\)，多维只是把“平方”换成外积。先求梯度：\(d\log\pi=d\pi/\pi\)，所以得分 \(s=\nabla\log\pi=\nabla\pi/\pi\)。再对它取微分：\(s\) 是标量 \(1/\pi\) 乘以向量 \(\nabla\pi\)，用乘积法则，</p>
+    \[\begin{aligned}d(\nabla\log\pi)&=d\Big(\frac1\pi\Big)\nabla\pi+\frac1\pi\,d(\nabla\pi)\\&=-\frac{\big((\nabla\pi)^{\top}d\theta\big)\,\nabla\pi}{\pi^{2}}+\frac{\nabla^{2}\pi\;d\theta}{\pi}\end{aligned}\]
+    <p>这里用到 \(d(1/\pi)=-d\pi/\pi^{2}\)，\(d\pi=(\nabla\pi)^{\top}d\theta\)，以及 \(d(\nabla\pi)=\nabla^{2}\pi\,d\theta\)（Hessian 的定义）。第一项里 \((\nabla\pi)^{\top}d\theta\) 是一个数，可以挪到后面：\(\big((\nabla\pi)^{\top}d\theta\big)\nabla\pi=\nabla\pi(\nabla\pi)^{\top}d\theta\)。于是 \(d(\nabla\log\pi)=\big[\nabla^{2}\pi/\pi-\nabla\pi(\nabla\pi)^{\top}/\pi^{2}\big]d\theta\)，方括号就是 Hessian。又因为 \(\nabla\pi/\pi=s\)：</p>
+    \[\nabla^{2}\log\pi=\frac{\nabla^{2}\pi}{\pi}-s\,s^{\top}\]
+    <p>两项都是 \(n\times n\)（\(ss^{\top}\) 是列乘行的外积，不是内积）。对动作取期望时，第一项是 \(\sum_a\pi\cdot\nabla^{2}\pi/\pi=\sum_a\nabla^{2}\pi=\nabla^{2}1=0\)，只剩 \(-\mathbb{E}[ss^{\top}]\)，也就是正文里的结果。微分记号和这些展开步骤，《<a href="../matrix-calculus/">矩阵微分</a>》里有详细讲解。</p>
+  </div>
 
   <h3><span class="sn">4.6</span>求解：自然梯度</h3>
   <p>把两个近似代回原问题，得到一个形式简单的问题：线性的目标，二次的约束。</p>
@@ -611,6 +619,10 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
     <figcaption><span class="fn">图 2</span>在参数空间里，“KL 距离相同”的点构成一个椭圆，而不是圆。沿策略敏感的方向（椭圆短轴），参数只能动一点；沿不敏感的方向（长轴），可以动很多。普通梯度在圆里找最陡方向，自然梯度在椭圆里找，两者方向不同。</figcaption>
   </figure>
   <p>这个椭圆就是 \(\{\Delta\theta:\ \tfrac12\Delta\theta^{\top}F\Delta\theta=\epsilon\}\)：它的轴沿着 \(F\) 的特征向量，特征值大的方向（策略敏感），椭圆在那个方向上就短。和普通策略梯度相比，唯一的区别就是乘上了 \(F^{-1}\)。它给出的是在“分布空间”（黎曼流形）里最陡的上升方向，而不是在假设平坦的欧氏参数空间里。由此带来一个很好的性质：<strong>不论策略怎样参数化，每一步改变策略的幅度都是 \(\epsilon\)</strong>。</p>
+  <div class="call intu"><span class="ct">一个能手算的例子</span>
+    <p>取 \(F=\operatorname{diag}(1,100)\)（第二个参数让策略敏感 100 倍），\(g=(1,1)^{\top}\)，预算 \(\epsilon=0.5\)。普通梯度沿 \((1,1)\) 走 \(t\)，KL 是 \(\tfrac12t^{2}(1+100)\)，令它等于 \(\epsilon\) 得 \(t=0.0995\)，目标上升 \(g^{\top}\Delta\theta=0.199\)。自然梯度的方向是 \(F^{-1}g=(1,\,0.01)\)，几乎只沿第一个参数走，因为那个方向上每走一步花的 KL 很少。同样的预算下 \(\Delta\theta=(0.995,\,0.00995)\)，目标上升 \(1.005\)，约是前者的 5 倍，两个方向的夹角约 44°。1.005 正好是理论上的最大值 \(\sqrt{2\epsilon\,g^{\top}F^{-1}g}=\sqrt{1.01}\)；在椭圆上逐点扫描，也得到同样的最大值。</p>
+    <p>所以“最陡”总是相对于一把尺子说的：普通梯度是欧氏尺子（球 \(\lVert\Delta\theta\rVert\le r\)）下最陡的方向，自然梯度是 KL 尺子（椭球 \(\tfrac12\Delta\theta^{\top}F\Delta\theta\le\epsilon\)）下最陡的方向。\(F\) 正定，\(g^{\top}F^{-1}g&gt;0\)，所以自然梯度总是上升方向，只是和 \(g\) 有夹角。它和牛顿法形式上都是“用逆矩阵校正梯度”，区别在于牛顿法用的是目标函数的曲率，自然梯度用的是 KL 的曲率 \(F\)，和目标无关。</p>
+  </div>
   <p>下面的三个动作只有两个可调参数，但两个参数的尺度相差很大。沿着同一个目标分别走几步，比较普通梯度与自然梯度怎样使用步长预算。</p>
   <div class="lab" data-lab="classic" id="lab-npg"></div>
 
@@ -699,6 +711,17 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   \[\max_{\theta}\;L_{\theta_{\text{old}}}(\theta)\quad\text{s.t.}\quad\mathbb{E}_{s}\Big[D_{\mathrm{KL}}\big(\pi_{\theta_{\text{old}}}(\cdot\mid s)\,\Vert\,\pi_\theta(\cdot\mid s)\big)\Big]\le\delta\]
   <p>为什么把最坏情况的 KL 换成平均 KL？最坏情况要在所有状态上取最大值，而我们只见过有限个状态，没法保证最大值被看到；平均 KL 可以直接对采样到的状态求平均。代价是原来那条“一定变好”的保证不再严格成立，所以 TRPO 后面要用线搜索和改进检查补上。形式上它和自然梯度一样，所以求解思路也一样。区别在于下面三个工程改进。</p>
 
+  <p><strong>两个完整的策略怎么比。</strong>KL 只能在同一个状态下比较两个动作分布，而“新旧策略差多远”说的是整个策略。把一整条轨迹看成一个随机对象：</p>
+  \[p_\pi(\tau)=\rho_0(s_0)\prod_{t}\pi(a_t\mid s_t)\,P(s_{t+1}\mid s_t,a_t)\]
+  <p>两个策略面对同一个环境，初始分布 \(\rho_0\) 和转移 \(P\) 在对数比里约掉，只剩策略项；再对每个 \(a_t\) 先取条件期望，就得到各状态上的 KL：</p>
+  \[\begin{aligned}D_{\mathrm{KL}}\big(p_{\text{old}}\Vert p_{\text{new}}\big)&=\mathbb{E}_{\tau\sim\text{old}}\Big[\sum_t\log\frac{\pi_{\text{old}}(a_t\mid s_t)}{\pi_{\text{new}}(a_t\mid s_t)}\Big]\\&=\sum_t\mathbb{E}_{s_t\sim d^{\text{old}}_t}\Big[D_{\mathrm{KL}}\big(\pi_{\text{old}}(\cdot\mid s_t)\Vert\pi_{\text{new}}(\cdot\mid s_t)\big)\Big]\end{aligned}\]
+  <p>其中 \(d_t^{\text{old}}\) 是旧策略在第 \(t\) 步到达各个状态的概率。也就是说：<strong>各个状态上的 KL，按旧策略访问到这个状态的概率加权，再对时间求和</strong>。在一个 3 状态、2 动作、3 步的小环境里枚举所有轨迹验证过，两边都是 0.6433。有三点：</p>
+  <ul>
+    <li>不需要知道环境的转移概率，它在两边相同，约掉了。</li>
+    <li>权重 \(d_t^{\text{old}}\) 也不用显式去算：状态本来就是用旧策略采出来的，对一批样本里的状态取平均，旧策略常去的状态自然出现得多、权重大。上面写成 \(\mathbb{E}_s\)，实际就是对样本取平均。</li>
+    <li>对时间求和换成对所有时间步取平均，大致差一个轨迹长度的因子，可以并进 \(\delta\)。大模型里，状态是 prompt 加上已生成的前缀，动作是下一个 token，对每个 token 位置算一个 KL，在采到的回答上取平均。</li>
+  </ul>
+
   <h3><span class="sn">5.3</span>改进一：共轭梯度，不求逆</h3>
   <p>我们其实不关心 \(F^{-1}\) 本身，只需要乘积 \(x=F^{-1}g\)，也就是线性方程 \(Fx=g\) 的解。神经网络动辄有上百万个参数，\(F\) 是 \(N\times N\) 的矩阵，连存都存不下，更不用说求逆。<strong>共轭梯度法</strong>可以绕开它。</p>
   <p><strong>共轭梯度在做什么。</strong>解 \(Fx=g\) 等价于最小化二次函数 \(q(x)=\tfrac12x^{\top}Fx-g^{\top}x\)：它的梯度是 \(Fx-g\)，令它为 0 就是这个方程。共轭梯度法沿着一组“共轭”方向 \(p_0,p_1,\dots\)（满足 \(p_i^{\top}Fp_j=0\)，\(i\ne j\)）一个一个走，每个方向上走到最低点，而且不会破坏前面已经走好的方向。所以在精确计算下，\(N\) 维问题最多 \(N\) 步就解完；实际中迭代 10 步左右就足够准确。每一步只用到 \(F\) 乘一个向量：</p>
@@ -740,6 +763,14 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
     <figcaption><span class="fn">图 4</span>回溯线搜索。完整步长和半步长都跑出了信赖域，四分之一步长同时满足 KL 约束和改进条件，被接受。</figcaption>
   </figure>
 
+  <p><strong>为什么不用二分搜索？</strong>回溯其实就是二分搜索的前半段。设可接受的步长是 \([0,t^{*}]\)，\(t^{*}\) 是刚好满足两个条件的边界。二分分两段：先一路缩小 \(1,\tfrac12,\tfrac14,\dots\)，找到第一个通过的点，把 \(t^{*}\) 夹在 \((t,2t)\) 之间；再在这个区间里反复取中点，逼近 \(t^{*}\)。回溯只做第一段，找到第一个通过的点就停下。第二段不值得做：</p>
+  <ul>
+    <li><strong>收益有上限。</strong>回溯接受的步长满足 \(\alpha t^{*}&lt;t\le t^{*}\)：\(\alpha=0.5\) 时最多少一半。常见实现里 \(\alpha\) 取得更大，OpenAI 的 Spinning Up 默认 0.8、最多试 10 次，最多少 20%。例如 \(t^{*}=0.37\)：依次试 \(1,\,0.5,\,0.25\)，第 3 次通过，得到 0.25，是 \(t^{*}\) 的 68%；再继续二分，要试 0.375（不行）、0.3125、0.344、0.359，多花 4 次，步长只多 44%。</li>
+    <li><strong>每次试探都很贵。</strong>每试一次，都要用新参数把整批样本前向算一遍，才能得到 KL 和替代优势。</li>
+    <li><strong>边界本身是模糊的。</strong>\(\delta\) 是手调的，KL 和目标都是样本估计，换一批数据 \(t^{*}\) 就会动。把一个模糊的边界逼到小数点后几位，没有意义。</li>
+  </ul>
+  <p>真正的旋钮是 \(\alpha\)：越接近 1，网格越密，越贴近边界，但试探次数越多。只有试探很便宜时（比如只算一个标量），二分才划算。</p>
+
   <h3><span class="sn">5.5</span>改进三：改进检查</h3>
   <p>上图里的第二个条件就是改进检查。TRPO 不假设这一步一定提高了替代优势 \(L\)，而是真的算一遍：用旧策略的样本和重要性采样重新评估 \(L\)，确认它大于 0 才接受。这会多花一点时间，但因为推导里用了太多近似，验证一下是值得的。</p>
   <p>把共轭梯度算出的方向交给线搜索。每次尝试都列出真实 KL 和替代优势，满足两个条件后才接受这一步。</p>
@@ -761,6 +792,22 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
     </ol>
   </div>
 
+  <h3><span class="sn">5.6</span>实际中拿不到精确值</h3>
+  <p>上面的式子看起来都是精确的，实际算法里每个量都只是估计。TRPO 的每个环节，都在补偿其中一种误差：</p>
+  <div class="tbl"><table>
+    <thead><tr><th>式子里的量</th><th>实际拿到的</th><th>后果</th><th>常见对策</th></tr></thead>
+    <tbody>
+      <tr><td>策略梯度 \(g\)</td><td>有限样本的平均；优势还要靠 Critic 估计</td><td>方向有噪声；Critic 不准时还有系统偏差</td><td>基线、GAE 的 \(\lambda\)（拿偏差换方差）、更大的 batch</td></tr>
+      <tr><td>Fisher 矩阵 \(F\)</td><td>同一批样本算出的 \(\hat F\)，秩不超过样本数，通常远小于参数个数</td><td>奇异，不能直接求逆</td><td>加阻尼 \(\hat F+\lambda I\)，共轭梯度不显式求逆</td></tr>
+      <tr><td>\(F^{-1}g\)</td><td>共轭梯度只迭代十来步</td><td>方向只是近似</td><td>只用 \(Fp\) 乘积，不求逆</td></tr>
+      <tr><td>KL \(\le\delta\)</td><td>二阶近似，且只在采到的状态上估计</td><td>步子一大，真实 KL 可能超预算，目标也可能没升</td><td>线搜索和改进检查：用真实的 KL 和目标检验，不合格就缩步</td></tr>
+    </tbody>
+  </table></div>
+  <p>其中 \(F\) 这一行有个值得细看的结果。设这批数据有 \(N\) 个样本，得分向量 \(s_i\)，优势 \(\hat A_i\)。把 \(s_i^{\top}\) 排成 \(N\times n\) 的矩阵 \(S\)，优势排成向量 \(\hat A\)，则 \(\hat g=S^{\top}\hat A/N\)，\(\hat F=S^{\top}S/N\)，而</p>
+  \[(\hat F+\lambda I)^{-1}\hat g=\operatorname{argmin}_{\Delta}\Big[\tfrac1N\lVert S\Delta-\hat A\rVert^{2}+\lambda\lVert\Delta\rVert^{2}\Big]\]
+  <p>右边是岭回归（对右边求梯度并令它为零，就得到左边的方程）：以得分向量为特征，去拟合优势。所以带阻尼的自然梯度，就是对优势做的一次带正则的线性回归。\(N&lt;n\) 时 \(\hat F\) 的秩只有 \(N\)，\(\lambda\to0\) 的极限是最小范数插值：每个样本的优势都被精确拟合，噪声也被拟合了进去。例如 20 个参数、8 个样本，\(\hat F\) 的秩是 8，\(\lambda\to0\) 时拟合残差约为 \(10^{-15}\)。阻尼因此不只是数值上的小补丁，它是回归里防过拟合的正则项。</p>
+  <p>理论的保证也有同样的命运：它们往往只在理想情形成立。5.2 里看到，按理论系数算出的步子太小，实际的 TRPO 改用手调的 \(\delta\)，单调改进的保证就不再严格成立。常见的设计模式是：便宜的近似负责提议，较贵但更准的量负责验证，线搜索和改进检查就是这样。</p>
+
   <p class="next"><span class="lab">留下的问题</span><span>TRPO 稳定可靠，但它仍然很重：即使用了共轭梯度，大网络的 Fisher 矩阵依然难以处理；二阶优化慢，而且没法直接用 Adam 这类一阶优化器；实现和调试都很复杂。能不能只用一阶梯度，也把新旧策略“拴”在一起？<a href="#ch6">→ 第 6 章</a></span></p>
 </section>
 
@@ -781,6 +828,7 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
   <h3><span class="sn">6.1</span>PPO-Penalty：自动调节的 KL 惩罚</h3>
   <p>TRPO 的理论推导里本来就有一个乘在 KL 上的惩罚项，只是理论系数太保守，更新小得可怜。PPO-Penalty 保留惩罚的形式，但让系数 \(\beta\) 自动调整。为简洁起见，记概率比为 \(r_t(\theta)=\pi_\theta(a_t\mid s_t)/\pi_{\theta_{\text{old}}}(a_t\mid s_t)\)：</p>
   \[L^{\mathrm{KLPEN}}(\theta)=\mathbb{E}_t\Big[r_t(\theta)\,\hat A_t-\beta\,D_{\mathrm{KL}}\big(\pi_{\theta_{\text{old}}}(\cdot\mid s_t)\,\Vert\,\pi_\theta(\cdot\mid s_t)\big)\Big]\]
+  <p>其中 \(\mathbb{E}_t[\cdot]\) 表示对这批样本里的每个时间步 \(t\) 取平均：\(\mathbb{E}_t[x_t]\approx\frac1N\sum_t x_t\)。一个 \(t\) 对应一个样本，即状态 \(s_t\) 和在那里采到的动作 \(a_t\)；\(r_t\)、\(\hat A_t\) 和那个状态上的 KL，都是第 \(t\) 个样本上的值。大模型里，一个 \(t\) 就是一个 token 位置，\(t\) 遍历这批所有回答的所有 token。用样本平均代替真期望，是因为状态和动作本来就是旧策略采出来的，访问得越多的状态，在样本里出现得越多（见 5.2）。\(t\) 不是训练的迭代轮数：一批数据的更新期间，\(\theta_{\text{old}}\) 是固定的。按 token 平均，还是先按每条回答平均、再对回答取平均，不同实现并不一样，会影响长、短回答在损失里的权重。</p>
   <p>难点在于很难找到一个对所有问题都合适的 \(\beta\)，甚至同一个问题在训练的不同阶段，合适的值也会变。\(\beta\) 太大，更新太小，重蹈 TRPO 的覆辙；\(\beta\) 太小，又会过冲。PPO 的办法是设一个<strong>目标散度</strong> \(d_{\text{targ}}\)，每次更新后检查实际的 KL \(d\)：</p>
   <ul>
     <li>\(d&gt;1.5\,d_{\text{targ}}\)：步子太大，下次把 \(\beta\) 加倍，惩罚加重；</li>
@@ -799,6 +847,15 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
     </ol>
   </div>
   <p>我们牺牲了一些数学上的严谨，换来了简单：不再需要 Fisher 矩阵，可以直接用 Adam。</p>
+
+  <div class="call intu"><span class="ct">KL 怎么算，惩罚项在做什么</span>
+    <p><strong>KL 怎么算。</strong>每个状态上，\(\pi_{\theta_{\text{old}}}(\cdot\mid s_t)\) 和 \(\pi_\theta(\cdot\mid s_t)\) 都是网络直接输出的分布，\(D_{\mathrm{KL}}=\sum_a\pi_{\text{old}}(a\mid s_t)\log\frac{\pi_{\text{old}}(a\mid s_t)}{\pi_\theta(a\mid s_t)}\) 只是对动作的一个有限求和，是 \(\theta\) 的可微函数，反向传播直接得到梯度，再对这批状态取平均。采样时把旧策略的概率存下来即可。动作空间小，或者策略是高斯时，直接精确求和或用闭式。词表很大（大模型每个位置有 \(10^{5}\) 个动作）时，只存被采样 token 的 \(\log\pi_{\text{old}}\)，改用单样本估计量：设 \(a\sim\pi_{\text{old}}\)，\(r=\pi_\theta(a\mid s)/\pi_{\text{old}}(a\mid s)\)，</p>
+    \[k_1=-\log r,\qquad k_3=(r-1)-\log r\]
+    <p>两者的期望都等于 KL，\(k_3\) 还恒 \(\ge0\)。样本来自 \(\pi_{\text{old}}\)，不依赖 \(\theta\)，所以对估计量直接求导，期望就是真 KL 的梯度。</p>
+    <p><strong>惩罚项在做什么。</strong>第一次更新时 \(\theta=\theta_{\text{old}}\)，KL 为 0，它的梯度也是 0（KL 在最小点），Adam 看到的只有策略梯度 \(g\)。小批量更新几步，\(\theta\) 偏离 \(\theta_{\text{old}}\) 一段 \(\Delta\) 之后，惩罚项的梯度约等于 \(\beta F\Delta\)，像一根把 \(\theta\) 拉回来的弹簧（4.5 讲过 KL 的二阶近似是 \(\tfrac12\Delta^{\top}F\Delta\)；对一个 6 动作的 softmax 策略验证过，\(\Delta\) 越小越准，相对误差依次是 18%、3.9%、0.85%）。于是在 \(\theta_{\text{old}}\) 附近，要最大化的目标近似为</p>
+    \[g^{\top}\Delta-\tfrac\beta2\,\Delta^{\top}F\,\Delta\]
+    <p>它的最大点是 \(\Delta=F^{-1}g/\beta\)，正是自然梯度方向（和 4.6 的条件 \(g-\lambda F\Delta=0\) 是同一个式子，\(\beta\) 对应 \(\lambda\)）。\(F\) 从来没有被算出来，它通过“偏离之后 KL 的梯度”隐式地起作用。但 Adam 只走有限的几步，到不了这个最优点：一阶方法在 \(F\) 的小特征值方向上收敛很慢（见《<a href="../matrix-calculus/">矩阵微分</a>》6.4 节），Adam 逐参数的缩放也会改变路径。所以 PPO-Penalty 的实际更新大致介于普通梯度和自然梯度之间，再靠后面检查 \(d\) 并调节 \(\beta\) 的两步，把实际 KL 拉回目标值附近。顺带一提，Adam 用梯度平方的滑动平均做逐参数缩放，常被类比成对 Fisher 对角线的粗略近似，但只是类比：它用的是小批量梯度，不是逐样本的得分，也不是真正的 \(F\)。</p>
+  </div>
 
   <h3><span class="sn">6.2</span>PPO-Clip：直接裁掉越界的收益</h3>
   <p>PPO-Clip 更进一步，连 KL 都不算了。与其费心调惩罚系数，不如直接限制概率比能带来的收益：</p>
