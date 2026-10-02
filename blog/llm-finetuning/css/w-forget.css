@@ -1,0 +1,39 @@
+﻿/* 继承文章图版；这里仅调整遗忘实验。 */
+#w-forget .w-ctrl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem 1.3rem; }
+#w-forget .w-ctrl label { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 .5rem; }
+#w-forget .w-ctrl label span { grid-column: 1 / -1; white-space: normal; }
+#w-forget input[type=range] { width: 100%; min-height: 44px; margin: 0; }
+#w-forget .w-ctrl output { min-width: 5.5rem; text-align: right; }
+#w-forget .seg { grid-column: 1 / -1; }
+#w-forget .seg button { min-height: 44px; }
+#w-forget .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+#w-forget .stats > span:last-child { grid-column: 1 / -1; }
+#w-forget .stats > span:first-child b { color: var(--clay-deep); }
+#w-forget .stats .d b { color: var(--ink); }
+#w-forget .legend .ln::before { background: var(--card); border: 1.6px solid var(--ink); border-radius: 50%; }
+#w-forget .fg-note { font-size: .78rem; line-height: 1.7; color: var(--ink-2); margin: .3rem 0 .8rem; }
+#w-forget .kc { overflow: hidden; }
+#w-forget .fg-principal { fill: none; stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 5; opacity: .28; }
+#w-forget .fg-solution { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 7 5; }
+#w-forget .fg-natural { fill: none; stroke: var(--ink); stroke-width: 2.7; stroke-dasharray: 2 5; }
+#w-forget .fg-ewc-path { fill: none; stroke: var(--ink); stroke-width: 1; }
+#w-forget .fg-kl { fill: var(--paper); stroke: var(--ink); stroke-width: 1.8; }
+#w-forget .fg-gd { fill: var(--amber-fill); stroke: var(--amber-fill); stroke-width: 1.8; }
+#w-forget .fg-moving { fill: white; }
+#w-forget .fg-diamond { fill: var(--ink); stroke: var(--paper); stroke-width: 1; }
+#w-forget .fg-orange { fill: var(--clay-deep); }
+#w-forget .fg-leader { stroke: var(--mute); stroke-width: .8; }
+#w-forget .fg-trade-line { fill: none; stroke: var(--ink); stroke-width: 1.6; }
+#w-forget .fg-unfilled { fill: none; }
+#w-forget .legend { color: var(--ink-2); }
+#w-forget .kc .tick { fill: var(--ink-2); font-size: 11px; }
+#w-forget .w-tag { font-size: 11px; }
+#w-forget #fg-trade { margin-top: .5rem; }
+@media (max-width: 580px) {
+  #w-forget .w-ctrl { grid-template-columns: minmax(0, 1fr); }
+  #w-forget .stats { gap: .6rem .7rem; }
+  #w-forget .stats b { font-size: .9rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #w-forget .seg button { transition: none; }
+}

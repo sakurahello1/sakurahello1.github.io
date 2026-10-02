@@ -1,0 +1,46 @@
+/* 三幅图共用纸面；窄屏按阅读顺序展开。 */
+#w-lora .lora-grid { display: grid; grid-template-columns: 1fr 1fr 1.65fr; gap: 1rem; align-items: center; margin-top: 1rem; }
+#w-lora .lora-pane { min-width: 0; margin: 0; }
+#w-lora canvas { display: block; width: 100%; aspect-ratio: 1; image-rendering: pixelated; }
+#w-lora .lora-pane figcaption { display: block; margin-top: .5rem; text-align: center; font-size: .75rem; text-transform: none; letter-spacing: .03em; }
+#w-lora .lora-note { margin: .7rem 0 0; font-size: .78rem; line-height: 1.8; color: var(--ink-2); }
+#w-lora #lora-scale { text-align: center; font-variant-numeric: tabular-nums; }
+#w-lora #lora-status { min-height: 1.8em; color: var(--clay-deep); }
+#w-lora #lora-spec { min-width: 0; overflow: visible; }
+#w-lora .lora-gridline { stroke: var(--line-2); stroke-width: 1; }
+#w-lora .lora-kept { fill: var(--amber-fill); }
+#w-lora .lora-dropped { fill: var(--ink); opacity: .28; }
+#w-lora .lora-cut { stroke: var(--clay-deep); stroke-width: 1.4; stroke-dasharray: 4 3; }
+#w-lora .lora-axis-label { font-size: 11px; fill: var(--ink); }
+#w-lora .kc .tick { fill: var(--ink-2); }
+#w-lora .legend, #w-lora .lora-pane figcaption { color: var(--ink-2); }
+#w-lora .legend .ln::before { opacity: .28; }
+#w-lora .w-ctrl label { display: grid; grid-template-columns: auto minmax(65px, 1fr) 3rem; flex-basis: 18rem; }
+#w-lora .w-ctrl input { width: 100%; min-width: 0; min-height: 44px; }
+#w-lora .w-ctrl output { min-width: 0; }
+#w-lora #lora-p-label[aria-disabled="true"] { opacity: .55; }
+#w-lora .seg { width: 100%; gap: .5rem; }
+#w-lora .seg button { min-height: 44px; }
+#w-lora button:focus-visible, #w-lora input:focus-visible { outline: 2px solid var(--clay-deep); outline-offset: 3px; }
+#w-lora .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+#w-lora .stats > span:last-child { grid-column: span 2; }
+#w-lora .stats b { font-size: .9rem; overflow-wrap: anywhere; }
+#w-lora .stats small { display: block; font-size: .75rem; font-weight: 400; margin-top: .25rem; }
+#w-lora .w-read { overflow-wrap: anywhere; }
+@media (max-width: 800px) {
+  #w-lora .lora-grid { grid-template-columns: 1fr 1fr; }
+  #w-lora #lora-spec { grid-column: 1 / -1; }
+  #w-lora .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #w-lora .stats > span:last-child { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+  #w-lora .lora-grid { grid-template-columns: minmax(0, 1fr); gap: 1.2rem; }
+  #w-lora .lora-pane { width: 100%; max-width: 240px; justify-self: center; }
+  #w-lora .stats { grid-template-columns: minmax(0, 1fr); }
+  #w-lora .w-ctrl label { grid-template-columns: minmax(0, 1fr) 3rem; gap: .2rem .5rem; }
+  #w-lora .w-ctrl label > span { grid-column: 1 / -1; }
+  #w-lora .seg button { width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #w-lora .seg button { transition: none; }
+}

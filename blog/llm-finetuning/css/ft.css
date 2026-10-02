@@ -1,0 +1,166 @@
+/* 矩阵微分 · 本文自己的组件：公式、各个实例的图与读数。
+   配色约定：梯度（−∇f 与下降路径）陶土橙，牛顿方向与等高线墨色，白色只给被拖动、正在走的点。 */
+
+/* 公式：KaTeX 预渲染 */
+.katex { font-size: 1.08em; text-transform: none; letter-spacing: normal; }
+.eq { position: relative; overflow-x: auto; overflow-y: hidden; margin: 1.15em 0; padding: .2rem 0; scrollbar-width: thin; }
+.eq .katex-display { margin: 0; }
+.tbl { position: relative; }        /* KaTeX 隐藏的 MathML 是绝对定位的，让滚动容器裁住它 */
+.nobr { white-space: nowrap; }
+.mi { font-family: KaTeX_Math, serif; font-style: italic; text-transform: none; letter-spacing: normal; }
+.mn { font-family: KaTeX_Main, serif; text-transform: none; letter-spacing: normal; }
+.stage .cap .katex, .art .tag .katex { font-size: 1.15em; }
+.widget .seg button .katex { font-size: 1.02em; }
+.w-ctrl label .katex { font-size: 1.1em; }
+th .katex { font-size: 1.25em; }
+.stats .katex { font-size: 1.05em; }
+sup.mn, sub { font-size: .72em; line-height: 0; }
+
+/* 图例：色块只给图例项本身，别套进公式内部 */
+.legend > span span::before { content: none; }
+.legend .lg::before { background: var(--amber-fill); }
+.legend .ln::before { background: var(--ink); }
+.legend .lm::before { background: linear-gradient(var(--ink), var(--ink)) center / 100% 1.6px no-repeat, linear-gradient(var(--ink), var(--ink)) center / 1.6px 100% no-repeat; border-radius: 0; }
+.legend { margin-bottom: .2rem; }
+
+/* 读数：标签在上，数字在下 */
+.widget .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.2rem, 1fr)); gap: .6rem 1.2rem; margin-top: .9rem; align-items: end; }
+.widget .stats > span { display: block; min-width: 0; line-height: 1.55; }
+.widget .stats b { display: block; margin-top: .1rem; font-size: 1.02rem; color: var(--ink); font-weight: 700; }
+.widget .stats .d b { color: var(--clay-deep); }
+#w-grad .stats > span:first-child b { white-space: nowrap; }
+#w-quad .stats { grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr)); }
+@media (max-width: 520px) {
+  #w-grad .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem .8rem; }
+  #w-grad .stats > span:first-child { grid-column: 1 / -1; }
+  #w-grad .stats b { font-size: .95rem; }
+}
+.w-ctrl .seg button { white-space: normal; text-align: left; }
+.w-read .katex { font-size: 1.05em; }
+
+/* 第 6 章：一元牛顿法。青色是当前点的二次模型，墨色是牛顿法（曲线、点、路径），橙色是梯度下降 */
+#w-newton .legend .lq::before { background: var(--teal); }
+#w-newton .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kc .fc { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.kc .fm { fill: none; stroke: var(--teal); stroke-width: 1.8; stroke-linecap: round; }
+.kc .vl { stroke: var(--teal); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.kc .vx { fill: var(--teal); stroke: #FAF8F3; stroke-width: 1.2; stroke-linejoin: round; }
+.kc .nd { fill: var(--ink); }
+.kc .gdc { fill: #FAF8F3; stroke: var(--amber); stroke-width: 2; }
+@media (max-width: 520px) {
+  #w-newton .stats { gap: .6rem .6rem; }
+  #w-newton .stats b { font-size: .9rem; }
+}
+
+/* 实例 3：检验表 */
+#chk-table { margin: 0; }
+#chk-table td.num { font-family: var(--mono); font-size: .8rem; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+#chk-table th:nth-child(n+2) { text-align: right; }
+#chk-table td.bad { color: var(--red); font-weight: 700; }
+#chk-table td:first-child { white-space: nowrap; }
+#chk-table sub { font-size: .75em; }
+.widget .tbl { margin: .9rem 0 0; }
+.w-read.no { background: var(--red-soft); color: var(--ink); }
+.w-read.no b { color: var(--red); }
+#chk-new { background: transparent; cursor: pointer; padding: .42rem 1rem; }
+#chk-new:hover { background: var(--ink); color: var(--paper-hi); }
+@media (max-width: 520px) {
+  #chk-table th, #chk-table td { padding-inline: .4rem; }
+  #chk-table td.num { font-size: .72rem; }
+}
+
+/* 第 8 章：roofline 与激活重计算。图例沿用 .lg .ln .lm 三个类名，色块按各自图里的画法重新给 */
+#w-roof .legend .lg::before { background: var(--amber-fill); border: 1.5px solid var(--amber); border-radius: 50%; }
+#w-roof .legend .ln::before { background: var(--ink); border-radius: 1px; transform: rotate(45deg) scale(.82); }
+#w-roof .legend .lm::before { background: linear-gradient(var(--ink), var(--ink)) center / 100% 2.4px no-repeat; border-radius: 0; }
+#w-ckpt .legend .lg::before { background: var(--amber-fill); }
+#w-ckpt .legend .ln::before { background: rgba(20, 20, 19, .55); }
+#w-ckpt .legend .lm::before { background: rgba(20, 20, 19, .2); border-radius: 3px; }
+#w-ckpt .stats { grid-template-columns: .8fr .8fr 1.5fr .9fr; }
+#ckpt-best { background: transparent; cursor: pointer; padding: .42rem 1rem; }
+#ckpt-best:hover { background: var(--ink); color: var(--paper-hi); }
+@media (max-width: 640px) {
+  #w-roof .stats, #w-ckpt .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem .8rem; }
+}
+@media (max-width: 460px) {
+  #w-ckpt .stats > span:nth-child(3) { grid-column: 1 / -1; }
+}
+
+/* 图：颜色全走变量 */
+.kc { display: block; width: 100%; overflow: visible; }
+.kc text { font-family: var(--sans); font-size: 12px; fill: var(--ink-2); }
+.kc .tick { font-family: var(--mono); font-size: 10.5px; letter-spacing: .04em; fill: var(--muted); }
+.kc .plate { fill: var(--paper); stroke: var(--line-2); stroke-width: 1; }
+.kc .grid { stroke: var(--rule); stroke-width: 1; fill: none; }
+.kc .axis { stroke: rgba(20, 20, 19, .42); stroke-width: 1.2; }
+.kc .ct { fill: none; stroke: rgba(20, 20, 19, .28); stroke-width: 1; }
+.kc .ct.on { stroke: var(--ink); stroke-width: 1.6; }
+.kc .xmark { stroke: var(--ink); stroke-width: 1.8; stroke-linecap: round; fill: none; }
+.kc .ag, .kc .agd { fill: var(--amber-fill); stroke: var(--amber-fill); stroke-width: 1; stroke-linejoin: round; }
+.kc .au { fill: #FAF8F3; stroke: var(--ink); stroke-width: 1.5; stroke-linejoin: round; }
+.kc .an { fill: var(--ink); stroke: var(--ink); stroke-width: .6; stroke-linejoin: round; }
+.kc .wedge { fill: rgba(217, 119, 87, .24); stroke: var(--amber); stroke-width: 1.2; stroke-linejoin: round; }
+.kc .nline { stroke: var(--ink); stroke-width: 1.2; stroke-dasharray: 4 4; opacity: .5; }
+.kc .gdp { fill: none; stroke: var(--amber-fill); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; }
+.kc .gdd { fill: var(--amber-fill); }
+.kc .gdn { fill: #FAF8F3; stroke: var(--ink); stroke-width: 1.6; }
+.kc .pt-h { fill: #FAF8F3; stroke: var(--ink); stroke-width: 2; pointer-events: none; }
+.kc .pt-h.foc { stroke: var(--amber); stroke-width: 3.2; }
+.kc .hit { fill: transparent; cursor: grab; touch-action: none; }
+.kc .hit.drag { cursor: grabbing; }
+.kc .hit:focus-visible { outline: none; }
+.kc .lab { paint-order: stroke; stroke: var(--paper); stroke-width: 3.5px; stroke-linejoin: round; fill: var(--ink); }
+.kc .lab.g { fill: var(--amber); }
+.kc .lab.a { font-family: var(--mono); font-size: 11px; fill: var(--amber); }
+.kc .mi-t { font-family: KaTeX_Math, serif; font-style: italic; font-size: 14px; }
+.kc .mn-t { font-family: KaTeX_Main, serif; font-size: 14px; }
+.kc .tick .mi-t, .kc .tick .mn-t { font-size: 12.5px; }
+
+/* roofline：屋顶线与填充用墨色；GEMM 是陶土橙的圆，逐元素链是墨色的菱形 */
+.kc .lab.m { fill: var(--ink-2); font-size: 11.5px; }
+.kc .lab.pt { font-weight: 700; }
+.kc .r-fill { fill: rgba(20, 20, 19, .05); }
+.kc .r-line { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.kc .r-ridge { stroke: rgba(20, 20, 19, .3); stroke-width: 1; stroke-dasharray: 1 3; }
+.kc .r-knee { fill: var(--paper); stroke: var(--ink); stroke-width: 1.6; }
+.kc .r-drop { stroke: rgba(20, 20, 19, .42); stroke-width: 1; stroke-dasharray: 3 3; }
+.kc .r-pg { fill: var(--amber-fill); stroke: var(--amber); stroke-width: 1.6; }
+.kc .r-pe { fill: var(--ink); stroke: var(--ink); stroke-width: 1; stroke-linejoin: round; }
+
+/* 激活重计算：前向陶土橙、重算墨色 55%、反向淡墨；小图里空心圈是最低点，实心陶土橙点是当前的 k */
+.kc .k-fwd { fill: var(--amber-fill); }
+.kc .k-rec { fill: rgba(20, 20, 19, .55); }
+.kc .k-bwd { fill: rgba(20, 20, 19, .2); }
+.kc .k-line { fill: none; stroke: var(--ink); stroke-width: 1.2; stroke-linejoin: round; }
+.kc .k-peak { stroke: var(--ink); stroke-width: 1.3; stroke-dasharray: 5 4; }
+.kc .k-full { stroke: rgba(20, 20, 19, .4); stroke-width: 1.1; stroke-dasharray: 2 4; }
+.kc .k-br { stroke-width: 4; stroke-linecap: round; }
+.kc .k-br.f { stroke: var(--amber-fill); }
+.kc .k-br.b { stroke: rgba(20, 20, 19, .4); }
+.kc .k-curve { fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linejoin: round; }
+.kc .k-min { stroke: rgba(20, 20, 19, .45); stroke-width: 1; stroke-dasharray: 3 3; }
+.kc .k-minc { fill: var(--paper); stroke: var(--ink); stroke-width: 1.6; }
+.kc .k-cur { fill: var(--amber-fill); stroke: var(--ink); stroke-width: 1.8; }
+.kc .k-note { fill: var(--ink-2); }
+
+/* 本文自己的小组件：结论标记、导读问题列表 */
+.lbl { display: inline-block; font-family: var(--mono); font-size: .62rem; letter-spacing: .14em; text-transform: uppercase; padding: .1rem .55rem; border-radius: 99px; margin-right: .5rem; vertical-align: .1em; border: 1.3px solid var(--ink); color: var(--ink); white-space: nowrap; }
+.lbl.thm { background: var(--ink); color: var(--paper-hi); }
+.lbl.obs { background: var(--clay-soft); border-color: var(--clay); color: var(--clay-deep); }
+.lbl.con { background: transparent; border-style: dashed; }
+.qlist { counter-reset: q; list-style: none; padding: 0; margin: 1.4rem 0; }
+.qlist li { counter-increment: q; position: relative; padding: .2rem 0 .2rem 2.6rem; margin: .5rem 0; line-height: 1.85; }
+.qlist li::before { content: counter(q, decimal-leading-zero); position: absolute; left: 0; top: .28rem; font-family: var(--mono); font-size: .72rem; letter-spacing: .1em; color: var(--clay-deep); }
+.qlist li strong { display: block; }
+
+/* 部分扉页 */
+.partbar { margin: 6rem 0 1rem; padding: 2.2rem 1.6rem 2rem; background: var(--ink); color: var(--paper-hi); border-radius: 20px; }
+.partbar .mono { display: flex; align-items: center; gap: .5rem; margin: 0 0 .7rem; font-family: var(--mono); font-size: .68rem; letter-spacing: .16em; text-transform: uppercase; color: var(--clay); }
+.partbar .mono::before { content: ""; width: 8px; height: 8px; background: var(--clay); }
+.partbar h2 { margin: 0 0 .8rem; font-weight: 900; font-size: clamp(1.8rem, 4vw, 2.6rem); line-height: 1.2; color: #fff; }
+.partbar p:not(.mono) { margin: 0; max-width: 38em; line-height: 1.85; color: #D6D1C6; }
+
+/* 参考文献：分组但编号连续 */
+#refs { counter-reset: rf; }
+#refs .refs { counter-reset: none; margin-top: .4rem; }
+#refs h3 { margin-top: 2.2rem; }

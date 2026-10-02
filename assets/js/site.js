@@ -441,6 +441,40 @@
       ctx.fillStyle = CREAM; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
       ctx.fillText('κ = ' + kap.toFixed(1), W * 0.94, H * 0.12);
     },
+    ft: function (ctx, W, H, t) {          // 欧氏最近与 KL 最近；读数为两处旧任务损失
+      ctx.clearRect(0, 0, W, H); ctx.save();
+      var kap = Math.exp(Math.log(8) + Math.log(2) * Math.sin(t * 0.25)), a = 0.4 + 0.08 * t;
+      var cs = Math.cos(a), sn = Math.sin(a), nx = Math.cos(-0.35), ny = Math.sin(-0.35), c = 1.6;
+      var v1 = nx * cs + ny * sn, v2 = -nx * sn + ny * cs, den = v1 * v1 / kap + v2 * v2;
+      var ex = c * nx, ey = c * ny, kx = c * (cs * v1 / kap - sn * v2) / den, ky = c * (sn * v1 / kap + cs * v2) / den;
+      var le = c * c / 2 * (kap * v1 * v1 + v2 * v2), lk = c * c / (2 * den);
+      var cx = W * 0.64, cy = H * 0.55;
+      var s = Math.min(W * 0.29 / Math.max(2.4, Math.abs(kx)), H * 0.32 / Math.max(2.4, Math.abs(ky)));
+      // 5 秒一轮；t = 6 秒处于保持段。左下角留给页面的 FT。
+      var u = (t + 2.4) % 5, p = Math.max(0, Math.min(1, (u - 0.4) / 2.1)); p = p * p * (3 - 2 * p);
+      var fade = Math.min(1, u / 0.25) * (u > 4.5 ? (5 - u) / 0.5 : 1);
+      function line(x, y, xx, yy) { ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(xx, yy); ctx.stroke(); }
+      function ellipse(loss) { var r = Math.sqrt(2 * loss) * s; ctx.beginPath(); ctx.ellipse(cx, cy, r / Math.sqrt(kap), r, a, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.save(); ctx.beginPath(); ctx.rect(W * 0.29, H * 0.22, W * 0.69, H * 0.73); ctx.clip();
+      ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(237,232,222,.25)';
+      for (var i = 1; i <= 12; i++) ellipse(Math.pow(i * 0.65, 2) / 2);
+      ctx.setLineDash([4, 5]); ctx.strokeStyle = 'rgba(237,232,222,.65)';
+      var far = Math.hypot(W, H), EX = cx + s * ex, EY = cy + s * ey;
+      line(EX + ny * far, EY - nx * far, EX - ny * far, EY + nx * far); ctx.setLineDash([]);
+      ctx.save(); ctx.globalAlpha = fade;
+      if (p === 1) { ctx.lineWidth = 1.2; ellipse(le); ctx.strokeStyle = CLAY; ellipse(lk); }
+      ctx.strokeStyle = CLAY; ctx.lineWidth = 1.5; ctx.setLineDash([4, 4]);
+      line(cx, cy, cx + s * kx * p, cy + s * ky * p); ctx.setLineDash([]);
+      ctx.strokeStyle = CREAM; line(cx, cy, cx + s * ex * p, cy + s * ey * p);
+      ctx.strokeStyle = CLAY; ctx.beginPath(); ctx.arc(cx + s * kx * p, cy + s * ky * p, Math.max(5, H * 0.022), 0, 7); ctx.stroke();
+      ctx.fillStyle = WHITE; ctx.beginPath(); ctx.arc(cx + s * ex * p, cy + s * ey * p, Math.max(3.5, H * 0.015), 0, 7); ctx.fill();
+      ctx.restore(); ctx.strokeStyle = CREAM; ctx.lineWidth = 1.5;
+      line(cx - 5, cy, cx + 5, cy); line(cx, cy - 5, cx, cy + 5); ctx.restore();
+      ctx.font = '500 ' + Math.max(9, Math.min(H * 0.05, W * 0.03)) + 'px "JetBrains Mono", monospace';
+      ctx.fillStyle = CREAM; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText('ΔLA ' + le.toFixed(2) + ' / ' + lk.toFixed(2), W * 0.94, H * 0.12);
+      ctx.restore();
+    },
     harness: function (ctx, W, H, t) {     // agent 闭环：上下文 → 模型 → 校验 → 工具 → 回到上下文；每跑完一圈，中间的验收亮一次
       ctx.clearRect(0, 0, W, H);
       var cx = W * 0.72, cy = H * 0.42, R = Math.min(W * 0.17, H * 0.27), lap = 4, u = (t % lap) / lap;

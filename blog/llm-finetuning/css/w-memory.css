@@ -1,0 +1,47 @@
+/* 显存账：三种颜色与共用容量轴。 */
+#w-memory .legend .lm::before { background: var(--ghost-2); border-radius: 2px; }
+#w-memory .w-title { line-height: 1.65; }
+#w-memory .w-tag { font-size: 11px; }
+#w-memory .mem-note { font-size: .78rem; line-height: 1.8; color: var(--ink-2); margin: .65rem 0; }
+#w-memory #mem-svg { overflow: hidden; }
+#w-memory .mem-axis { font-family: var(--mono); font-size: 11px; fill: var(--ink-2); }
+#w-memory .mem-ref { stroke: var(--line-2); stroke-width: 1; stroke-dasharray: 3 4; }
+#w-memory .mem-label { fill: var(--ink); font-size: 12px; paint-order: stroke; stroke: var(--card); stroke-width: 4px; }
+#w-memory .mem-value { font-family: var(--mono); font-size: 12px; fill: var(--ink); paint-order: stroke; stroke: var(--card); stroke-width: 4px; }
+#w-memory .mem-selected .mem-label, #w-memory .mem-selected .mem-value { fill: var(--clay-deep); font-weight: 700; }
+#w-memory .mem-part-0 { fill: var(--amber-fill); }
+#w-memory .mem-part-1 { fill: var(--ink); }
+#w-memory .mem-part-2 { fill: var(--ghost-2); }
+#w-memory .mem-selection { stroke: var(--clay-deep); stroke-width: 1.5; }
+#w-memory .mem-arrow { fill: none; stroke: var(--card); stroke-width: 2; }
+#w-memory .w-ctrl { gap: .9rem; }
+#w-memory .w-ctrl > .seg { flex-basis: 100%; gap: .4rem; }
+#w-memory .seg button { min-height: 44px; padding: .4rem .75rem; }
+#w-memory #mem-targets { flex-basis: 100%; gap: .4rem; }
+#w-memory [hidden] { display: none !important; }
+#w-memory .w-ctrl label { display: grid; grid-template-columns: 8.5em minmax(60px, 1fr) 4.4em; flex-basis: 100%; gap: .5rem; }
+#w-memory .w-ctrl input { width: 100%; min-height: 44px; margin: 0; }
+#w-memory .w-ctrl input:disabled { opacity: .4; }
+#w-memory .w-ctrl output { min-width: 0; text-align: right; }
+#w-memory button:focus-visible, #w-memory input:focus-visible, #w-memory summary:focus-visible, #w-memory a:focus-visible { outline: 2px solid var(--clay-deep); outline-offset: 3px; }
+#w-memory .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; }
+#w-memory .stats b { font-size: .98rem; overflow-wrap: anywhere; }
+#w-memory #mem-details { border-top: 1px solid var(--line-2); margin-top: 1rem; font-size: .8rem; line-height: 1.85; }
+#w-memory #mem-details summary { cursor: pointer; padding: .8rem 0; min-height: 44px; color: var(--ink); font-weight: 700; }
+#w-memory #mem-ledger { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .4rem .6rem; margin: .5rem 0 1.2rem; }
+#w-memory #mem-ledger dt, #w-memory #mem-ledger dd { margin: 0; border-bottom: 1px solid var(--line-2); }
+#w-memory #mem-ledger dd { font-family: var(--mono); text-align: right; }
+#w-memory #mem-formulas p { margin: 0 0 1em; overflow-wrap: anywhere; }
+#w-memory a { color: var(--clay-deep); text-decoration: underline; text-underline-offset: .18em; }
+@media (max-width: 520px) {
+  #w-memory { padding-inline: .85rem; }
+  #w-memory .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #w-memory .stats .d { grid-column: 1 / -1; }
+  #w-memory .w-ctrl label { grid-template-columns: 7.8em minmax(40px, 1fr) 3.6em; gap: .35rem; font-size: .8rem; }
+  #w-memory #mem-model button { flex: 1 0 43%; }
+  #w-memory #mem-method button { flex: 1 0 90%; }
+  #w-memory .mem-label, #w-memory .mem-value { font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #w-memory *, #w-memory *::before, #w-memory *::after { animation: none !important; transition: none !important; }
+}

@@ -1,0 +1,35 @@
+﻿#w-intrinsic .int-curve { fill: none; stroke-width: 2; stroke-linejoin: round; }
+#w-intrinsic .int-pre { stroke: var(--amber-fill); fill: var(--amber-fill); }
+#w-intrinsic .int-random { stroke: var(--ink); fill: var(--ink); }
+#w-intrinsic .int-curve, #w-intrinsic .int-threshold, #w-intrinsic .int-mark { fill: none; }
+#w-intrinsic .int-threshold { stroke-dasharray: 5 5; stroke-width: 1; }
+#w-intrinsic .int-mark { stroke-width: 2; }
+#w-intrinsic .int-dlabel { stroke: none; font-size: 11px; }
+#w-intrinsic .int-pre.int-dlabel { fill: var(--clay-deep); }
+#w-intrinsic .int-dot { stroke-width: 1.5; }
+#w-intrinsic .int-picked { fill: var(--card); stroke-width: 3; }
+#w-intrinsic .int-chance { stroke: var(--mute); stroke-dasharray: 3 4; }
+#w-intrinsic .int-selection { stroke: var(--line-2); stroke-width: 5; }
+#w-intrinsic .int-note { font-size: 11px; fill: var(--ink-2); }
+#w-intrinsic #int-status { min-height: 2.8em; margin: .5rem 0; font-size: .78rem; color: var(--ink-2); line-height: 1.5; }
+#w-intrinsic .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#w-intrinsic .stats b { font-size: .96rem; font-variant-numeric: tabular-nums; }
+#w-intrinsic .w-ctrl label { flex-basis: 100%; }
+#w-intrinsic .w-ctrl input { min-width: 0; width: 100%; min-height: 44px; }
+#w-intrinsic .seg button { min-height: 44px; }
+#w-intrinsic #int-method { margin-top: 1rem; font-size: .8rem; }
+#w-intrinsic #int-method summary { cursor: pointer; font-weight: 700; }
+#w-intrinsic #int-method p { margin: .6rem 0 0; overflow-wrap: anywhere; }
+#w-intrinsic .tick { letter-spacing: 0; font-size: 10px; fill: var(--ink-2); }
+@media (max-width: 420px) {
+  #w-intrinsic { padding-inline: .75rem; }
+  #w-intrinsic .stats { gap: .7rem; }
+  #w-intrinsic .stats > span { font-size: .72rem; }
+  #w-intrinsic .stats b { font-size: .81rem; }
+  #w-intrinsic .w-ctrl label { gap: .4rem; }
+  #w-intrinsic .w-ctrl label span { font-size: .78rem; }
+  #w-intrinsic .w-ctrl output { min-width: 2rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #w-intrinsic *, #w-intrinsic *::before { transition: none; animation: none; }
+}
