@@ -909,6 +909,8 @@ returns = A + V[:T]        <span class="c"># Critic 的回归目标</span></code
       <li class="in">\(\theta_{\text{old}}\leftarrow\theta\)</li>
     </ol>
   </div>
+  <p><strong>Critic 不是先训练好再用的。</strong>它和策略在同一个循环里一起学。第 1 轮时 Critic 是随机初始化的（大模型里常从奖励模型初始化，再接一个新的价值头），算出的优势几乎是噪声。之后每一轮：用当前的 Critic 和 GAE 算出优势与回报目标 \(V^{\text{targ}}_t=\hat A_t+V_{\text{old}}(s_t)\)；\(L(\theta)\) 里的 \(c_1\big(V_\theta-V^{\text{targ}}\big)^{2}\) 项，在更新策略的同时把 Critic 往这些目标上回归；下一轮就用更新后的 Critic。不能先单独训好再冻结，因为 Critic 估计的是<strong>当前策略</strong>的价值，策略一变，它就过时了。这是一个交替改进的结构：Critic 评估策略，策略按评估去改进。</p>
+  <p>早期 Critic 不准，不会让训练崩掉：回归目标里有真实奖励，每一轮都有真实数据在纠正它；\(\lambda\) 接近 1 时，GAE 的优势主要来自真实奖励，Critic 更多是在当基线；而只依赖状态的基线不改变梯度的期望，只影响方差。有的实现会在开始更新策略之前，先单独训练 Critic 几轮（verl 里有 <code>trainer.critic_warmup</code> 这个选项），免得新初始化的价值头把策略推向错误的方向。这是工程技巧，不是算法必需。后面的 GRPO 则干脆去掉 Critic，用同一问题的一组回答互相做基线。</p>
   <p>OpenAI 后来发布的 PPO2 是面向 GPU 和向量化环境的实现，数学基础不变，但加了不少工程细节：优势在每个小批量内做归一化、价值函数也做裁剪、梯度范数裁剪、学习率退火等。这些细节对最终效果影响很大，Huang 等人的博客《The 37 Implementation Details of PPO》专门做了整理。</p>
   <p>让几种方法回到同一条山路，每轮都采十六个回合。观察三个种子的回报范围，再对照每次更新的 KL，看稳定性与采样效率怎样一起变化。</p>
   <div class="lab" data-lab="classic" id="lab-race"></div>
