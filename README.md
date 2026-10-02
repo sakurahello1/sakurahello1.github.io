@@ -11,7 +11,7 @@
 | `blog/index.html` | 博客目录 |
 | `blog/rl-post-training/`、`blog/agent-theory/` | 两篇长文。RL 长文直接在这里编辑（`css/`、`js/art.js` 是代码绘制的图版）；Agent 手册由源码 `G:\homepage-blog-src\agent-theory` 的 `python build.py --site <本目录>` 生成，不要手改输出 |
 | `blog/kl-divergence/` | 《KL 散度从哪里来》，RL 长文 4.3 节的 “KL 散度” 链到这里，博客目录里列在“重要概念与数学理论”一栏（`#concepts`）。`index.html` 由 `G:\homepage-blog-src\kl-divergence` 的 `node build.cjs --site <本目录>` 生成（预渲染 KaTeX，并复制 `css/katex.css` 与 `fonts/`），不要手改；`css/page.css`、`css/kl.css`、`js/` 直接在这里编辑 |
-| `blog/matrix-calculus/` | 《矩阵微分：给学过数学分析的人》，RL 长文第 4 章开头链到这里，也列在“重要概念与数学理论”一栏。`index.html` 由 `G:\homepage-blog-src\matrix-calculus` 的 `node build.cjs --site <本目录>` 生成（预渲染 KaTeX，复制 `css/katex.css` 与 `fonts/`），不要手改；`css/page.css`、`css/mc.css`、`js/`（页面行为、三个实例、首屏图版）直接在这里编辑 |
+| `blog/matrix-calculus/` | 《矩阵微分：给学过数学分析的人》，RL 长文第 4 章开头链到这里，也列在“重要概念与数学理论”一栏。`index.html` 由 `G:\homepage-blog-src\matrix-calculus` 的 `node build.cjs --site <本目录>` 生成（预渲染 KaTeX，复制 `css/katex.css` 与 `fonts/`），不要手改；`css/page.css`、`css/mc.css`、`js/`（页面行为、六个实例、首屏图版）直接在这里编辑 |
 | `404.html` | GitHub Pages 的未找到页面 |
 | `assets/css/core.css` | 所有页面共享：字体、色板、纸面、HUD、字体样张式大标题、深色块、页脚 |
 | `assets/css/site.css`、`assets/js/site.js` | 首页与项目页的版块样式；site.js 负责标题效果、HUD、画布动画，并以 `window.Reel` 向博客提供绘图工具 |

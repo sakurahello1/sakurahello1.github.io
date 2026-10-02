@@ -1,5 +1,5 @@
 /* 矩阵微分 · 实例与目录
-   五个实例：方向导数（梯度与差商）、负梯度与牛顿方向（二次函数）、梯度检验（有限差分），
+   六个实例：方向导数（梯度与差商）、负梯度与牛顿方向（二次函数）、一元牛顿法（二次模型与它的顶点）、梯度检验（有限差分），
    以及第 8 章的 roofline（算力 / 访存）与激活重计算（显存 / 时间）。
    所有显示的数字都由页面当场算出：公式值用公式，差商用真的去算 f，roofline 与显存峰值按各自的模型逐项计算。 */
 (function () {
@@ -408,6 +408,159 @@
     $('quad-go').addEventListener('click', go);
     $('quad-reset').addEventListener('click', reset);
     model();
+    build();
+    var lastW = innerWidth;
+    window.addEventListener('resize', function () { if (innerWidth !== lastW) { lastW = innerWidth; build(); } });
+    if (document.fonts) document.fonts.ready.then(build);
+  })();
+
+  /* ---------------- 第 6 章：一元牛顿法，二次模型与它的顶点 ---------------- */
+  (function () {
+    var svg = $('nt-svg'); if (!svg) return;
+    var FN = {
+      exp: {
+        f: function (x) { return Math.exp(x) - 2 * x; }, d1: function (x) { return Math.exp(x) - 2; }, d2: function (x) { return Math.exp(x); },
+        xl: -1, xh: 2.2, yl: 0, yh: 5, x0: 0, mins: [Math.LN2]
+      },
+      sqrt: {
+        f: function (x) { return Math.sqrt(1 + x * x); }, d1: function (x) { return x / Math.sqrt(1 + x * x); }, d2: function (x) { return Math.pow(1 + x * x, -1.5); },
+        xl: -3, xh: 3, yl: 0.5, yh: 3.5, x0: 1.1, mins: [0]
+      },
+      quartic: {
+        f: function (x) { return x * x * x * x / 4 - x * x / 2; }, d1: function (x) { return x * x * x - x; }, d2: function (x) { return 3 * x * x - 1; },
+        xl: -1.8, xh: 1.8, yl: -0.6, yh: 1.1, x0: 0.3, mins: [-1, 1]
+      }
+    };
+    var BIG = 1e4, MAXK = 60;
+    var F = FN.exp, x0 = F.x0, k = 0, N = [x0], G = [x0], el = {}, geo = {};
+    var eS = $('nt-eta'), readEl = $('nt-read');
+
+    function last(a) { return a[a.length - 1]; }
+    function alive(v) { return isFinite(v) && Math.abs(v) < BIG; }
+    function num(v, d) { return !isFinite(v) ? '∞' : Math.abs(v) >= BIG || (v !== 0 && Math.abs(v) < 1e-3) ? sci(v).replace(/^-/, '−') : fmt(v, d); }
+    function stepN(x) { var h = F.d2(x); return alive(x) && Math.abs(h) > 1e-12 ? x - F.d1(x) / h : x; }
+    function stepG(x) { return alive(x) ? x - +eS.value * F.d1(x) : x; }
+    function compute() {   // 从 x0 起各走 k 步；发散之后停在原地
+      N = [x0]; G = [x0];
+      for (var i = 0; i < k; i++) { N.push(stepN(last(N))); G.push(stepG(last(G))); }
+    }
+
+    function build() {
+      var w = width(svg), ml = 30, mr = 14, mt = 14, mb = 64, pw = w - ml - mr, ph = Math.round(clamp(pw * 0.46, 170, 250)), bottom = mt + ph, i, j;   // 图框下面留一条放两支箭头的带子
+      frame(svg, bottom + mb);
+      geo = {
+        w: w, ml: ml, mt: mt, pw: pw, ph: ph, bottom: bottom,
+        X: function (x) { return ml + (x - F.xl) / (F.xh - F.xl) * pw; },
+        Y: function (y) { return bottom - (y - F.yl) / (F.yh - F.yl) * ph; },
+        ux: function (px) { return F.xl + (px - ml) / pw * (F.xh - F.xl); }
+      };
+      S(S(S(svg, 'defs', {}), 'clipPath', { id: 'ntclip' }), 'rect', { x: ml, y: mt, width: pw, height: ph });
+      S(svg, 'rect', { class: 'plate', x: ml, y: mt, width: pw, height: ph });
+      for (i = Math.ceil(F.xl); i <= F.xh; i++) {
+        if (i) S(svg, 'line', { class: 'grid', x1: geo.X(i), x2: geo.X(i), y1: mt, y2: bottom });
+        S(svg, 'text', { class: 'tick', x: geo.X(i), y: bottom + 16, 'text-anchor': 'middle' }, fmt(i, 0));
+      }
+      if (F.yl < 0 && F.yh > 0) S(svg, 'line', { class: 'axis', x1: ml, x2: ml + pw, y1: geo.Y(0), y2: geo.Y(0) });
+      S(svg, 'line', { class: 'axis', x1: geo.X(0), x2: geo.X(0), y1: mt, y2: bottom });
+      mtext(svg, { class: 'lab', x: ml + pw - 4, y: bottom - 6, 'text-anchor': 'end' }, 'x');
+      mtext(svg, { class: 'lab', x: ml + 8, y: mt + 16 }, 'f(x)');
+      var d = '';
+      for (j = 0; j <= 200; j++) { var xx = F.xl + (F.xh - F.xl) * j / 200; d += (j ? 'L' : 'M') + geo.X(xx).toFixed(1) + ' ' + geo.Y(F.f(xx)).toFixed(1); }
+      S(svg, 'path', { class: 'fc', d: d, 'clip-path': 'url(#ntclip)' });
+      F.mins.forEach(function (m) { cross(svg, geo.X(m), geo.Y(F.f(m)), 5); });
+      el.dyn = S(svg, 'g', {});
+      var vis = S(svg, 'circle', { class: 'pt-h', r: 7.5 });
+      var hit = S(svg, 'circle', { class: 'hit', r: 19, tabindex: 0, role: 'slider', 'aria-label': '起点 x₀ 的位置，方向键移动', 'aria-valuemin': F.xl, 'aria-valuemax': F.xh });
+      el.vis = vis; el.hit = hit;
+      function drag(e) { var r = svg.getBoundingClientRect(); setStart(geo.ux((e.clientX - r.left) * (geo.w / r.width))); }
+      hit.addEventListener('pointerdown', function (e) { e.preventDefault(); hit.setPointerCapture(e.pointerId); hit.focus({ preventScroll: true }); hit.classList.add('drag'); drag(e); });
+      hit.addEventListener('pointermove', function (e) { if (hit.hasPointerCapture(e.pointerId)) drag(e); });
+      hit.addEventListener('pointerup', function () { hit.classList.remove('drag'); });
+      hit.addEventListener('pointercancel', function () { hit.classList.remove('drag'); });
+      hit.addEventListener('focus', function () { vis.classList.add('foc'); });
+      hit.addEventListener('blur', function () { vis.classList.remove('foc'); });
+      hit.addEventListener('keydown', function (e) {
+        var st = (F.xh - F.xl) / 80 * (e.shiftKey ? 5 : 1), dx = { ArrowLeft: -st, ArrowRight: st, ArrowDown: -st, ArrowUp: st }[e.key];
+        if (dx) { e.preventDefault(); setStart(x0 + dx); }
+      });
+      draw();
+    }
+
+    function setStart(x) { x0 = clamp(x, F.xl + 0.02, F.xh - 0.02); k = 0; compute(); draw(); }
+
+    function draw() {
+      var X = geo.X, Y = geo.Y, xc = last(N), xg = last(G), n = N.length - 1, i;
+      var f0 = F.f(xc), g0 = F.d1(xc), h0 = F.d2(xc), inView = xc >= F.xl && xc <= F.xh, flat = Math.abs(h0) < 1e-12;
+      while (el.dyn.firstChild) el.dyn.removeChild(el.dyn.firstChild);
+      var dyn = el.dyn, py = Y(clamp(F.f(x0), F.yl, F.yh));
+      el.vis.setAttribute('cx', X(x0)); el.vis.setAttribute('cy', py); el.hit.setAttribute('cx', X(x0)); el.hit.setAttribute('cy', py);
+      el.hit.setAttribute('aria-valuenow', fmt(x0, 2)); el.hit.setAttribute('aria-valuetext', 'x₀ = ' + fmt(x0, 2));
+
+      var xv = flat ? xc : xc - g0 / h0;   // 二次模型的顶点（h = 0 时模型是直线，没有顶点）
+      if (inView) {
+        var d = '', m;
+        for (i = 0; i <= 160; i++) { var xx = F.xl + (F.xh - F.xl) * i / 160, dx = xx - xc; m = f0 + g0 * dx + 0.5 * h0 * dx * dx; d += (i ? 'L' : 'M') + X(xx).toFixed(1) + ' ' + Y(m).toFixed(1); }
+        S(dyn, 'path', { class: 'fm', d: d, 'clip-path': 'url(#ntclip)' });
+        if (!flat && xv >= F.xl && xv <= F.xh) {
+          var yv = clamp(f0 - g0 * g0 / (2 * h0), F.yl, F.yh);
+          S(dyn, 'line', { class: 'vl', x1: X(xv), x2: X(xv), y1: Y(yv), y2: geo.bottom });
+          var qx = X(xv), qy = Y(yv);
+          S(dyn, 'path', { class: 'vx', d: 'M' + pt(qx, qy - 6.5) + 'L' + pt(qx + 6.5, qy) + 'L' + pt(qx, qy + 6.5) + 'L' + pt(qx - 6.5, qy) + 'Z' });
+        }
+        // 图框下面的两支箭头：牛顿这一步（墨色，从当前点到顶点），梯度下降这一步（橙色）
+        var xe = clamp(xv, F.xl, F.xh);
+        S(dyn, 'polygon', { class: 'an', points: arrowPts(X(xc), geo.bottom + 36, X(xe), geo.bottom + 36, 1.1, 5, 9) });
+      }
+      if (xg >= F.xl && xg <= F.xh) {
+        var xge = clamp(xg - +eS.value * F.d1(xg), F.xl, F.xh);
+        S(dyn, 'polygon', { class: 'agd', points: arrowPts(X(xg), geo.bottom + 52, X(xge), geo.bottom + 52, 1.6, 6, 10) });
+      }
+      S(dyn, 'text', { class: 'tick', x: geo.ml + geo.pw - 8, y: geo.mt + 16, 'text-anchor': 'end' }, '第 ' + n + ' 步');
+      function dot(x, cls, r) {
+        if (x < F.xl || x > F.xh) return;
+        var y = F.f(x); if (y < F.yl || y > F.yh) return;
+        S(dyn, 'circle', { class: cls, cx: X(x), cy: Y(y), r: r });
+      }
+      for (i = 1; i <= n; i++) { dot(G[i], 'gdd', 3.2); dot(N[i], 'nd', 3.2); }
+      if (n > 0) { dot(xg, 'gdc', 5.6); dot(xc, 'gdn', 5.6); }
+
+      // 读数
+      var eta = +eS.value;
+      setText($('nt-eta-out'), fmt(eta, 2));
+      setText($('nt-nx'), alive(xc) ? num(xc, 6) : '已发散');
+      setText($('nt-ng'), alive(xc) ? num(g0, 3) : '—');
+      setText($('nt-ns'), flat || !alive(xc) ? '—' : num(1 / h0, 2));
+      setText($('nt-gx'), alive(xg) ? num(xg, 6) : '已发散');
+      setText($('nt-gg'), alive(xg) ? num(F.d1(xg), 3) : '—');
+      setText($('nt-gs'), fmt(eta, 2));
+
+      // 一句话说明现在发生了什么
+      var msg, bad = false, jump = flat ? 0 : Math.abs(g0 / h0);
+      if (!alive(xc)) { msg = '牛顿法跳出了画面：f″ 太小，步长 1/f″ 大得离谱，二次模型在这里完全不可信。'; bad = true; }
+      else if (n > 0 && Math.abs(g0) < 1e-6 && h0 < 0) { msg = '牛顿法在 f″ = ' + num(h0, 2) + ' < 0 的地方停住了：f′ ≈ 0，但这是 f 的局部最大点。牛顿法找的是 f′ = 0，不分最小和最大。'; bad = true; }
+      else if (n > 0 && Math.abs(g0) < 1e-9) { msg = '牛顿法已经收敛：f′ ≈ ' + num(g0, 1) + '。梯度下降此时 f′ = ' + num(F.d1(xg), 2) + '。'; }
+      else if (h0 < 0) { msg = '这里 f″ = ' + num(h0, 2) + ' < 0：二次模型开口向下，菱形是它的最大点。牛顿法下一步会往 f 的最大点走，而不是最小点。'; bad = true; }
+      else if (jump > F.xh - F.xl) { msg = '下一步要走 ' + num(jump, 2) + '，比整张图还宽：f″ = ' + num(h0, 3) + ' 太小，二次模型太平，顶点在很远的地方。'; bad = true; }
+      else if (n === 0) { msg = '拖动白点选起点，再点“走 1 步”。青色抛物线是白点处的二次模型，菱形是它的顶点，牛顿法下一步就跳到那里；橙色箭头是梯度下降要走的一步。'; }
+      else { msg = '第 ' + n + ' 步：牛顿法走了 ' + fmt(N[n] - N[n - 1], 4) + '（模型的顶点），梯度下降走了 ' + fmt(G[n] - G[n - 1], 4) + '（η·f′）。'; }
+      setText(readEl, msg);
+      readEl.classList.toggle('no', bad);
+    }
+
+    function stepBy(m) {
+      k = Math.min(MAXK, k + m); compute(); draw();
+    }
+    function pick(f) {
+      F = FN[f]; x0 = F.x0; k = 0; compute();
+      $$('#nt-fn button').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-f') === f ? 'true' : 'false'); });
+      build();
+    }
+    $$('#nt-fn button').forEach(function (b) { b.addEventListener('click', function () { pick(b.getAttribute('data-f')); }); });
+    eS.addEventListener('input', function () { compute(); draw(); });
+    $('nt-step').addEventListener('click', function () { stepBy(1); });
+    $('nt-step5').addEventListener('click', function () { stepBy(5); });
+    $('nt-reset').addEventListener('click', function () { x0 = F.x0; k = 0; compute(); draw(); });
+    compute();
     build();
     var lastW = innerWidth;
     window.addEventListener('resize', function () { if (innerWidth !== lastW) { lastW = innerWidth; build(); } });

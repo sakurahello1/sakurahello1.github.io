@@ -1,4 +1,4 @@
-/* 矩阵微分 · 本文自己的组件：公式、三个实例的图与读数。
+/* 矩阵微分 · 本文自己的组件：公式、各个实例的图与读数。
    配色约定：梯度（−∇f 与下降路径）陶土橙，牛顿方向与等高线墨色，白色只给被拖动、正在走的点。 */
 
 /* 公式：KaTeX 预渲染 */
@@ -37,6 +37,20 @@ sup.mn, sub { font-size: .72em; line-height: 0; }
 }
 .w-ctrl .seg button { white-space: normal; text-align: left; }
 .w-read .katex { font-size: 1.05em; }
+
+/* 第 6 章：一元牛顿法。青色是当前点的二次模型，墨色是牛顿法（曲线、点、路径），橙色是梯度下降 */
+#w-newton .legend .lq::before { background: var(--teal); }
+#w-newton .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.kc .fc { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.kc .fm { fill: none; stroke: var(--teal); stroke-width: 1.8; stroke-linecap: round; }
+.kc .vl { stroke: var(--teal); stroke-width: 1.2; stroke-dasharray: 3 3; }
+.kc .vx { fill: var(--teal); stroke: #FAF8F3; stroke-width: 1.2; stroke-linejoin: round; }
+.kc .nd { fill: var(--ink); }
+.kc .gdc { fill: #FAF8F3; stroke: var(--amber); stroke-width: 2; }
+@media (max-width: 520px) {
+  #w-newton .stats { gap: .6rem .6rem; }
+  #w-newton .stats b { font-size: .9rem; }
+}
 
 /* 实例 3：检验表 */
 #chk-table { margin: 0; }
