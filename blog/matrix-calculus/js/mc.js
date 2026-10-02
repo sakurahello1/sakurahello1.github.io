@@ -1,6 +1,7 @@
 /* 矩阵微分 · 实例与目录
-   三个实例：方向导数（梯度与差商）、负梯度与牛顿方向（二次函数）、梯度检验（有限差分）。
-   所有显示的数字都由页面当场算出：公式值用公式，差商用真的去算 f。 */
+   五个实例：方向导数（梯度与差商）、负梯度与牛顿方向（二次函数）、梯度检验（有限差分），
+   以及第 8 章的 roofline（算力 / 访存）与激活重计算（显存 / 时间）。
+   所有显示的数字都由页面当场算出：公式值用公式，差商用真的去算 f，roofline 与显存峰值按各自的模型逐项计算。 */
 (function () {
   'use strict';
   var NS = 'http://www.w3.org/2000/svg';
@@ -411,6 +412,337 @@
     var lastW = innerWidth;
     window.addEventListener('resize', function () { if (innerWidth !== lastW) { lastW = innerWidth; build(); } });
     if (document.fonts) document.fonts.ready.then(build);
+  })();
+
+  /* ---------------- 第 8 章两张图的公共小工具 ---------------- */
+  function pt(x, y) { return x.toFixed(1) + ' ' + y.toFixed(1); }
+  // 标签里 {k} 这样的单个字母用 KaTeX 斜体（和公式一致），其余照常，汉字留在页面字体里
+  function ltext(parent, attrs, str) {
+    var t = S(parent, 'text', attrs);
+    str.split(/\{([A-Za-z])\}/).forEach(function (s, i) { if (s) S(t, 'tspan', i % 2 ? { class: 'mi-t' } : {}, s); });
+    return t;
+  }
+  // 标签宽度的估计：汉字一个字号宽，其余 0.6 个字号
+  function tw(str, size) {
+    var s = str.replace(/\{([A-Za-z])\}/g, '$1'), n = 0;
+    for (var i = 0; i < s.length; i++) n += s.charCodeAt(i) > 0x2e80 ? size : size * 0.6;
+    return n;
+  }
+  // 刻度步长：1、2、5 × 10ⁿ 里，刻度数不超过 maxTicks 的最小一个
+  function niceStep(range, maxTicks) {
+    for (var p = 1; ; p *= 10) for (var i = 0, m = [1, 2, 5]; i < 3; i++) if (range / (m[i] * p) <= maxTicks) return m[i] * p;
+  }
+
+  /* ---------------- 第 8 章：roofline ---------------- */
+  (function () {
+    var svg = $('roof-svg'); if (!svg) return;
+    // A100 80GB SXM 的标称值：FP16/BF16 稠密张量算力、HBM 带宽；每个元素 2 字节
+    var PEAK = 312e12, BW = 2.039e12, EB = 2, RIDGE = PEAK / BW;
+    var XL = -1, XH = 4, YL = -1, YH = 3;   // 坐标范围取 log10：算术强度 0.1…10⁴ FLOP/B，算力 0.1…1000 TFLOP/s
+    var mS = $('roof-m'), kS = $('roof-k'), eS = $('roof-e');
+    var fused = false, R, shown = null, raf = 0, timer = 0;
+
+    function model() {
+      var M = Math.round(Math.pow(2, +mS.value)), K = Math.round(Math.pow(2, +kS.value)), e = +eS.value;
+      var flops = 2 * M * M * K, bytes = (M * K + K * M + M * M) * EB;   // (M×K)(K×N)，N = M；每个矩阵只碰一次
+      var ai = flops / bytes, att = Math.min(PEAK, BW * ai), t = flops / att;
+      // 逐元素链作用在 M×N 的输出上：每个算子读、写各一遍（共 2·EB 字节 / 元素），约 1 FLOP / 元素
+      var E = M * M, cf = e * E, cb = (fused ? 1 : e) * 2 * EB * E, ct = Math.max(cb / BW, cf / PEAK);
+      R = { M: M, K: K, e: e, ai: ai, att: att, t: t, cai: cf / cb, catt: cf / ct, ct: ct, ratio: ct / t };
+    }
+    function tstr(s) {   // 秒 → ns / µs / ms，三位有效数字
+      var v = s * 1e3, u = ' ms';
+      if (s < 1e-6) { v = s * 1e9; u = ' ns'; } else if (s < 1e-3) { v = s * 1e6; u = ' µs'; }
+      return (v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2)) + u;
+    }
+    function pstr(r) { var p = r * 100; return (p >= 10 ? p.toFixed(0) : p >= 0.05 ? p.toFixed(1) : '<0.1') + '%'; }
+
+    function draw() {
+      var w = width(svg), ml = 46, mr = 14, mt = 12, mb = 50, pw = w - ml - mr, ph = Math.round(clamp(pw * 0.62, 190, 300));
+      var bottom = mt + ph, right = ml + pw;
+      frame(svg, bottom + mb);
+      function X(v) { return ml + (Math.log10(clamp(v, 0.1, 1e4)) - XL) / (XH - XL) * pw; }
+      function Y(v) { return bottom - (Math.log10(clamp(v, 0.1, 1e3)) - YL) / (YH - YL) * ph; }
+      var i;
+      S(svg, 'rect', { class: 'plate', x: ml, y: mt, width: pw, height: ph });
+      var XT = ['0.1', '1', '10', '100', '1k', '10k'], YT = ['0.1', '1', '10', '100', '1000'];
+      for (i = 0; i < XT.length; i++) {
+        var gx = ml + i / (XT.length - 1) * pw;
+        if (i && i < XT.length - 1) S(svg, 'line', { class: 'grid', x1: gx, x2: gx, y1: mt, y2: bottom });
+        S(svg, 'text', { class: 'tick', x: gx, y: bottom + 17, 'text-anchor': 'middle' }, XT[i]);
+      }
+      for (i = 0; i < YT.length; i++) {
+        var gy = bottom - i / (YT.length - 1) * ph;
+        if (i && i < YT.length - 1) S(svg, 'line', { class: 'grid', x1: ml, x2: right, y1: gy, y2: gy });
+        S(svg, 'text', { class: 'tick', x: ml - 6, y: gy + 4, 'text-anchor': 'end' }, YT[i]);
+      }
+      S(svg, 'text', { x: right, y: bottom + 34, 'text-anchor': 'end' }, '算术强度（FLOP/字节）');
+      S(svg, 'text', { x: 14, y: mt + ph / 2, 'text-anchor': 'middle', transform: 'rotate(-90 14 ' + (mt + ph / 2) + ')' }, '可达算力（TFLOP/s）');
+
+      // 屋顶线：斜线 y = BW·x，到拐点后水平
+      var tf0 = BW / 1e12, xr = X(RIDGE), yr = Y(PEAK / 1e12), y0 = Y(tf0 * 0.1);
+      S(svg, 'path', { class: 'r-fill', d: 'M' + pt(ml, bottom) + 'V' + y0.toFixed(1) + 'L' + pt(xr, yr) + 'H' + right + 'V' + bottom + 'Z' });
+      S(svg, 'line', { class: 'r-ridge', x1: xr, x2: xr, y1: yr, y2: bottom });
+      S(svg, 'path', { class: 'r-line', d: 'M' + pt(ml, y0) + 'L' + pt(xr, yr) + 'H' + right });
+      S(svg, 'circle', { class: 'r-knee', cx: xr, cy: yr, r: 3.6 });
+
+      // 两个点
+      var gx0 = X(R.ai), gy0 = Y(R.att / 1e12), cx0 = X(shown.x), cy0 = Y(shown.y);
+      S(svg, 'line', { class: 'r-drop', x1: cx0, x2: cx0, y1: cy0, y2: bottom });
+      S(svg, 'line', { class: 'r-drop', x1: gx0, x2: gx0, y1: gy0, y2: bottom });
+      S(svg, 'path', { class: 'r-pe', d: 'M' + pt(cx0, cy0 - 7.5) + 'L' + pt(cx0 + 7.5, cy0) + 'L' + pt(cx0, cy0 + 7.5) + 'L' + pt(cx0 - 7.5, cy0) + 'Z' });
+      S(svg, 'circle', { class: 'r-pg', cx: gx0, cy: gy0, r: 6 });
+
+      // 标签：每个标签给几个候选位置，挑和其他东西（点、竖线、已放的标签、屋顶线、图框）撞得最少的
+      // 障碍 = [x0, y0, x1, y1, 撞上的代价]：点和拐点 10，虚线竖线 2
+      var obs = [[gx0 - 9, gy0 - 9, gx0 + 9, gy0 + 9, 10], [cx0 - 9, cy0 - 9, cx0 + 9, cy0 + 9, 10], [xr - 6, yr - 6, xr + 6, yr + 6, 10], [gx0 - 2, gy0, gx0 + 2, bottom, 2], [cx0 - 2, cy0, cx0 + 2, bottom, 2]];
+      var roofPts = [], j;
+      for (j = 0; j <= 60; j++) { var a = Math.pow(10, XL + (Math.log10(RIDGE) - XL) * j / 60); roofPts.push([X(a), Y(tf0 * a)]); }
+      for (j = 1; j <= 30; j++) roofPts.push([xr + (right - xr) * j / 30, yr]);
+      function rects(c, wd) {
+        var x0 = c.a === 'start' ? c.x : c.a === 'end' ? c.x - wd : c.x - wd / 2, out = [];
+        if (c.rot == null) return [[x0 - 2, c.y - 12, x0 + wd + 2, c.y + 4]];
+        var ca = Math.cos(c.rot), sa = Math.sin(c.rot);   // 斜着的标签：沿基线每 5px、离基线 0.5 / 4.5 / 8.5px 取一小块
+        for (var u = -wd / 2; u <= wd / 2; u += 5) for (var v = 0.5; v < 10; v += 4) { var px = c.x + u * ca - v * sa, py = c.y - u * sa - v * ca; out.push([px - 3.5, py - 3.5, px + 3.5, py + 3.5]); }
+        return out;
+      }
+      function cost(rs, onRoof) {
+        var c = 0;
+        rs.forEach(function (r) {
+          if (r[0] < ml + 2 || r[2] > right - 2 || r[1] < mt + 2 || r[3] > bottom - 2) c += 100;
+          obs.forEach(function (o) { if (r[0] < o[2] && r[2] > o[0] && r[1] < o[3] && r[3] > o[1]) c += o[4]; });
+          if (!onRoof) for (var q = 0; q < roofPts.length; q++) if (roofPts[q][0] > r[0] && roofPts[q][0] < r[2] && roofPts[q][1] > r[1] && roofPts[q][1] < r[3]) { c += 4; break; }
+        });
+        return c;
+      }
+      function put(str, cls, cands) {
+        var wd = tw(str, 12), best = null, bc = 1e9;
+        cands.forEach(function (c) { var rs = rects(c, wd), k = cost(rs, c.rot != null); if (k < bc) { bc = k; best = { c: c, rs: rs }; } });
+        var c = best.c, t = S(svg, 'text', { class: cls, x: c.x.toFixed(1), y: c.y.toFixed(1), 'text-anchor': c.a }, str);
+        if (c.rot != null) t.setAttribute('transform', 'rotate(' + (-c.rot * 180 / Math.PI).toFixed(1) + ' ' + c.x.toFixed(1) + ' ' + c.y.toFixed(1) + ')');
+        best.rs.forEach(function (r) { obs.push([r[0], r[1], r[2], r[3], 10]); });
+      }
+      function around(px, py, order) {
+        var D = { ur: ['start', 11, -6], ul: ['end', -11, -6], lr: ['start', 11, 16], ll: ['end', -11, 16], up: ['middle', 0, -14], dn: ['middle', 0, 24], r: ['start', 12, 4], l: ['end', -12, 4] };
+        return order.map(function (o) { return { a: D[o][0], x: px + D[o][1], y: py + D[o][2] }; });
+      }
+      // 顺序：先放两个点的标签（给屋顶线上惯常的位置留一点余地），再放峰值 / 拐点 / 斜率的标签
+      var TC = fmt(PEAK / 1e12, 0) + ' TFLOPS', TR = fmt(RIDGE, 0) + ' FLOP/B', xm = (xr + right) / 2;
+      var cc = [{ a: 'end', x: right - 6, y: yr - 9 }, { a: 'start', x: xr + 10, y: yr - 9 }, { a: 'end', x: right - 6, y: yr + 18 }, { a: 'start', x: xr + 10, y: yr + 18 }, { a: 'middle', x: xm, y: yr - 9 }, { a: 'middle', x: xm, y: yr + 18 }];
+      var rc = [{ a: 'end', x: xr - 9, y: yr - 9 }, { a: 'start', x: xr + 9, y: yr + 18 }, { a: 'start', x: xr + 8, y: bottom - 8 }, { a: 'end', x: xr - 9, y: bottom - 8 }];
+      var nb = obs.length;
+      rects(cc[0], tw(TC, 12)).concat(rects(rc[0], tw(TR, 12))).forEach(function (r) { obs.push([r[0], r[1], r[2], r[3], 3]); });
+      put('GEMM', 'lab g pt', around(gx0, gy0, ['ul', 'ur', 'll', 'lr', 'up', 'l', 'r', 'dn']));
+      put('逐元素链', 'lab pt', around(cx0, cy0, ['lr', 'll', 'ur', 'ul', 'dn', 'r', 'l', 'up']));
+      obs.splice(nb, 2);
+      put(TC, 'lab m', cc);
+      put(TR, 'lab m', rc);
+      // 斜线上的标签：贴着斜线，先试上方再试下方；强度从 3 附近开始往两边找
+      var sa = Math.atan2(ph / (YH - YL), pw / (XH - XL)), sl = [], as = [];
+      for (j = -9; j <= 20; j++) as.push(j / 10);
+      as.sort(function (p, q) { return Math.abs(p - 0.5) - Math.abs(q - 0.5); });
+      [8, -17].forEach(function (off) {
+        as.forEach(function (la) { var a = Math.pow(10, la); sl.push({ a: 'middle', x: X(a) - Math.sin(sa) * off, y: Y(tf0 * a) - Math.cos(sa) * off, rot: sa }); });
+      });
+      put('带宽 ' + fmt(tf0, 1) + ' TB/s', 'lab m', sl);
+    }
+
+    function cancel() { cancelAnimationFrame(raf); clearTimeout(timer); raf = timer = 0; }
+    function tween(to) {
+      var from = shown, t0 = performance.now(), D = 340;
+      function lerp(a, b, s) { return Math.exp(Math.log(a) + (Math.log(b) - Math.log(a)) * s); }
+      function step(now) {
+        var u = clamp((now - t0) / D, 0, 1), s = u * u * (3 - 2 * u);
+        shown = { x: lerp(from.x, to.x, s), y: lerp(from.y, to.y, s) };
+        draw();
+        if (u < 1) raf = requestAnimationFrame(step); else cancel();
+      }
+      raf = requestAnimationFrame(step);
+      timer = setTimeout(function () { cancel(); shown = to; draw(); }, D + 150);   // 页面在后台、rAF 停了也能落到终点
+    }
+    function update(animate) {
+      model();
+      var to = { x: R.cai, y: R.catt / 1e12 };
+      setText($('roof-m-out'), String(R.M));
+      setText($('roof-k-out'), String(R.K));
+      setText($('roof-e-out'), String(R.e));
+      setText($('roof-ai'), fmt(R.ai, 1) + ' FLOP/B');
+      setText($('roof-t'), tstr(R.t));
+      setText($('roof-et'), tstr(R.ct));
+      setText($('roof-ratio'), pstr(R.ratio));
+      cancel();
+      if (animate && !reduced && shown && (shown.x !== to.x || shown.y !== to.y)) { tween(to); return; }
+      shown = to;
+      draw();
+    }
+
+    [mS, kS, eS].forEach(function (s) { s.addEventListener('input', function () { update(false); }); });
+    $$('#roof-fuse button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        fused = btn.getAttribute('data-f') === '1';
+        $$('#roof-fuse button').forEach(function (o) { o.setAttribute('aria-pressed', o === btn ? 'true' : 'false'); });
+        update(true);
+      });
+    });
+    update(false);
+    var lastW = innerWidth;
+    window.addEventListener('resize', function () { if (innerWidth !== lastW) { lastW = innerWidth; draw(); } });
+    if (document.fonts) document.fonts.ready.then(draw);
+  })();
+
+  /* ---------------- 第 8 章：激活重计算的显存与时间 ---------------- */
+  (function () {
+    var svg = $('ckpt-svg'); if (!svg) return;
+    var GB = 2.87;   // GPT-3 175B 一层、一个序列的激活：sbh·114 字节 ≈ 2.87 GB
+    var lS = $('ckpt-l'), kS = $('ckpt-k'), unit = 1;
+
+    // 模型：前向一层 1 个时间单位，反向一层 2，重算一层 1；每层激活 1 个显存单位。k = 1 是每层都存、不重算。
+    function lens(L, k) { var a = [], n = Math.ceil(L / k); for (var j = 0; j < n; j++) a.push(Math.min(k, L - j * k)); return a; }
+    function peakOf(L, k) {   // 第 j 段（从 0 数）重算完时，显存是 j+1 个检查点加这一段的 len 层激活
+      if (k === 1) return L;
+      var p = 0;
+      lens(L, k).forEach(function (len, j) { p = Math.max(p, j + 1 + len); });
+      return p;
+    }
+    function bestK(L) {   // 峰值最低的 k；并列时取最靠近 √L 的
+      var mv = 1e9, b = 1, k, p;
+      for (k = 1; k <= L; k++) { p = peakOf(L, k); if (p < mv) { mv = p; b = k; } else if (p === mv && Math.abs(k - Math.sqrt(L)) < Math.abs(b - Math.sqrt(L))) b = k; }
+      return b;
+    }
+
+    function draw() {
+      var L = +lS.value, k = +kS.value, ls = lens(L, k), n = ls.length, peak = peakOf(L, k), T = (k === 1 ? 3 : 4) * L, i, j;
+      var w = width(svg), wide = w >= 640, ml = 46, mr = 18, pw = w - ml - mr, mt = 34, ph = Math.round(clamp(pw * 0.5, 180, 250)), b1 = mt + ph;
+      var ymax = Math.max(L, peak) * Math.max(1.08, 1 / (1 - 20 / ph));   // 顶上留出写“峰值”的位置
+      var ph2 = wide ? 104 : 92, iy = b1 + 66, ib = iy + ph2;
+      frame(svg, ib + 28);
+      function tx(t) { return ml + t / (4 * L) * pw; }   // 横轴固定到 4L，切换 k 时坐标不跳
+      function my(m) { return b1 - m / ymax * ph; }
+
+      // 主图：板面、网格、刻度
+      S(svg, 'rect', { class: 'plate', x: ml, y: mt, width: pw, height: ph });
+      var ys = niceStep(ymax, 5.5);
+      for (i = 0; i * ys <= ymax; i++) {
+        if (i) S(svg, 'line', { class: 'grid', x1: ml, x2: ml + pw, y1: my(i * ys), y2: my(i * ys) });
+        S(svg, 'text', { class: 'tick', x: ml - 6, y: my(i * ys) + 4, 'text-anchor': 'end' }, String(i * ys));
+      }
+      for (i = 0; i <= 4; i++) {
+        if (i && i < 4) S(svg, 'line', { class: 'grid', x1: tx(i * L), x2: tx(i * L), y1: mt, y2: b1 });
+        ltext(svg, { class: 'tick', x: tx(i * L), y: b1 + 16, 'text-anchor': 'middle' }, i === 0 ? '0' : i === 1 ? '{L}' : i + '{L}');
+      }
+      S(svg, 'text', { x: ml + pw, y: b1 + 34, 'text-anchor': 'end' }, '时间');
+      S(svg, 'text', { x: 14, y: mt + ph / 2, 'text-anchor': 'middle', transform: 'rotate(-90 14 ' + (mt + ph / 2) + ')' }, '显存（层激活）');
+
+      // 三个阶段：前向（每段开头存一个检查点，显存一格一格涨）、每段先重算、再反向（显存按层释放）
+      var F = 'M' + pt(tx(0), my(0)) + 'L' + pt(tx(0), my(1)), top = 'M' + pt(tx(0), my(1)), Rc = '', Bw = '', t = L;
+      for (i = 1; i < n; i++) {
+        var step = 'H' + tx(i * k).toFixed(1) + 'V' + my(i + 1).toFixed(1);
+        F += step; top += step;
+      }
+      F += 'H' + tx(L).toFixed(1) + 'V' + my(0).toFixed(1) + 'Z'; top += 'H' + tx(L).toFixed(1);
+      if (k === 1) {
+        Bw = 'M' + pt(tx(L), my(0)) + 'L' + pt(tx(L), my(L)) + 'L' + pt(tx(3 * L), my(0)) + 'Z';
+        top += 'L' + pt(tx(3 * L), my(0));
+      } else {
+        for (j = n - 1; j >= 0; j--) {
+          var len = ls[j], base = j + 1, t1 = t + len, t2 = t + 3 * len;
+          Rc += 'M' + pt(tx(t), my(0)) + 'L' + pt(tx(t), my(base)) + 'L' + pt(tx(t1), my(base + len)) + 'L' + pt(tx(t1), my(0)) + 'Z';
+          Bw += 'M' + pt(tx(t1), my(0)) + 'L' + pt(tx(t1), my(base + len)) + 'L' + pt(tx(t2), my(j)) + 'L' + pt(tx(t2), my(0)) + 'Z';
+          top += 'L' + pt(tx(t1), my(base + len)) + 'L' + pt(tx(t2), my(j));
+          t = t2;
+        }
+      }
+      S(svg, 'path', { class: 'k-fwd', d: F });
+      if (Rc) S(svg, 'path', { class: 'k-rec', d: Rc });
+      S(svg, 'path', { class: 'k-bwd', d: Bw });
+      S(svg, 'path', { class: 'k-line', d: top });
+
+      // 峰值线与“全存”线；单位选 GB 时在数字后面带上 GB
+      function gb(u) { return unit === 1 ? '' : '（' + (u * unit).toFixed(u * unit >= 100 ? 0 : 1) + ' GB）'; }
+      S(svg, 'line', { class: 'k-peak', x1: ml, x2: ml + pw, y1: my(peak), y2: my(peak) });
+      S(svg, 'text', { class: 'lab', x: ml + pw - 6, y: my(peak) - 5, 'text-anchor': 'end' }, '峰值 ' + peak + gb(peak));
+      if (peak !== L) {
+        S(svg, 'line', { class: 'k-full', x1: ml, x2: ml + pw, y1: my(L), y2: my(L) });
+        S(svg, 'text', { class: 'lab m', x: ml + 6, y: my(L) + (L > peak ? -5 : 14), 'text-anchor': 'start' }, '全存 ' + L + gb(L));
+      }
+
+      // 阶段标注：板面上方一条色带加文字
+      function bracket(a, b, label, cls) {
+        S(svg, 'line', { class: 'k-br ' + cls, x1: tx(a) + 1, x2: tx(b) - 1, y1: mt - 8, y2: mt - 8 });
+        S(svg, 'text', { x: (tx(a) + tx(b)) / 2, y: mt - 14, 'text-anchor': 'middle' }, label);
+      }
+      bracket(0, L, '前向', 'f');
+      bracket(L, T, k === 1 ? '反向' : '重算 + 反向', 'b');
+
+      // 小图：峰值随 k 的变化（k = 1…L，每个 k 都按上面的模型算）
+      var ipw = wide ? Math.round(pw * 0.56) : pw, ix0 = ml + pw - ipw, pad = 8, curve = [], pmax = 0, kk;
+      for (kk = 1; kk <= L; kk++) { curve.push(peakOf(L, kk)); pmax = Math.max(pmax, curve[kk - 1]); }
+      var ymax2 = pmax * 1.1, kmin = bestK(L), ys2 = niceStep(ymax2, 3), xs2 = niceStep(L, 5);
+      function ix(q) { return ix0 + pad + (q - 1) / (L - 1) * (ipw - 2 * pad); }
+      function iv(p) { return ib - p / ymax2 * ph2; }
+      ltext(svg, { x: ix0, y: iy - 9 }, '显存峰值随 {k} 的变化');
+      S(svg, 'rect', { class: 'plate', x: ix0, y: iy, width: ipw, height: ph2 });
+      for (i = 0; i * ys2 <= ymax2; i++) {
+        if (i) S(svg, 'line', { class: 'grid', x1: ix0, x2: ix0 + ipw, y1: iv(i * ys2), y2: iv(i * ys2) });
+        S(svg, 'text', { class: 'tick', x: ix0 - 6, y: iv(i * ys2) + 4, 'text-anchor': 'end' }, String(i * ys2));
+      }
+      S(svg, 'text', { class: 'tick', x: ix(1), y: ib + 16, 'text-anchor': 'middle' }, '1');
+      for (i = xs2; i <= L; i += xs2) {
+        S(svg, 'line', { class: 'grid', x1: ix(i), x2: ix(i), y1: iy, y2: ib });
+        S(svg, 'text', { class: 'tick', x: ix(i), y: ib + 16, 'text-anchor': 'middle' }, String(i));
+      }
+      ltext(svg, { x: ix0 + ipw + 6, y: ib + 4 }, '{k}');
+      S(svg, 'path', { class: 'k-curve', d: curve.map(function (p, q) { return (q ? 'L' : 'M') + pt(ix(q + 1), iv(p)); }).join('') });
+      S(svg, 'line', { class: 'k-min', x1: ix(kmin), x2: ix(kmin), y1: iy, y2: iv(curve[kmin - 1]) });
+      S(svg, 'circle', { class: 'k-minc', cx: ix(kmin), cy: iv(curve[kmin - 1]), r: 4 });
+      ltext(svg, { class: 'lab', x: ix(kmin) + 6, y: iy + 14, 'text-anchor': 'start' }, '最低点 {k}≈√{L}');
+      S(svg, 'circle', { class: 'k-cur', cx: ix(k), cy: iv(peak), r: 5 });
+
+      // 宽屏时小图左边写一下当前的分法
+      if (wide) {
+        var last = ls[n - 1], lines = k === 1 ? ['每层的激活都存着，', '不重算，反向直接用'] : [
+          '每 ' + k + ' 层存一个检查点，共 ' + n + ' 段',
+          last === k ? n + ' 段，每段 ' + k + ' 层' : (n - 1) + ' 段 × ' + k + ' 层 + 末段 ' + last + ' 层',
+          '重算 = 把前向再做一遍'
+        ];
+        S(svg, 'text', { x: ml, y: iy - 9 }, '当前的分法');
+        var nt = S(svg, 'text', { class: 'k-note', x: ml, y: iy + 14 });
+        lines.forEach(function (s, q) { S(nt, 'tspan', { x: ml, dy: q ? 18 : 0 }, s); });
+      }
+    }
+
+    function update() {
+      var L = +lS.value, k = +kS.value, peak = peakOf(L, k), total = (k === 1 ? 3 : 4) * L;
+      setText($('ckpt-l-out'), String(L));
+      setText($('ckpt-k-out'), String(k));
+      setText($('ckpt-peak'), unit === 1 ? peak + ' 单位' : (peak * unit).toFixed(1) + ' GB');
+      setText($('ckpt-rel'), Math.round(peak / L * 100) + '%');
+      var tm = $('ckpt-time'), html = (k === 1 ? 3 : 4) + '<span class="mi">L</span> = ' + total + ' 个时间单位';
+      if (tm.innerHTML !== html) tm.innerHTML = html;
+      setText($('ckpt-extra'), k === 1 ? '0%' : '+' + Math.round((total / (3 * L) - 1) * 100) + '%');
+      draw();
+    }
+    function setL() {
+      var L = +lS.value;
+      kS.max = String(L);
+      if (+kS.value > L) kS.value = String(L);
+      update();
+    }
+
+    lS.addEventListener('input', setL);
+    kS.addEventListener('input', update);
+    $$('#ckpt-unit button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        unit = +btn.getAttribute('data-u');
+        $$('#ckpt-unit button').forEach(function (o) { o.setAttribute('aria-pressed', o === btn ? 'true' : 'false'); });
+        update();
+      });
+    });
+    $('ckpt-best').addEventListener('click', function () { kS.value = String(bestK(+lS.value)); update(); });
+    setL();
+    var lastW = innerWidth;
+    window.addEventListener('resize', function () { if (innerWidth !== lastW) { lastW = innerWidth; draw(); } });
+    if (document.fonts) document.fonts.ready.then(draw);
   })();
 
   /* ---------------- 目录跟踪与窄屏目录胶囊（同示范页） ---------------- */
